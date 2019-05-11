@@ -1,0 +1,3 @@
+[submodule "external/gqten"]
+	path = external/gqten
+	url = git@github.com:sun-rongyang/graceq-tensor.git
