@@ -1,0 +1,7 @@
+# Dir
+build/
+test/
+
+# File
+*swp
+*swo
