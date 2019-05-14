@@ -7,6 +7,7 @@
 
 
 add_library(gqmps2
+  mpogen.cc
   lanczos.cc
   gqmps2.cc)
 

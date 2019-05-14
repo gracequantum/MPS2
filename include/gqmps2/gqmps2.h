@@ -18,6 +18,56 @@ namespace gqmps2 {
 using namespace gqten;
 
 
+// MPO generator.
+const GQTensor kNullOperator = GQTensor();
+
+
+struct OpIdx {
+  OpIdx(const GQTensor &op, const long idx) : op(op), idx(idx) {}
+
+  GQTensor op;
+  long idx;
+};
+
+
+struct FSMEdge {
+  FSMEdge(const GQTensor &op, const long lstate, const long nstate) :
+      op(op), lstate(lstate), nstate(nstate) {}
+  FSMEdge(void) : FSMEdge(GQTensor(), 0, 0) {}
+
+  GQTensor op;
+  long lstate;
+  long nstate;
+};
+
+
+class MPOGenerator {
+public:
+  MPOGenerator(const long, const Index &);
+
+  void AddTerm(
+      const double,
+      const std::vector<OpIdx> &,
+      const GQTensor &inter_op=kNullOperator);
+  std::vector<GQTensor *> Gen(void);
+
+private:
+  long N_;
+  Index pb_out_;
+  Index pb_in_;
+  std::vector<std::vector<FSMEdge>> edges_set_;
+  std::vector<long> mid_state_nums_;
+  GQTensor id_op_;
+  
+  void AddOneSiteTerm(const double, const OpIdx &);
+  void AddTwoSiteTerm(
+      const double, const OpIdx &, const OpIdx &, const GQTensor &);
+  GQTensor *GenHeadMpo(const std::vector<FSMEdge> &, const long);
+  GQTensor *GenCentMpo(const std::vector<FSMEdge> &, const long, const long);
+  GQTensor *GenTailMpo(const std::vector<FSMEdge> &, const long);
+};
+
+
 // Lanczos Ground state search algorithm.
 struct LanczosParams {
   LanczosParams(double err, long max_iter) :

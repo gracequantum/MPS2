@@ -24,3 +24,4 @@ endmacro()
 
 # Test Lanczos algorithm.
 add_unittest(test_lanczos test_lanczos.cc "" "gqten;gqmps2" "" "")
+add_unittest(test_mpogen test_mpogen.cc "" "gqten;gqmps2" "" "")
