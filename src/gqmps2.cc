@@ -106,7 +106,8 @@ LanczosRes LanczosSolver(
   auto temp_mat_mul_vec_res = (*eff_ham_mul_state)(rpeff_ham, bases[0]);
   a[0] = Contract(
              *temp_mat_mul_vec_res,
-             Dag(*bases[0]),    // Dag not efficient now, look for move constructor.
+             //Dag(*bases[0]),    // Dag not efficient now, look for move constructor.
+             MockDag(*bases[0]),
              energy_measu_ctrct_axes)->scalar;
   delete temp_mat_mul_vec_res;
   N[0] = 0.0;
@@ -153,7 +154,8 @@ LanczosRes LanczosSolver(
     bases[m] = gamma;
     a[m] = Contract(
                *(*eff_ham_mul_state)(rpeff_ham, bases[m]),
-               Dag(*bases[m]),    // Dag not efficient now, look for move constructor.
+               //Dag(*bases[m]),    // Dag not efficient now, look for move constructor.
+               MockDag(*bases[m]),
                energy_measu_ctrct_axes)->scalar;
     TridiagGsSolver(a, b, m+1, eigval, eigvec, 'N');
     auto energy0_new = eigval;

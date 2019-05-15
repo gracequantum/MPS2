@@ -27,7 +27,7 @@ std::vector<GQTensor *> InitRBlocks(
   auto N = mps.size();
   std::vector<GQTensor *> rblocks(N-1);
   auto rblock1 = Contract(*mps.back(), *mpo.back(), {{1}, {0}});
-  auto temp_rblock1 = Contract(*rblock1, Dag(*mps.back()), {{2}, {1}});
+  auto temp_rblock1 = Contract(*rblock1, MockDag(*mps.back()), {{2}, {1}});
   delete rblock1;
   rblock1 = temp_rblock1;
   rblocks[1] = rblock1;
@@ -36,7 +36,7 @@ std::vector<GQTensor *> InitRBlocks(
     auto temp_rblocki = Contract(*rblocki, *mpo[N-i], {{1, 2}, {1, 3}});
     delete rblocki;
     rblocki = temp_rblocki;
-    temp_rblocki = Contract(*rblocki, Dag(*mps[N-i]), {{3, 1}, {1, 2}});
+    temp_rblocki = Contract(*rblocki, MockDag(*mps[N-i]), {{3, 1}, {1, 2}});
     delete rblocki;
     rblocki = temp_rblocki;
     rblocks[i] = rblocki;
@@ -158,7 +158,7 @@ double TwoSiteUpdate(
       if (i == 0) {
         auto new_lblock = Contract(*mps[i], *mpo[i], {{0}, {0}});
         auto temp_new_lblock = Contract(
-                                   *new_lblock, Dag(*mps[i]),
+                                   *new_lblock, MockDag(*mps[i]),
                                    {{2}, {0}});
         delete new_lblock;
         new_lblock = temp_new_lblock;
@@ -169,7 +169,7 @@ double TwoSiteUpdate(
         auto temp_new_lblock = Contract(*new_lblock, *mpo[i], {{0, 2}, {0, 1}});
         delete new_lblock;
         new_lblock = temp_new_lblock;
-        temp_new_lblock = Contract(*new_lblock, Dag(*mps[i]), {{0, 2}, {0, 1}});
+        temp_new_lblock = Contract(*new_lblock, MockDag(*mps[i]), {{0, 2}, {0, 1}});
         delete new_lblock;
         new_lblock = temp_new_lblock;
         delete lblocks[i+1];
@@ -185,7 +185,7 @@ double TwoSiteUpdate(
       mps[rsite_idx] = svd_res.v;
       if (i == N-1) {
         auto new_rblock = Contract(*mps[i], *mpo[i], {{1}, {0}});
-        auto temp_new_rblock = Contract(*new_rblock, Dag(*mps[i]), {{2}, {1}});
+        auto temp_new_rblock = Contract(*new_rblock, MockDag(*mps[i]), {{2}, {1}});
         delete new_rblock;
         new_rblock = temp_new_rblock;
         delete rblocks[N-i];
@@ -195,7 +195,7 @@ double TwoSiteUpdate(
         auto temp_new_rblock = Contract(*new_rblock, *mpo[i], {{1, 2}, {1, 3}});
         delete new_rblock;
         new_rblock = temp_new_rblock;
-        temp_new_rblock = Contract(*new_rblock, Dag(*mps[i]), {{3, 1}, {1, 2}});
+        temp_new_rblock = Contract(*new_rblock, MockDag(*mps[i]), {{3, 1}, {1, 2}});
         delete new_rblock;
         new_rblock = temp_new_rblock;
         delete rblocks[N-i];
