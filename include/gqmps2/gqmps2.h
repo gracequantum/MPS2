@@ -74,6 +74,9 @@ struct LanczosParams {
       error(err), max_iterations(max_iter) {}
   LanczosParams(double err) : LanczosParams(err, 200) {}
   LanczosParams(void) : LanczosParams(1.0E-7, 200) {}
+  LanczosParams(const LanczosParams &lancz_params) :
+      LanczosParams(lancz_params.error, lancz_params.max_iterations) {}
+
   double error;
   long max_iterations;
 };
@@ -89,6 +92,24 @@ LanczosRes LanczosSolver(
     const std::string &);
 
 
+// Two sites update algorithm.
+struct SweepParams {
+  SweepParams(
+      const long sweeps,
+      const long dmin, const long dmax, const double cutoff,
+      const LanczosParams &lancz_params) :
+      Sweeps(sweeps), Dmin(dmin), Dmax(dmax), Cutoff(cutoff),
+      LanczParams(lancz_params) {}
 
+  long Sweeps;
+  long Dmin;
+  long Dmax;
+  double Cutoff;
+  LanczosParams LanczParams;
+};
+
+double TwoSiteAlgorithm(
+    std::vector<GQTensor *> &, const std::vector<GQTensor *> &,
+    const SweepParams &);
 } /* gqmps2 */ 
 #endif /* ifndef GQMPS2_GQMPS2_H */

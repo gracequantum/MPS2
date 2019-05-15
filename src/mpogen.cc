@@ -60,7 +60,7 @@ void MPOGenerator::AddTwoSiteTerm(
         }
       }
     } else {
-      target_op = inter_op;
+      target_op = itrop;
       for (auto &edge : edges_set_[i]) {
         if (edge.lstate == last_state &&
             edge.op == target_op &&
@@ -108,7 +108,7 @@ void MPOGenerator::AddTwoSiteTerm(
         } 
       }
     } else {
-      target_op = inter_op;
+      target_op = itrop;
       for (auto &edge : edges_set_[i]) {
         if (edge.nstate == next_state &&
             edge.op == target_op &&
@@ -135,7 +135,7 @@ void MPOGenerator::AddTwoSiteTerm(
     } else if (i == opidx2.idx) {
       target_op = opidx2.op;
     } else {
-      target_op = inter_op;
+      target_op = itrop;
     }
     if (i == beg_idx) {
       last_state = beg_lstate;

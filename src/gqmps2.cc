@@ -6,6 +6,7 @@
 */
 #include "mpogen.h"
 #include "lanczos.h"
+#include "two_site_algo.h"
 #include "gqmps2/gqmps2.h"
 
 #include <iostream>
@@ -176,4 +177,19 @@ LanczosRes LanczosSolver(
   }
 }
 
+
+double TwoSiteAlgorithm(
+    std::vector<GQTensor *> &mps, const std::vector<GQTensor *> &mpo,
+    const SweepParams &sweep_params) {
+  auto rblocks = InitRBlocks(mps, mpo);
+  auto N = mps.size();
+  std::vector<GQTensor *> lblocks(N-1);
+  std::cout << "\n";
+  double e0;
+  for (long sweep = 0; sweep < sweep_params.Sweeps; ++sweep) {
+    std::cout << "sweep " << sweep << std::endl;
+    e0 = TwoSiteSweep(mps, mpo, lblocks, rblocks, sweep_params);
+  }
+  return e0;
+}
 } /* gqmps2 */ 

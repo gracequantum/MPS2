@@ -9,6 +9,7 @@
 add_library(gqmps2
   mpogen.cc
   lanczos.cc
+  two_site_algo.cc
   gqmps2.cc)
 
 target_include_directories(gqmps2
