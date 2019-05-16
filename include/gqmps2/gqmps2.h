@@ -18,6 +18,11 @@ namespace gqmps2 {
 using namespace gqten;
 
 
+const std::string kMpoPath = "mpo";
+const std::string kRuntimeTempPath = ".temp";
+const std::string kBlockFileBaseName = "block";
+
+
 // MPO generator.
 const GQTensor kNullOperator = GQTensor();
 
@@ -96,15 +101,21 @@ LanczosRes LanczosSolver(
 struct SweepParams {
   SweepParams(
       const long sweeps,
+      const long dmin, const long dmax, const double cutoff, const bool fileio,
+      const LanczosParams &lancz_params) :
+      Sweeps(sweeps), Dmin(dmin), Dmax(dmax), Cutoff(cutoff), FileIO(fileio),
+      LanczParams(lancz_params) {}
+  SweepParams(
+      const long sweeps,
       const long dmin, const long dmax, const double cutoff,
       const LanczosParams &lancz_params) :
-      Sweeps(sweeps), Dmin(dmin), Dmax(dmax), Cutoff(cutoff),
-      LanczParams(lancz_params) {}
+      SweepParams(sweeps, dmin, dmax, cutoff, false, lancz_params) {}
 
   long Sweeps;
   long Dmin;
   long Dmax;
   double Cutoff;
+  bool FileIO;
   LanczosParams LanczParams;
 };
 

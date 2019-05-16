@@ -5,6 +5,7 @@
 * Description: GraceQ/mps2 project. Private objects for two sites algorithm. Implementation.
 */
 #include "two_site_algo.h"
+#include "gqmps2/gqmps2.h"
 #include "gqten/gqten.h"
 
 #include <iostream>
@@ -22,15 +23,27 @@ using namespace gqten;
 
 
 std::vector<GQTensor *> InitRBlocks(
-    const std::vector<GQTensor *> &mps, const std::vector<GQTensor *> &mpo) {
+    const std::vector<GQTensor *> &mps, const std::vector<GQTensor *> &mpo,
+    const SweepParams &sweep_params) {
   assert(mps.size() == mpo.size());
   auto N = mps.size();
   std::vector<GQTensor *> rblocks(N-1);
+  auto rblock0 = new GQTensor();
+  rblocks[0] = rblock0;
   auto rblock1 = Contract(*mps.back(), *mpo.back(), {{1}, {0}});
   auto temp_rblock1 = Contract(*rblock1, MockDag(*mps.back()), {{2}, {1}});
   delete rblock1;
   rblock1 = temp_rblock1;
   rblocks[1] = rblock1;
+  std::string file;
+  if (sweep_params.FileIO) {
+    file = kRuntimeTempPath + "/" +
+               "r" + kBlockFileBaseName + "0" + "." + kGQTenFileSuffix; 
+    WriteGQTensorTOFile(*rblock0, file);
+    file = kRuntimeTempPath + "/" +
+               "r" + kBlockFileBaseName + "1" + "." + kGQTenFileSuffix; 
+    WriteGQTensorTOFile(*rblock1, file);
+  }
   for (size_t i = 2; i < N-1; ++i) {
     auto rblocki = Contract(*mps[N-i], *rblocks[i-1], {{2}, {0}});
     auto temp_rblocki = Contract(*rblocki, *mpo[N-i], {{1, 2}, {1, 3}});
@@ -40,7 +53,14 @@ std::vector<GQTensor *> InitRBlocks(
     delete rblocki;
     rblocki = temp_rblocki;
     rblocks[i] = rblocki;
+    if (sweep_params.FileIO) {
+      auto file = kRuntimeTempPath + "/" +
+                  "r" + kBlockFileBaseName + std::to_string(i) +
+                  "." + kGQTenFileSuffix; 
+      WriteGQTensorTOFile(*rblocki, file);
+    }
   }
+  if (sweep_params.FileIO) { for (auto &rb : rblocks) { delete rb; } }
   return rblocks;
 }
 
@@ -68,19 +88,19 @@ double TwoSiteUpdate(
     const SweepParams &sweep_params, const char dir) {
   std::cout << "Site " << i << " updating ..." << std::endl;
   auto N = mps.size();
-  std::vector<GQTensor *>eff_ham(4);
   std::vector<std::vector<long>> init_state_ctrct_axes, us_ctrct_axes;
   std::string where;
   long svd_ldims, svd_rdims;
   long lsite_idx, rsite_idx;
+  long lblock_len, rblock_len;
+  std::string lblock_file, rblock_file;
+
   switch (dir) {
     case 'r':
       lsite_idx = i;
       rsite_idx = i+1;
-      eff_ham[0] = lblocks[i];
-      eff_ham[1] = mpo[i];
-      eff_ham[2] = mpo[i+1];
-      eff_ham[3] = rblocks[N-(i+2)];
+      lblock_len = i;
+      rblock_len = N-(i+2);
       if (i == 0) {
         init_state_ctrct_axes = {{1}, {0}};
         where = "lend";
@@ -101,10 +121,8 @@ double TwoSiteUpdate(
     case 'l':
       lsite_idx = i-1;
       rsite_idx = i;
-      eff_ham[0] = lblocks[i-1];
-      eff_ham[1] = mpo[i-1];
-      eff_ham[2] = mpo[i];
-      eff_ham[3] = rblocks[N-i-1];
+      lblock_len = i-1;
+      rblock_len = N-i-1;
       if (i == N-1) {
         init_state_ctrct_axes = {{2}, {0}};
         where = "rend";
@@ -128,9 +146,34 @@ double TwoSiteUpdate(
     default:
       std::cout << "dir must be 'r' or 'l', but " << dir << std::endl; 
       exit(1);
-  } 
+  }
+
+  if (sweep_params.FileIO) {
+    switch (dir) {
+      case 'r':
+        rblock_file = kRuntimeTempPath + "/" +
+                      "r" + kBlockFileBaseName + std::to_string(rblock_len) +
+                      "." + kGQTenFileSuffix; 
+        ReadGQTensorFromFile(rblocks[rblock_len], rblock_file);
+        break;
+      case 'l':
+        lblock_file = kRuntimeTempPath + "/" +
+                      "l" + kBlockFileBaseName + std::to_string(lblock_len) +
+                      "." + kGQTenFileSuffix; 
+        ReadGQTensorFromFile(lblocks[lblock_len], lblock_file);
+        break;
+      default:
+        std::cout << "dir must be 'r' or 'l', but " << dir << std::endl; 
+        exit(1);
+    }
+  }
 
   // Lanczos and SVD.
+  std::vector<GQTensor *>eff_ham(4);
+  eff_ham[0] = lblocks[lblock_len];
+  eff_ham[1] = mpo[lsite_idx];
+  eff_ham[2] = mpo[rsite_idx];
+  eff_ham[3] = rblocks[rblock_len];
   auto init_state = Contract(
                         *mps[lsite_idx], *mps[rsite_idx],
                         init_state_ctrct_axes);
@@ -147,6 +190,8 @@ double TwoSiteUpdate(
   delete lancz_res.gs_vec;
 
   // Update MPS sites and blocks.
+  GQTensor *new_lblock, *new_rblock;
+  bool update_block = true;
   switch (dir) {
     case 'r':
       delete mps[lsite_idx];
@@ -155,25 +200,45 @@ double TwoSiteUpdate(
       mps[rsite_idx] = Contract(*svd_res.s, *svd_res.v, {{1}, {0}});
       delete svd_res.s;
       delete svd_res.v;
+
       if (i == 0) {
-        auto new_lblock = Contract(*mps[i], *mpo[i], {{0}, {0}});
+        new_lblock = Contract(*mps[i], *mpo[i], {{0}, {0}});
         auto temp_new_lblock = Contract(
                                    *new_lblock, MockDag(*mps[i]),
                                    {{2}, {0}});
         delete new_lblock;
         new_lblock = temp_new_lblock;
-        delete lblocks[i+1];
-        lblocks[i+1] = new_lblock;
       } else if (i != N-2) {
-        auto new_lblock = Contract(*lblocks[i], *mps[i], {{0}, {0}});
+        new_lblock = Contract(*lblocks[i], *mps[i], {{0}, {0}});
         auto temp_new_lblock = Contract(*new_lblock, *mpo[i], {{0, 2}, {0, 1}});
         delete new_lblock;
         new_lblock = temp_new_lblock;
         temp_new_lblock = Contract(*new_lblock, MockDag(*mps[i]), {{0, 2}, {0, 1}});
         delete new_lblock;
         new_lblock = temp_new_lblock;
-        delete lblocks[i+1];
-        lblocks[i+1] = new_lblock;
+      } else {
+        update_block = false;
+      }
+
+      if (sweep_params.FileIO) {
+        if (update_block) {
+          auto target_blk_len = i+1;
+          lblocks[target_blk_len] = new_lblock;
+          auto target_blk_file = kRuntimeTempPath + "/" +
+                                 "l" + kBlockFileBaseName + std::to_string(target_blk_len) +
+                                 "." + kGQTenFileSuffix; 
+          WriteGQTensorTOFile(*new_lblock, target_blk_file);
+          delete eff_ham[0];
+          delete eff_ham[3];
+        } else {
+          delete eff_ham[0];
+        }
+      } else {
+        if (update_block) {
+          auto target_blk_len = i+1;
+          delete lblocks[target_blk_len];
+          lblocks[target_blk_len] = new_lblock;
+        }
       }
       break;
     case 'l':
@@ -183,28 +248,44 @@ double TwoSiteUpdate(
       delete svd_res.s;
       delete mps[rsite_idx];
       mps[rsite_idx] = svd_res.v;
+
       if (i == N-1) {
-        auto new_rblock = Contract(*mps[i], *mpo[i], {{1}, {0}});
+        new_rblock = Contract(*mps[i], *mpo[i], {{1}, {0}});
         auto temp_new_rblock = Contract(*new_rblock, MockDag(*mps[i]), {{2}, {1}});
         delete new_rblock;
         new_rblock = temp_new_rblock;
-        delete rblocks[N-i];
-        rblocks[N-i] = new_rblock;
       } else if (i != 1) {
-        auto new_rblock = Contract(*mps[i], *eff_ham[3], {{2}, {0}});
+        new_rblock = Contract(*mps[i], *eff_ham[3], {{2}, {0}});
         auto temp_new_rblock = Contract(*new_rblock, *mpo[i], {{1, 2}, {1, 3}});
         delete new_rblock;
         new_rblock = temp_new_rblock;
         temp_new_rblock = Contract(*new_rblock, MockDag(*mps[i]), {{3, 1}, {1, 2}});
         delete new_rblock;
         new_rblock = temp_new_rblock;
-        delete rblocks[N-i];
-        rblocks[N-i] = new_rblock;
+      } else {
+        update_block = false;
       }
-      break;
-    default:
-      std::cout << "dir must be 'r' or 'l', but " << dir << std::endl; 
-      exit(1);
+
+      if (sweep_params.FileIO) {
+        if (update_block) {
+          auto target_blk_len = N-i;
+          rblocks[target_blk_len] = new_rblock;
+          auto target_blk_file = kRuntimeTempPath + "/" +
+                                 "r" + kBlockFileBaseName + std::to_string(target_blk_len) +
+                                 "." + kGQTenFileSuffix; 
+          WriteGQTensorTOFile(*new_rblock, target_blk_file);
+          delete eff_ham[0];
+          delete eff_ham[3];
+        } else {
+          delete eff_ham[3];
+        }
+      } else {
+        if (update_block) {
+          auto target_blk_len = N-i;
+          delete rblocks[target_blk_len];
+          rblocks[target_blk_len] = new_rblock;
+        }
+      }
   }
   std::cout << "Site " << i << " updated E0 = " << std::setprecision(16) << lancz_res.gs_eng << " TruncErr = " << svd_res.trunc_err << " D = " << svd_res.D << std::endl;
   std::cout << "\n";

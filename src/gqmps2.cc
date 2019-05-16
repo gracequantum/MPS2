@@ -106,7 +106,6 @@ LanczosRes LanczosSolver(
   auto temp_mat_mul_vec_res = (*eff_ham_mul_state)(rpeff_ham, bases[0]);
   a[0] = Contract(
              *temp_mat_mul_vec_res,
-             //Dag(*bases[0]),    // Dag not efficient now, look for move constructor.
              MockDag(*bases[0]),
              energy_measu_ctrct_axes)->scalar;
   delete temp_mat_mul_vec_res;
@@ -154,7 +153,6 @@ LanczosRes LanczosSolver(
     bases[m] = gamma;
     a[m] = Contract(
                *(*eff_ham_mul_state)(rpeff_ham, bases[m]),
-               //Dag(*bases[m]),    // Dag not efficient now, look for move constructor.
                MockDag(*bases[m]),
                energy_measu_ctrct_axes)->scalar;
     TridiagGsSolver(a, b, m+1, eigval, eigvec, 'N');
@@ -183,9 +181,17 @@ LanczosRes LanczosSolver(
 double TwoSiteAlgorithm(
     std::vector<GQTensor *> &mps, const std::vector<GQTensor *> &mpo,
     const SweepParams &sweep_params) {
-  auto rblocks = InitRBlocks(mps, mpo);
+  if ( sweep_params.FileIO && !IsPathExist(kRuntimeTempPath)) {
+    CreatPath(kRuntimeTempPath);
+  }
+  auto rblocks = InitRBlocks(mps, mpo, sweep_params);
   auto N = mps.size();
   std::vector<GQTensor *> lblocks(N-1);
+  if (sweep_params.FileIO) {
+    auto file = kRuntimeTempPath + "/" +
+                "l" + kBlockFileBaseName + "0" + "." + kGQTenFileSuffix; 
+    WriteGQTensorTOFile(GQTensor(), file);
+  }
   std::cout << "\n";
   double e0;
   for (long sweep = 0; sweep < sweep_params.Sweeps; ++sweep) {

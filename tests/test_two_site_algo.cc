@@ -67,8 +67,12 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, Cases) {
   auto rmps_ten = new GQTensor({mps_init_virt_idx_in, phys_idx_out});
   rmps_ten->Random(qn0);
   mps[N-1] = rmps_ten;
-  auto sweep_params = SweepParams(4, 1, 10, 1.0E-5, LanczosParams(1.0E-7));
+  auto sweep_params = SweepParams(4, 1, 10, 1.0E-5, true, LanczosParams(1.0E-7));
   auto energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
+  EXPECT_NEAR(energy0, -0.25*(N-1), 1.0E-12);
+  // No file I/O case.
+  sweep_params = SweepParams(4, 1, 10, 1.0E-5, LanczosParams(1.0E-7));
+  energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -0.25*(N-1), 1.0E-12);
 
   // 1D AFM Heisenberg model.
@@ -79,7 +83,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, Cases) {
     mpo_gen.AddTerm(0.5, {OpIdx(sm, i), OpIdx(sp, i+1)});
   }
   mpo = mpo_gen.Gen();
-  sweep_params = SweepParams(4, 8, 8, 1.0E-9, LanczosParams(1.0E-7));
+  sweep_params = SweepParams(4, 8, 8, 1.0E-9, true, LanczosParams(1.0E-7));
   energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -2.493577133888, 1.0E-12);
 
@@ -203,7 +207,7 @@ TEST_F(TestTwoSiteAlgorithmFermionSystem, Cases) {
   auto rmps_ten = new GQTensor({lvb, phys_idx_out});
   rmps_ten->Random(zero_div);
   mps[N-1] = rmps_ten;
-  auto sweep_params = SweepParams(12, 8, 8, 1.0E-9, LanczosParams(1.0E-8, 20));
+  auto sweep_params = SweepParams(12, 8, 8, 1.0E-9, true, LanczosParams(1.0E-8, 20));
   auto energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -6.947478526233, 1.0E-10);
 
