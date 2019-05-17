@@ -45,26 +45,39 @@ void RandomInitMps(
     std::vector<GQTensor *> &mps,
     const Index &pb_out,
     const QN &div, const QN &zero_div) {
-  auto rvb = GenHeadVirtBond(pb_out, div);
-  auto lend_mps_ten = new GQTensor({pb_out, rvb});
-  lend_mps_ten->Random(div);
-  mps[0] = lend_mps_ten;
+  Index lvb, rvb;
+  // Left to center.
+  rvb = GenHeadRightVirtBond(pb_out, div);
+  mps[0] = new GQTensor({pb_out, rvb});
   auto N = mps.size();
-  for (std::size_t i = 1; i < N; ++i) {
-    auto lvb = InverseIndex(rvb); 
-    rvb = GenBodyVirtBond(lvb, pb_out, zero_div);
-    auto mps_teni = new GQTensor({lvb, pb_out, rvb});
-    mps_teni->Random(zero_div);
-    mps[i] = mps_teni;
+  for (std::size_t i = 1; i < N/2; ++i) {
+    lvb = InverseIndex(rvb); 
+    rvb = GenBodyRightVirtBond(lvb, pb_out, zero_div);
+    mps[i] = new GQTensor({lvb, pb_out, rvb});
   }
-  auto lvb = InverseIndex(rvb);
-  auto rend_mps_ten = new GQTensor({lvb, pb_out});
-  rend_mps_ten->Random(zero_div);
-  mps[N-1] = rend_mps_ten;
+  auto cent_bond = rvb;
+
+  // Right to center.
+  lvb = GenTailLeftVirtBond(pb_out, zero_div);
+  mps[N-1] = new GQTensor({lvb, pb_out});
+  for (std::size_t i = N-2; i > N/2; --i) {
+    rvb = InverseIndex(lvb);
+    lvb = GenBodyLeftVirtBond(rvb, pb_out, zero_div);
+    mps[i] = new GQTensor({lvb, pb_out, rvb});
+  }
+  rvb = InverseIndex(lvb);
+  lvb = InverseIndex(cent_bond);
+  mps[N/2] = new GQTensor({lvb, pb_out, rvb});
+  
+  // Initialize elements randomly.
+  mps[0]->Random(div);
+  for (std::size_t i = 1; i < N; ++i) {
+    mps[i]->Random(zero_div);
+  }
 }
 
 
-Index GenHeadVirtBond(const Index &pb, const QN &div) {
+Index GenHeadRightVirtBond(const Index &pb, const QN &div) {
   std::vector<QNSector> new_qnscts;
   for (auto &qnsct : pb.qnscts) {
     new_qnscts.push_back(QNSector(div - qnsct.qn, 1));
@@ -73,7 +86,16 @@ Index GenHeadVirtBond(const Index &pb, const QN &div) {
 }
 
 
-Index GenBodyVirtBond(const Index &lvb, const Index &pb, const QN &div) {
+Index GenTailLeftVirtBond(const Index &pb, const QN &zero_div) {
+  std::vector<QNSector> new_qnscts;
+  for (auto &qnsct : pb.qnscts) {
+    new_qnscts.push_back(QNSector(qnsct.qn - zero_div, 1));
+  }
+  return Index(new_qnscts, IN);
+}
+
+
+Index GenBodyRightVirtBond(const Index &lvb, const Index &pb, const QN &div) {
   std::vector<QNSector> new_qnscts;
   for (auto &lvqnsct : lvb.qnscts) {
     for (auto &pqnsct : pb.qnscts) {
@@ -91,5 +113,27 @@ Index GenBodyVirtBond(const Index &lvb, const Index &pb, const QN &div) {
     }
   }
   return Index(new_qnscts, OUT);
+}
+
+
+Index GenBodyLeftVirtBond(
+    const Index &rvb, const Index &pb, const QN &zero_div) {
+  std::vector<QNSector> new_qnscts;
+  for (auto &rvqnsct : rvb.qnscts) {
+    for (auto &pqnsct : pb.qnscts) {
+      auto poss_lvb_qn = pqnsct.qn - zero_div + rvqnsct.qn;
+      auto has_qn = false;
+      for (auto &new_qnsct : new_qnscts) {
+        if (poss_lvb_qn == new_qnsct.qn) {
+          has_qn = true;
+          break;
+        }
+      }
+      if (!has_qn) {
+        new_qnscts.push_back(QNSector(poss_lvb_qn, 1));
+      }
+    }
+  }
+  return Index(new_qnscts, IN);
 }
 } /* gqmps2 */ 

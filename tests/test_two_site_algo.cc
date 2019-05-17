@@ -51,22 +51,9 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, Cases) {
   }
   auto mpo = mpo_gen.Gen();
   std::vector<GQTensor *> mps(N);
-  srand(0);
-  auto lmps_ten = new GQTensor({phys_idx_out, mps_init_virt_idx_out});
   auto qn0 = QN({QNNameVal("Sz", 0)});
-  lmps_ten->Random(qn0);
-  mps[0] = lmps_ten;
-  for (long i = 1; i < N-1; ++i) {
-    auto cmps_ten = new GQTensor({
-                        mps_init_virt_idx_in,
-                        phys_idx_out,
-                        mps_init_virt_idx_out});
-    cmps_ten->Random(qn0);
-    mps[i] = cmps_ten;
-  }
-  auto rmps_ten = new GQTensor({mps_init_virt_idx_in, phys_idx_out});
-  rmps_ten->Random(qn0);
-  mps[N-1] = rmps_ten;
+  srand(0);
+  RandomInitMps(mps, phys_idx_out, qn0, qn0);
   auto sweep_params = SweepParams(4, 1, 10, 1.0E-5, true, LanczosParams(1.0E-7));
   auto energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -0.25*(N-1), 1.0E-12);
@@ -110,36 +97,6 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, Cases) {
 
 
 // Test Fermion model.
-Index GenVirtBondHead(const Index &pb, const QN &div) {
-  std::vector<QNSector> new_qnscts;
-  for (auto &qnsct : pb.qnscts) {
-    new_qnscts.push_back(QNSector(div - qnsct.qn, 1));
-  }
-  return Index(new_qnscts, OUT);
-}
-
-
-Index GenVirtBond(const Index &lvb, const Index &pb, const QN &div) {
-  std::vector<QNSector> new_qnscts;
-  for (auto &lvqnsct : lvb.qnscts) {
-    for (auto &pqnsct : pb.qnscts) {
-      auto poss_rvb_qn = div + lvqnsct.qn - pqnsct.qn;
-      auto has_qn = false;
-      for (auto &new_qnsct : new_qnscts) {
-        if (poss_rvb_qn == new_qnsct.qn) {
-          has_qn = true;
-          break;
-        }
-      }
-      if (!has_qn) {
-        new_qnscts.push_back(QNSector(poss_rvb_qn, 1));
-      }
-    }
-  }
-  return Index(new_qnscts, OUT);
-}
-
-
 struct TestTwoSiteAlgorithmFermionSystem : public testing::Test {
   long N = 4;
   double t = 3.;

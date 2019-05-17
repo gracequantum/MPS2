@@ -23,9 +23,12 @@ void LoadMps(std::vector<GQTensor *> &);
 void RandomInitMps(
     std::vector<GQTensor *> &, const Index &, const QN &, const QN &);
 
-Index GenHeadVirtBond(const Index &, const QN &);
+Index GenHeadRightVirtBond(const Index &, const QN &);
 
-Index GenBodyVirtBond(const Index &, const Index &, const QN &);
+Index GenTailLeftVirtBond(const Index &, const QN &);
 
+Index GenBodyRightVirtBond(const Index &, const Index &, const QN &);
+
+Index GenBodyLeftVirtBond(const Index &, const Index &, const QN &);
 } /* gqmps2 */ 
 #endif /* ifndef GQMPS2_MPS_OPS_H */
