@@ -22,7 +22,7 @@ namespace gqmps2 {
 using namespace gqten;
 
 
-std::vector<GQTensor *> InitRBlocks(
+std::pair<std::vector<GQTensor *>, std::vector<GQTensor *>> InitBlocks(
     const std::vector<GQTensor *> &mps, const std::vector<GQTensor *> &mpo,
     const SweepParams &sweep_params) {
   assert(mps.size() == mpo.size());
@@ -61,7 +61,13 @@ std::vector<GQTensor *> InitRBlocks(
     }
   }
   if (sweep_params.FileIO) { for (auto &rb : rblocks) { delete rb; } }
-  return rblocks;
+  std::vector<GQTensor *> lblocks(N-1);
+  if (sweep_params.FileIO) {
+    auto file = kRuntimeTempPath + "/" +
+                "l" + kBlockFileBaseName + "0" + "." + kGQTenFileSuffix; 
+    WriteGQTensorTOFile(GQTensor(), file);
+  }
+  return std::make_pair(lblocks, rblocks);
 }
 
 

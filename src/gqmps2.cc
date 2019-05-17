@@ -184,19 +184,15 @@ double TwoSiteAlgorithm(
   if ( sweep_params.FileIO && !IsPathExist(kRuntimeTempPath)) {
     CreatPath(kRuntimeTempPath);
   }
-  auto rblocks = InitRBlocks(mps, mpo, sweep_params);
-  auto N = mps.size();
-  std::vector<GQTensor *> lblocks(N-1);
-  if (sweep_params.FileIO) {
-    auto file = kRuntimeTempPath + "/" +
-                "l" + kBlockFileBaseName + "0" + "." + kGQTenFileSuffix; 
-    WriteGQTensorTOFile(GQTensor(), file);
-  }
+  auto l_and_r_blocks = InitBlocks(mps, mpo, sweep_params);
   std::cout << "\n";
   double e0;
   for (long sweep = 0; sweep < sweep_params.Sweeps; ++sweep) {
     std::cout << "sweep " << sweep << std::endl;
-    e0 = TwoSiteSweep(mps, mpo, lblocks, rblocks, sweep_params);
+    e0 = TwoSiteSweep(
+        mps, mpo,
+        l_and_r_blocks.first, l_and_r_blocks.second,
+        sweep_params);
   }
   return e0;
 }

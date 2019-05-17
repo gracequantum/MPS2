@@ -20,7 +20,7 @@ namespace gqmps2 {
 using namespace gqten;
 
 
-std::vector<GQTensor *> InitRBlocks(
+std::pair<std::vector<GQTensor *>, std::vector<GQTensor *>> InitBlocks(
     const std::vector<GQTensor *> &, const std::vector<GQTensor *> &,
     const SweepParams &);
 
