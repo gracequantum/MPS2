@@ -18,9 +18,10 @@ namespace gqmps2 {
 using namespace gqten;
 
 
-const std::string kMpoPath = "mpo";
+const std::string kMpsPath = "mps";
 const std::string kRuntimeTempPath = ".temp";
 const std::string kBlockFileBaseName = "block";
+const std::string kMpsTenBaseName = "mps_ten";
 
 
 // MPO generator.
@@ -122,5 +123,9 @@ struct SweepParams {
 double TwoSiteAlgorithm(
     std::vector<GQTensor *> &, const std::vector<GQTensor *> &,
     const SweepParams &);
+
+void DumpMps(const std::vector<GQTensor *> &);
+
+void LoadMps(std::vector<GQTensor *> &);
 } /* gqmps2 */ 
 #endif /* ifndef GQMPS2_GQMPS2_H */
