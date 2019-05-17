@@ -196,32 +196,4 @@ double TwoSiteAlgorithm(
   }
   return e0;
 }
-
-
-void DumpMps(const std::vector<GQTensor *> &mps) {
-  if (!IsPathExist(kMpsPath)) { CreatPath(kMpsPath); }
-  auto N = mps.size();
-  std::string file;
-  for (std::size_t i = 0; i < N; ++i) {
-    file = kMpsPath + "/" +
-           kMpsTenBaseName + std::to_string(i) + "." + kGQTenFileSuffix;
-    std::ofstream ofs(file, std::ofstream::binary);
-    bfwrite(ofs, *mps[i]);
-    ofs.close();
-  }
-}
-
-
-void LoadMps(std::vector<GQTensor *> &mps) {
-  auto N = mps.size();
-  std::string file;
-  for (std::size_t i = 0; i < N; ++i) {
-    file = kMpsPath + "/" +
-           kMpsTenBaseName + std::to_string(i) + "." + kGQTenFileSuffix;
-    std::ifstream ifs(file, std::ifstream::binary);
-    mps[i] = new GQTensor();
-    bfread(ifs, *mps[i]);
-    ifs.close();
-  }
-}
 } /* gqmps2 */ 

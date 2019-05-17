@@ -191,22 +191,8 @@ TEST_F(TestTwoSiteAlgorithmFermionSystem, Cases) {
   std::vector<GQTensor *> mps(N);
   auto total_div = QN({QNNameVal("N", N-2), QNNameVal("Sz", 0)});
   auto zero_div = QN({QNNameVal("N", 0), QNNameVal("Sz", 0)});
-  auto rvb = GenVirtBondHead(phys_idx_out, total_div);
-  auto mps_ten0 = new GQTensor({phys_idx_out, rvb});
   srand(0);
-  mps_ten0->Random(total_div);
-  mps[0] = mps_ten0;
-  for (long i = 1; i < N; ++i) {
-    auto lvb = InverseIndex(rvb);
-    rvb = GenVirtBond(lvb, phys_idx_out, zero_div);
-    auto mps_teni = new GQTensor({lvb, phys_idx_out, rvb});
-    mps_teni->Random(zero_div);
-    mps[i] = mps_teni;
-  }
-  auto lvb = InverseIndex(rvb);
-  auto rmps_ten = new GQTensor({lvb, phys_idx_out});
-  rmps_ten->Random(zero_div);
-  mps[N-1] = rmps_ten;
+  RandomInitMps(mps, phys_idx_out, total_div, zero_div);
   auto sweep_params = SweepParams(12, 8, 8, 1.0E-9, true, LanczosParams(1.0E-8, 20));
   auto energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -6.947478526233, 1.0E-10);

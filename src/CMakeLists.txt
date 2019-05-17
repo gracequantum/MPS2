@@ -7,6 +7,7 @@
 
 
 add_library(gqmps2
+  mps_ops.cc
   mpogen.cc
   lanczos.cc
   two_site_algo.cc

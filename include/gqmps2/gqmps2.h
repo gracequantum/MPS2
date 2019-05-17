@@ -12,6 +12,10 @@
 
 #include <string>
 #include <vector>
+#include <iostream>
+#include <fstream>
+
+#include <sys/stat.h>
 
 
 namespace gqmps2 {
@@ -124,8 +128,46 @@ double TwoSiteAlgorithm(
     std::vector<GQTensor *> &, const std::vector<GQTensor *> &,
     const SweepParams &);
 
+
+// MPS operations.
 void DumpMps(const std::vector<GQTensor *> &);
 
 void LoadMps(std::vector<GQTensor *> &);
+
+void RandomInitMps(
+    std::vector<GQTensor *> &, const Index &, const QN &, const QN &);
+
+
+// System I/O functions.
+inline void WriteGQTensorTOFile(const GQTensor &t, const std::string &file) {
+  std::ofstream ofs(file, std::ofstream::binary);  
+  bfwrite(ofs, t);
+  ofs.close();
+}
+
+
+inline void ReadGQTensorFromFile(GQTensor * &rpt, const std::string &file) {
+  std::ifstream ifs(file, std::ifstream::binary);
+  rpt = new GQTensor();
+  bfread(ifs, *rpt);
+  ifs.close();
+}
+
+
+inline bool IsPathExist(const std::string &path) {
+  struct stat buffer;
+  return (stat(path.c_str(), &buffer) == 0);
+}
+
+
+inline void CreatPath(const std::string &path) {
+  const int dir_err = mkdir(
+                          path.c_str(),
+                          S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  if (dir_err == -1) {
+    std::cout << "error creating directory!" << std::endl;
+    exit(1);
+  }
+}
 } /* gqmps2 */ 
 #endif /* ifndef GQMPS2_GQMPS2_H */
