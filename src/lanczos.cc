@@ -10,6 +10,8 @@
 
 #include <iostream>
 
+#include <cstring>
+
 #include "mkl.h"
 
 
