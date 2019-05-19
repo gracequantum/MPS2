@@ -107,20 +107,23 @@ struct SweepParams {
   SweepParams(
       const long sweeps,
       const long dmin, const long dmax, const double cutoff, const bool fileio,
+      const bool restart,
       const LanczosParams &lancz_params) :
       Sweeps(sweeps), Dmin(dmin), Dmax(dmax), Cutoff(cutoff), FileIO(fileio),
+      Restart(restart),
       LanczParams(lancz_params) {}
   SweepParams(
       const long sweeps,
       const long dmin, const long dmax, const double cutoff,
       const LanczosParams &lancz_params) :
-      SweepParams(sweeps, dmin, dmax, cutoff, false, lancz_params) {}
+      SweepParams(sweeps, dmin, dmax, cutoff, false, false, lancz_params) {}
 
   long Sweeps;
   long Dmin;
   long Dmax;
   double Cutoff;
   bool FileIO;
+  bool Restart;
   LanczosParams LanczParams;
 };
 

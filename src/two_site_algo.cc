@@ -28,6 +28,13 @@ std::pair<std::vector<GQTensor *>, std::vector<GQTensor *>> InitBlocks(
   assert(mps.size() == mpo.size());
   auto N = mps.size();
   std::vector<GQTensor *> rblocks(N-1);
+  std::vector<GQTensor *> lblocks(N-1);
+
+  if (sweep_params.Restart) {
+    return std::make_pair(lblocks, rblocks);
+  }
+
+  // Generate blocks.
   auto rblock0 = new GQTensor();
   rblocks[0] = rblock0;
   auto rblock1 = Contract(*mps.back(), *mpo.back(), {{1}, {0}});
@@ -61,7 +68,6 @@ std::pair<std::vector<GQTensor *>, std::vector<GQTensor *>> InitBlocks(
     }
   }
   if (sweep_params.FileIO) { for (auto &rb : rblocks) { delete rb; } }
-  std::vector<GQTensor *> lblocks(N-1);
   if (sweep_params.FileIO) {
     auto file = kRuntimeTempPath + "/" +
                 "l" + kBlockFileBaseName + "0" + "." + kGQTenFileSuffix; 
