@@ -92,6 +92,7 @@ struct LanczosParams {
 };
 
 struct LanczosRes {
+  long iters;
   double gs_eng;
   GQTensor *gs_vec;
 };
@@ -172,5 +173,22 @@ inline void CreatPath(const std::string &path) {
     exit(1);
   }
 }
+
+
+// Timer.
+class Timer {
+public:
+  Timer(const std::string &);
+
+  void Restart(void);
+  double Elapsed(void);
+  void PrintElapsed(void);
+
+private:
+  double start_;
+  std::string notes_;
+
+  double GetWallTime(void);
+};
 } /* gqmps2 */ 
 #endif /* ifndef GQMPS2_GQMPS2_H */

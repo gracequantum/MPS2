@@ -98,7 +98,8 @@ double TwoSiteUpdate(
     std::vector<GQTensor *> &mps, const std::vector<GQTensor *> &mpo,
     std::vector<GQTensor *> &lblocks, std::vector<GQTensor *> &rblocks,
     const SweepParams &sweep_params, const char dir) {
-  std::cout << "Site " << i << " updating ..." << std::endl;
+  Timer update_timer("update");
+  update_timer.Restart();
   auto N = mps.size();
   std::vector<std::vector<long>> init_state_ctrct_axes, us_ctrct_axes;
   std::string where;
@@ -189,10 +190,13 @@ double TwoSiteUpdate(
   auto init_state = Contract(
                         *mps[lsite_idx], *mps[rsite_idx],
                         init_state_ctrct_axes);
+  Timer lancz_timer("Lancz");
+  lancz_timer.Restart();
   auto lancz_res = LanczosSolver(
                        eff_ham, init_state,
                        sweep_params.LanczParams,
                        where);
+  auto lancz_elapsed_time = lancz_timer.Elapsed();
   auto svd_res = Svd(
       *lancz_res.gs_vec,
       svd_ldims, svd_rdims,
@@ -299,8 +303,15 @@ double TwoSiteUpdate(
         }
       }
   }
-  std::cout << "Site " << i << " updated E0 = " << std::setprecision(16) << lancz_res.gs_eng << " TruncErr = " << svd_res.trunc_err << " D = " << svd_res.D << std::endl;
-  std::cout << "\n";
+  auto update_elapsed_time = update_timer.Elapsed();
+  std::cout << "Site " << std::setw(4) << i
+            << " updated E0 = " << std::setw(20) << std::setprecision(16) << std::fixed << lancz_res.gs_eng
+            << " TruncErr = " << std::setprecision(2) << std::scientific << svd_res.trunc_err << std::fixed
+            << " D = " << std::setw(5) << svd_res.D
+            << " Iter = " << std::setw(3) << lancz_res.iters
+            << " LanczT = " << std::setw(8) << lancz_elapsed_time
+            << " TotT = " << std::setw(8) << update_elapsed_time
+            << std::scientific << std::endl;
   return lancz_res.gs_eng;
 }
 } /* gqmps2 */ 

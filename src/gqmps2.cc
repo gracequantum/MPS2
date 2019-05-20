@@ -7,6 +7,7 @@
 #include "mpogen.h"
 #include "lanczos.h"
 #include "two_site_algo.h"
+#include "timer.h"
 #include "gqmps2/gqmps2.h"
 
 #include <iostream>
@@ -115,7 +116,6 @@ LanczosRes LanczosSolver(
   m = 0;
   double energy0;
   energy0 = a[0];
-  std::cout << m << "\t" <<  std::setprecision(kLanczEnergyOutputPrecision) << energy0 << std::endl;
   while (true) {
     m += 1; 
     GQTensor *gamma;
@@ -132,6 +132,7 @@ LanczosRes LanczosSolver(
     double *eigvec = nullptr;
     if (norm_gamma == 0.0) {
       if (m == 1) {
+        lancz_res.iters = m;
         lancz_res.gs_eng = energy0;
         lancz_res.gs_vec = new GQTensor(*bases[0]);
         LanczosFree(eigvec,  bases);
@@ -142,6 +143,7 @@ LanczosRes LanczosSolver(
         for (long i = 1; i < m; ++i) {
           *gs_vec += (eigvec[i] * (*bases[i]));
         }
+        lancz_res.iters = m;
         lancz_res.gs_eng = energy0;
         lancz_res.gs_vec = gs_vec;
         LanczosFree(eigvec, bases);
@@ -161,7 +163,6 @@ LanczosRes LanczosSolver(
     a[m] = temp_scalar_ten->scalar; delete temp_scalar_ten;
     TridiagGsSolver(a, b, m+1, eigval, eigvec, 'N');
     auto energy0_new = eigval;
-    std::cout << m << "\t" << std::setprecision(kLanczEnergyOutputPrecision) << energy0_new << std::endl;
     if (((energy0 - energy0_new) < params.error) || 
          (m == eff_ham_eff_dim) ||
          (m == params.max_iterations - 1)) {
@@ -171,6 +172,7 @@ LanczosRes LanczosSolver(
       for (long i = 0; i < m+1; ++i) {
         *gs_vec += (eigvec[i] * (*bases[i]));
       }
+      lancz_res.iters = m;
       lancz_res.gs_eng = energy0;
       lancz_res.gs_vec = gs_vec;
       LanczosFree(eigvec, bases);
@@ -191,12 +193,16 @@ double TwoSiteAlgorithm(
   auto l_and_r_blocks = InitBlocks(mps, mpo, sweep_params);
   std::cout << "\n";
   double e0;
+  Timer sweep_timer("sweep");
   for (long sweep = 0; sweep < sweep_params.Sweeps; ++sweep) {
     std::cout << "sweep " << sweep << std::endl;
+    sweep_timer.Restart();
     e0 = TwoSiteSweep(
         mps, mpo,
         l_and_r_blocks.first, l_and_r_blocks.second,
         sweep_params);
+    sweep_timer.PrintElapsed();
+    std::cout << "\n";
   }
   return e0;
 }
