@@ -152,10 +152,12 @@ LanczosRes LanczosSolver(
     b[m-1] = norm_gamma;
     gamma->Normalize();
     bases[m] = gamma;
+    auto temp_eff_ham_mul_state_ten = (*eff_ham_mul_state)(rpeff_ham, bases[m]);
     auto temp_scalar_ten = Contract(
-               *(*eff_ham_mul_state)(rpeff_ham, bases[m]),
+               *temp_eff_ham_mul_state_ten,
                MockDag(*bases[m]),
                energy_measu_ctrct_axes);
+    delete temp_eff_ham_mul_state_ten;
     a[m] = temp_scalar_ten->scalar; delete temp_scalar_ten;
     TridiagGsSolver(a, b, m+1, eigval, eigvec, 'N');
     auto energy0_new = eigval;
