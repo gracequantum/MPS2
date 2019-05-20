@@ -104,10 +104,11 @@ LanczosRes LanczosSolver(
   pinit_state->Normalize();
   bases[0] =  pinit_state;
   auto temp_mat_mul_vec_res = (*eff_ham_mul_state)(rpeff_ham, bases[0]);
-  a[0] = Contract(
+  auto temp_scalar_ten = Contract(
              *temp_mat_mul_vec_res,
              MockDag(*bases[0]),
-             energy_measu_ctrct_axes)->scalar;
+             energy_measu_ctrct_axes);
+  a[0] = temp_scalar_ten->scalar; delete temp_scalar_ten;
   delete temp_mat_mul_vec_res;
   N[0] = 0.0;
   long m;
@@ -151,10 +152,11 @@ LanczosRes LanczosSolver(
     b[m-1] = norm_gamma;
     gamma->Normalize();
     bases[m] = gamma;
-    a[m] = Contract(
+    auto temp_scalar_ten = Contract(
                *(*eff_ham_mul_state)(rpeff_ham, bases[m]),
                MockDag(*bases[m]),
-               energy_measu_ctrct_axes)->scalar;
+               energy_measu_ctrct_axes);
+    a[m] = temp_scalar_ten->scalar; delete temp_scalar_ten;
     TridiagGsSolver(a, b, m+1, eigval, eigvec, 'N');
     auto energy0_new = eigval;
     std::cout << m << "\t" << std::setprecision(kLanczEnergyOutputPrecision) << energy0_new << std::endl;
