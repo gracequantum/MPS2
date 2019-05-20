@@ -305,7 +305,7 @@ double TwoSiteUpdate(
   }
   auto update_elapsed_time = update_timer.Elapsed();
   std::cout << "Site " << std::setw(4) << i
-            << " updated E0 = " << std::setw(20) << std::setprecision(16) << std::fixed << lancz_res.gs_eng
+            << " E0 = " << std::setw(20) << std::setprecision(16) << std::fixed << lancz_res.gs_eng
             << " TruncErr = " << std::setprecision(2) << std::scientific << svd_res.trunc_err << std::fixed
             << " D = " << std::setw(5) << svd_res.D
             << " Iter = " << std::setw(3) << lancz_res.iters

@@ -201,6 +201,7 @@ double TwoSiteAlgorithm(
         mps, mpo,
         l_and_r_blocks.first, l_and_r_blocks.second,
         sweep_params);
+    std::cout << std::fixed;
     sweep_timer.PrintElapsed();
     std::cout << "\n";
   }
