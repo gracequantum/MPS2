@@ -51,6 +51,10 @@ void MPOGenerator::AddTerm(
 
 
 std::vector<GQTensor *> MPOGenerator::Gen(void) {
+  // Print MPO information.
+  long cent_site = N_ % 2 == 1 ? (N_-1) / 2 : N_ / 2;
+  std::cout << "MPO bond dimension: "
+            << std::setw(3) << mid_state_nums_[cent_site] + 2 << std::endl;
   std::vector<GQTensor *> mpo(N_);
   for (long i = 0; i < N_; ++i) {
     if (i == 0) {
