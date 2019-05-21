@@ -144,10 +144,14 @@ Index GenBodyLeftVirtBond(
 
 void DirectStateInitMps(
     std::vector<GQTensor *> &mps, const std::vector<long> &stat_labs,
-    const Index &pb_out, const QN &div, const QN &zero_div) {
+    const Index &pb_out, const QN &zero_div) {
   auto N = mps.size();
   assert(N == stat_labs.size());
   Index lvb, rvb;
+
+  // Calculate total quantum number.
+  auto div = pb_out.qnscts[stat_labs[0]].qn;
+  for (std::size_t i = 1; i < N; ++i) { div += pb_out.qnscts[stat_labs[i]].qn; }
 
   auto stat_lab = stat_labs[0];
   auto rvb_qn = div - pb_out.qnscts[stat_lab].qn;

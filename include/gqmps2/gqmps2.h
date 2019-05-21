@@ -143,7 +143,7 @@ void RandomInitMps(
 
 void DirectStateInitMps(
     std::vector<GQTensor *> &, const std::vector<long> &,
-    const Index &, const QN &, const QN &);
+    const Index &, const QN &);
 
 
 // System I/O functions.
