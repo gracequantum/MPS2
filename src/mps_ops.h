@@ -16,13 +16,6 @@ namespace gqmps2 {
 using namespace gqten;
 
 
-void DumpMps(const std::vector<GQTensor *> &);
-
-void LoadMps(std::vector<GQTensor *> &);
-
-void RandomInitMps(
-    std::vector<GQTensor *> &, const Index &, const QN &, const QN &);
-
 Index GenHeadRightVirtBond(const Index &, const QN &);
 
 Index GenTailLeftVirtBond(const Index &, const QN &);

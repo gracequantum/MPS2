@@ -8,6 +8,10 @@
 #include "gqmps2/gqmps2.h"
 #include "gqten/gqten.h"
 
+#ifdef Release
+  #define NDEBUG
+#endif
+#include <assert.h>
 
 namespace  gqmps2 {
 using  namespace gqten;
@@ -135,5 +139,34 @@ Index GenBodyLeftVirtBond(
     }
   }
   return Index(new_qnscts, IN);
+}
+
+
+void DirectStateInitMps(
+    std::vector<GQTensor *> &mps, const std::vector<long> &stat_labs,
+    const Index &pb_out, const QN &div, const QN &zero_div) {
+  auto N = mps.size();
+  assert(N == stat_labs.size());
+  Index lvb, rvb;
+
+  auto stat_lab = stat_labs[0];
+  auto rvb_qn = div - pb_out.qnscts[stat_lab].qn;
+  rvb = Index({QNSector(rvb_qn, 1)}, OUT);
+  mps[0] = new GQTensor({pb_out, rvb});
+  (*mps[0])({stat_lab, 0}) = 1;
+
+  for (std::size_t i = 1; i < N-1; ++i) {
+    lvb = InverseIndex(rvb); 
+    stat_lab = stat_labs[i];
+    rvb_qn = zero_div - pb_out.qnscts[stat_lab].qn + lvb.qnscts[0].qn;
+    rvb = Index({QNSector(rvb_qn, 1)}, OUT);
+    mps[i] = new GQTensor({lvb, pb_out, rvb});
+    (*mps[i])({0, stat_lab, 0}) = 1;
+  }
+
+  lvb = InverseIndex(rvb);
+  mps[N-1] = new GQTensor({lvb, pb_out});
+  stat_lab = stat_labs[N-1];
+  (*mps[N-1])({0, stat_lab}) = 1;
 }
 } /* gqmps2 */ 

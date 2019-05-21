@@ -141,6 +141,10 @@ void LoadMps(std::vector<GQTensor *> &);
 void RandomInitMps(
     std::vector<GQTensor *> &, const Index &, const QN &, const QN &);
 
+void DirectStateInitMps(
+    std::vector<GQTensor *> &, const std::vector<long> &,
+    const Index &, const QN &, const QN &);
+
 
 // System I/O functions.
 inline void WriteGQTensorTOFile(const GQTensor &t, const std::string &file) {
