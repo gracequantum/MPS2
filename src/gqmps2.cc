@@ -52,12 +52,10 @@ void MPOGenerator::AddTerm(
 
 std::vector<GQTensor *> MPOGenerator::Gen(void) {
   // Print MPO information.
-  long cent_site = N_ % 2 == 1 ? (N_-1) / 2 : N_ / 2;
-  std::cout << "MPO bond dimension: "
-            << std::setw(3) << mid_state_nums_[cent_site-1] + 2 << " "
-            << std::setw(3) << mid_state_nums_[cent_site] + 2   << " "
-            << std::setw(3) << mid_state_nums_[cent_site+1] + 2
-            << std::endl;
+  std::cout << "MPO bond dimensions: " << std::endl;
+  for (auto &mid_state_num : mid_state_nums_) {
+    std::cout << std::setw(3) << mid_state_num + 2 << std::endl;
+  }
   std::vector<GQTensor *> mpo(N_);
   for (long i = 0; i < N_; ++i) {
     if (i == 0) {
@@ -111,13 +109,12 @@ LanczosRes LanczosSolver(
   std::vector<double> N(params.max_iterations, 0.0);
   pinit_state->Normalize();
   bases[0] =  pinit_state;
-  auto temp_mat_mul_vec_res = (*eff_ham_mul_state)(rpeff_ham, bases[0]);
+  auto last_mat_mul_vec_res = (*eff_ham_mul_state)(rpeff_ham, bases[0]);
   auto temp_scalar_ten = Contract(
-             *temp_mat_mul_vec_res,
+             *last_mat_mul_vec_res,
              MockDag(*bases[0]),
              energy_measu_ctrct_axes);
   a[0] = temp_scalar_ten->scalar; delete temp_scalar_ten;
-  delete temp_mat_mul_vec_res;
   N[0] = 0.0;
   long m;
   m = 0;
@@ -127,10 +124,10 @@ LanczosRes LanczosSolver(
     m += 1; 
     GQTensor *gamma;
     if (m == 1) {
-      gamma = (*eff_ham_mul_state)(rpeff_ham, bases[m-1]);
+      gamma = last_mat_mul_vec_res;
       (*gamma) -= a[m-1]*(*bases[m-1]);
     } else {
-      gamma = (*eff_ham_mul_state)(rpeff_ham, bases[m-1]);
+      gamma = last_mat_mul_vec_res;
       (*gamma) -= a[m-1]*(*bases[m-1]);
       (*gamma) -= std::sqrt(N[m-1])*(*bases[m-2]);
     }
@@ -142,7 +139,7 @@ LanczosRes LanczosSolver(
         lancz_res.iters = m;
         lancz_res.gs_eng = energy0;
         lancz_res.gs_vec = new GQTensor(*bases[0]);
-        LanczosFree(eigvec,  bases);
+        LanczosFree(eigvec, bases, last_mat_mul_vec_res);
         return lancz_res;
       } else {
         TridiagGsSolver(a, b, m, eigval, eigvec, 'V');
@@ -153,7 +150,7 @@ LanczosRes LanczosSolver(
         lancz_res.iters = m;
         lancz_res.gs_eng = energy0;
         lancz_res.gs_vec = gs_vec;
-        LanczosFree(eigvec, bases);
+        LanczosFree(eigvec, bases, last_mat_mul_vec_res);
         return lancz_res;
       }
     }
@@ -161,12 +158,11 @@ LanczosRes LanczosSolver(
     b[m-1] = norm_gamma;
     gamma->Normalize();
     bases[m] = gamma;
-    auto temp_eff_ham_mul_state_ten = (*eff_ham_mul_state)(rpeff_ham, bases[m]);
+    last_mat_mul_vec_res = (*eff_ham_mul_state)(rpeff_ham, bases[m]);
     auto temp_scalar_ten = Contract(
-               *temp_eff_ham_mul_state_ten,
+               *last_mat_mul_vec_res,
                MockDag(*bases[m]),
                energy_measu_ctrct_axes);
-    delete temp_eff_ham_mul_state_ten;
     a[m] = temp_scalar_ten->scalar; delete temp_scalar_ten;
     TridiagGsSolver(a, b, m+1, eigval, eigvec, 'N');
     auto energy0_new = eigval;
@@ -182,7 +178,7 @@ LanczosRes LanczosSolver(
       lancz_res.iters = m;
       lancz_res.gs_eng = energy0;
       lancz_res.gs_vec = gs_vec;
-      LanczosFree(eigvec, bases);
+      LanczosFree(eigvec, bases, last_mat_mul_vec_res);
       return lancz_res;
     } else {
       energy0 = energy0_new;

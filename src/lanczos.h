@@ -41,9 +41,13 @@ inline void InplaceContract(
   lhs = res;
 }
 
-inline void LanczosFree(double * &a, std::vector<GQTensor *> &b) {
+inline void LanczosFree(
+    double * &a,
+    std::vector<GQTensor *> &b,
+    GQTensor * &last_mat_mul_vec_res) {
   if (a != nullptr) { delete [] a; }
   for (auto &ptr : b) { delete ptr; }
+  delete last_mat_mul_vec_res;
 }
 
 } /* gqmps2 */ 

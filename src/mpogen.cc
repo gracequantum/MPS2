@@ -22,135 +22,194 @@ void MPOGenerator::AddTwoSiteTerm(
     const double coef,
     const OpIdx &opidx1, const OpIdx &opidx2,
     const GQTensor &inter_op) {
-  GQTensor itrop;   // Inter operator.
-  if (inter_op == kNullOperator) {
-    itrop  = id_op_;
-  } else {
-    itrop = inter_op;
-  }
-  
-  // Trace from left to right to find the begin site.
-  long beg_lstate = 0;
-  long beg_idx = opidx1.idx;
-  long last_state = 0;
-  long next_state;
-  GQTensor target_op;
-  for (long i = opidx1.idx; i < opidx2.idx-1; ++i) {
-    auto has_edge = false;
-    if (i == opidx1.idx) {
-      target_op = coef * opidx1.op;
-      for (auto &edge : edges_set_[i]) {
-        if (edge.lstate == last_state &&
-            edge.op == target_op &&
-            edge.nstate != -1) {
-          next_state = edge.nstate;
-          has_edge = true;
-          break;
+  assert(opidx1.idx < opidx2.idx);
+  //if (opidx2.idx-opidx1.idx == 1) {
+    //// Nearest neighbor interaction term.
+    //auto target_op1 = coef * opidx1.op;
+    //auto target_op2 = opidx2.op;
+    //long next_state1, last_state2;
+    //auto has_edge1 = false;
+    //auto has_edge2 = false;
+    //for (auto &edge : edges_set_[opidx1.idx]) {
+      //if (edge.lstate == 0 && edge.op == target_op1 && edge.nstate != -1) {
+        //next_state1 = edge.nstate;
+        //has_edge1 = true;
+        //break;
+      //}
+    //}
+    //if (!has_edge1) {
+      //next_state1 = mid_state_nums_[opidx1.idx+1] + 1;
+    //}
+    //for (auto &edge : edges_set_[opidx2.idx]) {
+      //if (edge.lstate != 0 && edge.op == target_op2 && edge.nstate == -1) {
+        //last_state2 = edge.lstate;
+        //has_edge2 = true;
+        //break;
+      //}
+    //}
+    //if (!has_edge2) {
+      //last_state2 = mid_state_nums_[opidx2.idx] + 1;
+    //}
+    //if (has_edge1 && has_edge2) {
+      //if (next_state1 != last_state2) {
+        //mid_state_nums_[opidx1.idx+1] += 1;
+        //next_state1 = mid_state_nums_[opidx1.idx+1];
+        //last_state2 = mid_state_nums_[opidx1.idx+1];
+        //edges_set_[opidx1.idx].push_back(
+            //FSMEdge(target_op1, 0, next_state1));
+        //edges_set_[opidx2.idx].push_back(
+            //FSMEdge(target_op2, last_state2, -1));
+      //} else {
+        //std::cout << "Warning: term duplication, ignored!" << std::endl;
+      //}
+    //} else if (has_edge1 && !has_edge2) {
+      //last_state2 = next_state1;
+      //edges_set_[opidx2.idx].push_back(
+          //FSMEdge(target_op2, last_state2, -1));
+    //} else if (!has_edge1 && has_edge2) {
+      //next_state1 = last_state2;
+      //edges_set_[opidx1.idx].push_back(
+          //FSMEdge(target_op1, 0, next_state1));
+    //} else {
+      //mid_state_nums_[opidx1.idx+1] += 1;
+      //next_state1 = mid_state_nums_[opidx1.idx+1];
+      //last_state2 = mid_state_nums_[opidx1.idx+1];
+      //edges_set_[opidx1.idx].push_back(
+          //FSMEdge(target_op1, 0, next_state1));
+      //edges_set_[opidx2.idx].push_back(
+          //FSMEdge(target_op2, last_state2, -1));
+    //}
+  //} else {
+    // No nearest neighbor interaction term.
+    GQTensor itrop;   // Inter operator.
+    if (inter_op == kNullOperator) {
+      itrop  = id_op_;
+    } else {
+      itrop = inter_op;
+    }
+    // Trace from left to right to find the begin site.
+    long beg_lstate = 0;
+    long beg_idx = opidx1.idx;
+    long last_state = 0;
+    long next_state;
+    GQTensor target_op;
+    for (long i = opidx1.idx; i < opidx2.idx-1; ++i) {
+      auto has_edge = false;
+      if (i == opidx1.idx) {
+        target_op = coef * opidx1.op;
+        for (auto &edge : edges_set_[i]) {
+          if (edge.lstate == last_state &&
+              edge.op == target_op &&
+              edge.nstate != -1) {
+            next_state = edge.nstate;
+            has_edge = true;
+            break;
+          }
+        }
+      } else if (i == opidx2.idx) {
+        target_op = opidx2.op;
+        for (auto &edge : edges_set_[i]) {
+          if (edge.lstate == last_state &&
+              edge.op == target_op &&
+              edge.nstate == -1) {
+            next_state = edge.nstate;
+            has_edge = true;
+            break;
+          }
+        }
+      } else {
+        target_op = itrop;
+        for (auto &edge : edges_set_[i]) {
+          if (edge.lstate == last_state &&
+              edge.op == target_op &&
+              edge.nstate != -1) {
+            next_state = edge.nstate;
+            has_edge = true;
+            break;
+          }
         }
       }
-    } else if (i == opidx2.idx) {
-      target_op = opidx2.op;
-      for (auto &edge : edges_set_[i]) {
-        if (edge.lstate == last_state &&
-            edge.op == target_op &&
-            edge.nstate == -1) {
-          next_state = edge.nstate;
-          has_edge = true;
-          break;
+      if (!has_edge) {
+        beg_lstate = last_state;
+        beg_idx = i;
+        break;
+      } else {
+        last_state = next_state;
+      }
+    }
+    // Trace from right to left to find the end site.
+    long end_nstate = -1;
+    long end_idx = opidx2.idx;
+    next_state = -1;
+    for (long i = opidx2.idx; i > opidx1.idx+1; --i) {
+      auto has_edge = false;
+      if (i == opidx2.idx) {
+        target_op = opidx2.op;
+        for (auto &edge : edges_set_[i]) {
+          if (edge.nstate == next_state &&
+              edge.op == target_op &&
+              edge.lstate != 0) {
+            last_state = edge.lstate;
+            has_edge = true;
+            break;
+          }
+        }
+      } else if (i == opidx1.idx) {
+        target_op = coef * opidx1.op;
+        for (auto &edge : edges_set_[i]) {
+          if (edge.nstate == next_state &&
+              edge.op == target_op &&
+              edge.lstate == 0) {
+            last_state = edge.lstate;
+            has_edge = true;
+            break;
+          } 
+        }
+      } else {
+        target_op = itrop;
+        for (auto &edge : edges_set_[i]) {
+          if (edge.nstate == next_state &&
+              edge.op == target_op &&
+              edge.lstate != 0) {
+            last_state = edge.lstate;
+            has_edge = true;
+            break;
+          }
         }
       }
-    } else {
-      target_op = itrop;
-      for (auto &edge : edges_set_[i]) {
-        if (edge.lstate == last_state &&
-            edge.op == target_op &&
-            edge.nstate != -1) {
-          next_state = edge.nstate;
-          has_edge = true;
-          break;
-        }
+      if (!has_edge) {
+        end_nstate = next_state;
+        end_idx = i;
+        break;
+      } else {
+        next_state = last_state;
       }
     }
-    if (!has_edge) {
-      beg_lstate = last_state;
-      beg_idx = i;
-      break;
-    } else {
-      last_state = next_state;
-    }
-  }
-  // Trace from right to left to find the end site.
-  long end_nstate = -1;
-  long end_idx = opidx2.idx;
-  next_state = -1;
-  for (long i = opidx2.idx; i > opidx1.idx+1; --i) {
-    auto has_edge = false;
-    if (i == opidx2.idx) {
-      target_op = opidx2.op;
-      for (auto &edge : edges_set_[i]) {
-        if (edge.nstate == next_state &&
-            edge.op == target_op &&
-            edge.lstate != 0) {
-          last_state = edge.lstate;
-          has_edge = true;
-          break;
-        }
+    
+    // Generate mid states.
+    for (long i = beg_idx; i < end_idx+1; ++i) {
+      if (i == opidx1.idx) {
+        target_op = coef * opidx1.op;
+      } else if (i == opidx2.idx) {
+        target_op = opidx2.op;
+      } else {
+        target_op = itrop;
       }
-    } else if (i == opidx1.idx) {
-      target_op = coef * opidx1.op;
-      for (auto &edge : edges_set_[i]) {
-        if (edge.nstate == next_state &&
-            edge.op == target_op &&
-            edge.lstate == 0) {
-          last_state = edge.lstate;
-          has_edge = true;
-          break;
-        } 
+      if (i == beg_idx) {
+        last_state = beg_lstate;
+      } else {
+        last_state = next_state;
       }
-    } else {
-      target_op = itrop;
-      for (auto &edge : edges_set_[i]) {
-        if (edge.nstate == next_state &&
-            edge.op == target_op &&
-            edge.lstate != 0) {
-          last_state = edge.lstate;
-          has_edge = true;
-          break;
-        }
+      if (i == end_idx) {
+        next_state = end_nstate;
+      } else {
+        mid_state_nums_[i+1] += 1;
+        next_state = mid_state_nums_[i+1];
       }
+      edges_set_[i].push_back(
+          FSMEdge(target_op, last_state, next_state));
     }
-    if (!has_edge) {
-      end_nstate = next_state;
-      end_idx = i;
-      break;
-    } else {
-      next_state = last_state;
-    }
-  }
-  
-  // Generate mid states.
-  for (long i = beg_idx; i < end_idx+1; ++i) {
-    if (i == opidx1.idx) {
-      target_op = coef * opidx1.op;
-    } else if (i == opidx2.idx) {
-      target_op = opidx2.op;
-    } else {
-      target_op = itrop;
-    }
-    if (i == beg_idx) {
-      last_state = beg_lstate;
-    } else {
-      last_state = next_state;
-    }
-    if (i == end_idx) {
-      next_state = end_nstate;
-    } else {
-      mid_state_nums_[i+1] += 1;
-      next_state = mid_state_nums_[i+1];
-    }
-    edges_set_[i].push_back(
-        FSMEdge(target_op, last_state, next_state));
-  }
+  //}
 }
 
 
