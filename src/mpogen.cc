@@ -8,6 +8,11 @@
 #include "gqmps2/gqmps2.h"
 #include "gqten/gqten.h"
 
+#ifdef Release
+  #define NDEBUG
+#endif
+#include <assert.h>
+
 
 namespace gqmps2 {
 using namespace gqten;
