@@ -14,6 +14,7 @@
   #define NDEBUG
 #endif
 #include <assert.h>
+#include <algorithm>
 
 
 namespace gqmps2 {
