@@ -16,21 +16,15 @@ using namespace gqten;
 
 
 struct TestTwoSiteAlgorithmSpinSystem : public testing::Test {
-  Index phys_idx_out = Index({
-                           QNSector(QN({QNNameVal("Sz", 1)}), 1),
-                           QNSector(QN({QNNameVal("Sz", -1)}), 1)}, OUT);
-  Index phys_idx_in = InverseIndex(phys_idx_out);
-  GQTensor sz = GQTensor({phys_idx_in, phys_idx_out});
-  GQTensor sp = GQTensor({phys_idx_in, phys_idx_out});
-  GQTensor sm = GQTensor({phys_idx_in, phys_idx_out});
+  long N = 6;
 
-  long init_vdim = 1;
-  Index mps_init_virt_idx_in =
-      Index({
-          QNSector(QN({QNNameVal("Sz", 1)}), init_vdim),
-          QNSector(QN({QNNameVal("Sz", 0)}), init_vdim),
-          QNSector(QN({QNNameVal("Sz", -1)}), init_vdim)}, IN);
-  Index mps_init_virt_idx_out = InverseIndex(mps_init_virt_idx_in);
+  Index pb_out = Index({
+                     QNSector(QN({QNNameVal("Sz", 1)}), 1),
+                     QNSector(QN({QNNameVal("Sz", -1)}), 1)}, OUT);
+  Index pb_in = InverseIndex(pb_out);
+  GQTensor sz = GQTensor({pb_in, pb_out});
+  GQTensor sp = GQTensor({pb_in, pb_out});
+  GQTensor sm = GQTensor({pb_in, pb_out});
 
   void SetUp(void) {
     sz({0, 0}) = 0.5;
@@ -41,19 +35,18 @@ struct TestTwoSiteAlgorithmSpinSystem : public testing::Test {
 };
 
 
-TEST_F(TestTwoSiteAlgorithmSpinSystem, Cases) {
-  long N = 6;
-  
-  // 1D Ising model.
-  auto mpo_gen = MPOGenerator(N, phys_idx_out);
+TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DIsing) {
+  auto mpo_gen = MPOGenerator(N, pb_out);
   for (long i = 0; i < N-1; ++i) {
     mpo_gen.AddTerm(1, {OpIdx(sz, i), OpIdx(sz, i+1)});
   }
   auto mpo = mpo_gen.Gen();
+
   std::vector<GQTensor *> mps(N);
   auto qn0 = QN({QNNameVal("Sz", 0)});
   srand(0);
-  RandomInitMps(mps, phys_idx_out, qn0, qn0);
+  RandomInitMps(mps, pb_out, qn0, qn0);
+
   auto sweep_params = SweepParams(
                           4,
                           1, 10, 1.0E-5,
@@ -61,39 +54,54 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, Cases) {
                           kTwoSiteAlgoWorkflowInitial,
                           LanczosParams(1.0E-7),
                           N/2-1);
+
   auto energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
-  EXPECT_NEAR(energy0, -0.25*(N-1), 1.0E-12);
+  EXPECT_NEAR(energy0, -0.25*(N-1), 1.0E-10);
+
   // No file I/O case.
   sweep_params = SweepParams(
-                     4,
+                     2,
                      1, 10, 1.0E-5,
                      false,
                      kTwoSiteAlgoWorkflowInitial,
                      LanczosParams(1.0E-7),
                      N/2-1);
-  energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
-  EXPECT_NEAR(energy0, -0.25*(N-1), 1.0E-12);
 
-  // 1D AFM Heisenberg model.
-  mpo_gen = MPOGenerator(N, phys_idx_out);
+  energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
+  EXPECT_NEAR(energy0, -0.25*(N-1), 1.0E-10);
+}
+
+
+TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DHeisenberg) {
+  auto mpo_gen = MPOGenerator(N, pb_out);
   for (long i = 0; i < N-1; ++i) {
     mpo_gen.AddTerm(1, {OpIdx(sz, i), OpIdx(sz, i+1)});
     mpo_gen.AddTerm(0.5, {OpIdx(sp, i), OpIdx(sm, i+1)});
     mpo_gen.AddTerm(0.5, {OpIdx(sm, i), OpIdx(sp, i+1)});
   }
-  mpo = mpo_gen.Gen();
-  sweep_params = SweepParams(
+  auto mpo = mpo_gen.Gen();
+
+  std::vector<GQTensor *> mps(N);
+  auto qn0 = QN({QNNameVal("Sz", 0)});
+  srand(0);
+  RandomInitMps(mps, pb_out, qn0, qn0);
+
+  auto sweep_params = SweepParams(
                      4,
                      8, 8, 1.0E-9,
                      true,
                      kTwoSiteAlgoWorkflowInitial,
                      LanczosParams(1.0E-7),
                      N/2-1);
-  energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
+
+  auto energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -2.493577133888, 1.0E-12);
 
-  // Restart test.
+  // Continue simulation test.
   DumpMps(mps);
+  for (auto &mps_ten : mps) { delete mps_ten; }
+  LoadMps(mps);
+
   sweep_params = SweepParams(
                      4,
                      8, 8, 1.0E-9,
@@ -101,13 +109,14 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, Cases) {
                      kTwoSiteAlgoWorkflowContinue,
                      LanczosParams(1.0E-7),
                      N/2-1);
-  for (auto &mps_ten : mps) { delete mps_ten; }
-  LoadMps(mps);
+
   energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -2.493577133888, 1.0E-12);
+}
 
-  // 2D AFM Heisenberg model.
-  mpo_gen = MPOGenerator(N, phys_idx_out);
+
+TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DHeisenberg) {
+  auto mpo_gen = MPOGenerator(N, pb_out);
   std::vector<std::pair<long, long>> nn_pairs = {
       std::make_pair(0, 1), 
       std::make_pair(0, 2), 
@@ -122,44 +131,60 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, Cases) {
     mpo_gen.AddTerm(0.5, {OpIdx(sp, p.first), OpIdx(sm, p.second)});
     mpo_gen.AddTerm(0.5, {OpIdx(sm, p.first), OpIdx(sp, p.second)});
   }
-  mpo = mpo_gen.Gen();
-  energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
-  EXPECT_NEAR(energy0, -3.129385241572, 1.0E-12);
+  auto mpo = mpo_gen.Gen();
 
-  // Test direct product state initialization.
-  std::vector<long> stat_labs;
-  for (int i = 0; i < N; ++i) { stat_labs.push_back(i % 2); }
-  DirectStateInitMps(mps, stat_labs, phys_idx_out, qn0);
-  sweep_params = SweepParams(
-                     5,
+  std::vector<GQTensor *> mps(N);
+  auto qn0 = QN({QNNameVal("Sz", 0)});
+  srand(0);
+  RandomInitMps(mps, pb_out, qn0, qn0);
+
+  auto sweep_params = SweepParams(
+                     4,
                      8, 8, 1.0E-9,
                      true,
                      kTwoSiteAlgoWorkflowInitial,
                      LanczosParams(1.0E-7),
                      N/2-1);
+
+  auto energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
+  EXPECT_NEAR(energy0, -3.129385241572, 1.0E-10);
+
+  // Test direct product state initialization.
+  std::vector<long> stat_labs;
+  for (int i = 0; i < N; ++i) { stat_labs.push_back(i % 2); }
+  DirectStateInitMps(mps, stat_labs, pb_out, qn0);
+
+  sweep_params = SweepParams(
+                     4,
+                     8, 8, 1.0E-9,
+                     true,
+                     kTwoSiteAlgoWorkflowInitial,
+                     LanczosParams(1.0E-7),
+                     N/2-1);
+
   energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
-  EXPECT_NEAR(energy0, -3.129385241572, 1.0E-12);
+  EXPECT_NEAR(energy0, -3.129385241572, 1.0E-10);
 }
 
 
-// Test Fermion model.
-struct TestTwoSiteAlgorithmFermionSystem : public testing::Test {
+// Test Fermion models.
+struct TestTwoSiteAlgorithmTjSystem : public testing::Test {
   long N = 4;
   double t = 3.;
   double J = 1.;
-  Index phys_idx_out = Index({
+  Index pb_out = Index({
       QNSector(QN({QNNameVal("N", 1), QNNameVal("Sz",  1)}), 1),
       QNSector(QN({QNNameVal("N", 1), QNNameVal("Sz", -1)}), 1),
       QNSector(QN({QNNameVal("N", 0), QNNameVal("Sz",  0)}), 1)}, OUT);
-  Index phys_idx_in = InverseIndex(phys_idx_out);
-  GQTensor f = GQTensor({phys_idx_in, phys_idx_out});
-  GQTensor sz = GQTensor({phys_idx_in, phys_idx_out});
-  GQTensor sp = GQTensor({phys_idx_in, phys_idx_out});
-  GQTensor sm = GQTensor({phys_idx_in, phys_idx_out});
-  GQTensor cup = GQTensor({phys_idx_in, phys_idx_out});
-  GQTensor cdagup = GQTensor({phys_idx_in, phys_idx_out});
-  GQTensor cdn = GQTensor({phys_idx_in, phys_idx_out});
-  GQTensor cdagdn = GQTensor({phys_idx_in, phys_idx_out});
+  Index pb_in = InverseIndex(pb_out);
+  GQTensor f = GQTensor({pb_in, pb_out});
+  GQTensor sz = GQTensor({pb_in, pb_out});
+  GQTensor sp = GQTensor({pb_in, pb_out});
+  GQTensor sm = GQTensor({pb_in, pb_out});
+  GQTensor cup = GQTensor({pb_in, pb_out});
+  GQTensor cdagup = GQTensor({pb_in, pb_out});
+  GQTensor cdn = GQTensor({pb_in, pb_out});
+  GQTensor cdagdn = GQTensor({pb_in, pb_out});
 
   void SetUp(void) {
     f({0, 0})  = -1;
@@ -177,9 +202,8 @@ struct TestTwoSiteAlgorithmFermionSystem : public testing::Test {
 };
 
 
-TEST_F(TestTwoSiteAlgorithmFermionSystem, Cases) {
-  // 1D t-J chain.
-  auto mpo_gen = MPOGenerator(N, phys_idx_out);
+TEST_F(TestTwoSiteAlgorithmTjSystem, 1DCase) {
+  auto mpo_gen = MPOGenerator(N, pb_out);
   for (long i = 0; i < N-1; ++i) {
     mpo_gen.AddTerm(-t, {OpIdx(cdagup, i), OpIdx(cup, i+1)});
     mpo_gen.AddTerm(-t, {OpIdx(cdagdn, i), OpIdx(cdn, i+1)});
@@ -195,19 +219,23 @@ TEST_F(TestTwoSiteAlgorithmFermionSystem, Cases) {
   auto total_div = QN({QNNameVal("N", N-2), QNNameVal("Sz", 0)});
   auto zero_div = QN({QNNameVal("N", 0), QNNameVal("Sz", 0)});
   srand(0);
-  RandomInitMps(mps, phys_idx_out, total_div, zero_div);
+  RandomInitMps(mps, pb_out, total_div, zero_div);
+
   auto sweep_params = SweepParams(
-                          12,
+                          11,
                           8, 8, 1.0E-9,
                           true,
                           kTwoSiteAlgoWorkflowInitial,
                           LanczosParams(1.0E-8, 20),
                           N/2-1);
+
   auto energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -6.947478526233, 1.0E-10);
+}
 
-  // 2D t-J model.
-  mpo_gen = MPOGenerator(N, phys_idx_out);
+
+TEST_F(TestTwoSiteAlgorithmTjSystem, 2DCase) {
+  auto mpo_gen = MPOGenerator(N, pb_out);
   std::vector<std::pair<long, long>> nn_pairs = {
       std::make_pair(0, 1), 
       std::make_pair(0, 2), 
@@ -222,11 +250,27 @@ TEST_F(TestTwoSiteAlgorithmFermionSystem, Cases) {
     mpo_gen.AddTerm(0.5*J, {OpIdx(sp, p.first), OpIdx(sm, p.second)});
     mpo_gen.AddTerm(0.5*J, {OpIdx(sm, p.first), OpIdx(sp, p.second)});
   }
-  mpo = mpo_gen.Gen();
-  energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
+  auto mpo = mpo_gen.Gen();
+
+  std::vector<GQTensor *> mps(N);
+  auto total_div = QN({QNNameVal("N", N-2), QNNameVal("Sz", 0)});
+  auto zero_div = QN({QNNameVal("N", 0), QNNameVal("Sz", 0)});
+  srand(0);
+  RandomInitMps(mps, pb_out, total_div, zero_div);
+
+  auto sweep_params = SweepParams(
+                          10,
+                          8, 8, 1.0E-9,
+                          true,
+                          kTwoSiteAlgoWorkflowInitial,
+                          LanczosParams(1.0E-8, 20),
+                          N/2-1);
+
+  auto energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -8.868563739680, 1.0E-10);
+
   // Direct product state initialization.
-  DirectStateInitMps(mps, {2, 0, 1, 2}, phys_idx_out, zero_div);
+  DirectStateInitMps(mps, {2, 0, 1, 2}, pb_out, zero_div);
   energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -8.868563739680, 1.0E-10);
 }

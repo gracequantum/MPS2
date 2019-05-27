@@ -29,6 +29,8 @@ LanczosRes LanczosSolver(
       const std::vector<GQTensor *> &, const GQTensor *) = nullptr;
   std::vector<std::vector<long>> energy_measu_ctrct_axes;
   LanczosRes lancz_res;
+
+  // Calculate position dependent parameters.
   if (where == "cent") {
     eff_ham_eff_dim *= rpeff_ham[0]->indexes[0].dim;
     eff_ham_eff_dim *= rpeff_ham[1]->indexes[1].dim;
@@ -54,6 +56,8 @@ LanczosRes LanczosSolver(
   std::vector<double> a(params.max_iterations, 0.0);
   std::vector<double> b(params.max_iterations, 0.0);
   std::vector<double> N(params.max_iterations, 0.0);
+
+  // Initialize Lanczos iteration.
   pinit_state->Normalize();
   bases[0] =  pinit_state;
   auto last_mat_mul_vec_res = (*eff_ham_mul_state)(rpeff_ham, bases[0]);
@@ -63,10 +67,10 @@ LanczosRes LanczosSolver(
              energy_measu_ctrct_axes);
   a[0] = temp_scalar_ten->scalar; delete temp_scalar_ten;
   N[0] = 0.0;
-  long m;
-  m = 0;
+  long m = 0;
   double energy0;
   energy0 = a[0];
+  // Lanczos iterations.
   while (true) {
     m += 1; 
     GQTensor *gamma;
