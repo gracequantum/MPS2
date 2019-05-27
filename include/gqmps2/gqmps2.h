@@ -151,18 +151,25 @@ struct SweepParams {
       const long dmin, const long dmax, const double cutoff,
       const bool fileio,
       const char workflow,
-      const LanczosParams &lancz_params) :
+      const LanczosParams &lancz_params,
+      const long ee_target_bond) :
       Sweeps(sweeps), Dmin(dmin), Dmax(dmax), Cutoff(cutoff), FileIO(fileio),
       Workflow(workflow),
-      LanczParams(lancz_params) {}
+      LanczParams(lancz_params),
+      EETargetBond(ee_target_bond) {}
 
   long Sweeps;
+
   long Dmin;
   long Dmax;
   double Cutoff;
+
   bool FileIO;
   char Workflow;
+
   LanczosParams LanczParams;
+
+  long EETargetBond;
 };
 
 double TwoSiteAlgorithm(

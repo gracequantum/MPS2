@@ -59,7 +59,8 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, Cases) {
                           1, 10, 1.0E-5,
                           true,
                           kTwoSiteAlgoWorkflowInitial,
-                          LanczosParams(1.0E-7));
+                          LanczosParams(1.0E-7),
+                          N/2-1);
   auto energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -0.25*(N-1), 1.0E-12);
   // No file I/O case.
@@ -68,7 +69,8 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, Cases) {
                      1, 10, 1.0E-5,
                      false,
                      kTwoSiteAlgoWorkflowInitial,
-                     LanczosParams(1.0E-7));
+                     LanczosParams(1.0E-7),
+                     N/2-1);
   energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -0.25*(N-1), 1.0E-12);
 
@@ -85,7 +87,8 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, Cases) {
                      8, 8, 1.0E-9,
                      true,
                      kTwoSiteAlgoWorkflowInitial,
-                     LanczosParams(1.0E-7));
+                     LanczosParams(1.0E-7),
+                     N/2-1);
   energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -2.493577133888, 1.0E-12);
 
@@ -96,7 +99,8 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, Cases) {
                      8, 8, 1.0E-9,
                      true,
                      kTwoSiteAlgoWorkflowContinue,
-                     LanczosParams(1.0E-7));
+                     LanczosParams(1.0E-7),
+                     N/2-1);
   for (auto &mps_ten : mps) { delete mps_ten; }
   LoadMps(mps);
   energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
@@ -131,7 +135,8 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, Cases) {
                      8, 8, 1.0E-9,
                      true,
                      kTwoSiteAlgoWorkflowInitial,
-                     LanczosParams(1.0E-7));
+                     LanczosParams(1.0E-7),
+                     N/2-1);
   energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -3.129385241572, 1.0E-12);
 }
@@ -196,7 +201,8 @@ TEST_F(TestTwoSiteAlgorithmFermionSystem, Cases) {
                           8, 8, 1.0E-9,
                           true,
                           kTwoSiteAlgoWorkflowInitial,
-                          LanczosParams(1.0E-8, 20));
+                          LanczosParams(1.0E-8, 20),
+                          N/2-1);
   auto energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -6.947478526233, 1.0E-10);
 
