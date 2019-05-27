@@ -30,7 +30,7 @@ std::pair<std::vector<GQTensor *>, std::vector<GQTensor *>> InitBlocks(
   std::vector<GQTensor *> rblocks(N-1);
   std::vector<GQTensor *> lblocks(N-1);
 
-  if (sweep_params.Restart) {
+  if (sweep_params.Workflow == kTwoSiteAlgoWorkflowContinue) {
     return std::make_pair(lblocks, rblocks);
   }
 

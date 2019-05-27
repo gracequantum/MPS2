@@ -27,6 +27,10 @@ const std::string kRuntimeTempPath = ".temp";
 const std::string kBlockFileBaseName = "block";
 const std::string kMpsTenBaseName = "mps_ten";
 
+const char kTwoSiteAlgoWorkflowInitial = 'i';
+const char kTwoSiteAlgoWorkflowRestart = 'r';
+const char kTwoSiteAlgoWorkflowContinue = 'c';
+
 
 // MPO generator.
 const GQTensor kNullOperator = GQTensor();
@@ -144,24 +148,20 @@ LanczosRes LanczosSolver(
 struct SweepParams {
   SweepParams(
       const long sweeps,
-      const long dmin, const long dmax, const double cutoff, const bool fileio,
-      const bool restart,
+      const long dmin, const long dmax, const double cutoff,
+      const bool fileio,
+      const char workflow,
       const LanczosParams &lancz_params) :
       Sweeps(sweeps), Dmin(dmin), Dmax(dmax), Cutoff(cutoff), FileIO(fileio),
-      Restart(restart),
+      Workflow(workflow),
       LanczParams(lancz_params) {}
-  SweepParams(
-      const long sweeps,
-      const long dmin, const long dmax, const double cutoff,
-      const LanczosParams &lancz_params) :
-      SweepParams(sweeps, dmin, dmax, cutoff, false, false, lancz_params) {}
 
   long Sweeps;
   long Dmin;
   long Dmax;
   double Cutoff;
   bool FileIO;
-  bool Restart;
+  char Workflow;
   LanczosParams LanczParams;
 };
 

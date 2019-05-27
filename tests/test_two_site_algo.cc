@@ -54,11 +54,21 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, Cases) {
   auto qn0 = QN({QNNameVal("Sz", 0)});
   srand(0);
   RandomInitMps(mps, phys_idx_out, qn0, qn0);
-  auto sweep_params = SweepParams(4, 1, 10, 1.0E-5, true, false, LanczosParams(1.0E-7));
+  auto sweep_params = SweepParams(
+                          4,
+                          1, 10, 1.0E-5,
+                          true,
+                          kTwoSiteAlgoWorkflowInitial,
+                          LanczosParams(1.0E-7));
   auto energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -0.25*(N-1), 1.0E-12);
   // No file I/O case.
-  sweep_params = SweepParams(4, 1, 10, 1.0E-5, LanczosParams(1.0E-7));
+  sweep_params = SweepParams(
+                     4,
+                     1, 10, 1.0E-5,
+                     false,
+                     kTwoSiteAlgoWorkflowInitial,
+                     LanczosParams(1.0E-7));
   energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -0.25*(N-1), 1.0E-12);
 
@@ -70,12 +80,23 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, Cases) {
     mpo_gen.AddTerm(0.5, {OpIdx(sm, i), OpIdx(sp, i+1)});
   }
   mpo = mpo_gen.Gen();
-  sweep_params = SweepParams(4, 8, 8, 1.0E-9, true, false, LanczosParams(1.0E-7));
+  sweep_params = SweepParams(
+                     4,
+                     8, 8, 1.0E-9,
+                     true,
+                     kTwoSiteAlgoWorkflowInitial,
+                     LanczosParams(1.0E-7));
   energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -2.493577133888, 1.0E-12);
+
   // Restart test.
   DumpMps(mps);
-  sweep_params = SweepParams(4, 8, 8, 1.0E-9, true, true, LanczosParams(1.0E-7));
+  sweep_params = SweepParams(
+                     4,
+                     8, 8, 1.0E-9,
+                     true,
+                     kTwoSiteAlgoWorkflowContinue,
+                     LanczosParams(1.0E-7));
   for (auto &mps_ten : mps) { delete mps_ten; }
   LoadMps(mps);
   energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
@@ -105,7 +126,12 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, Cases) {
   std::vector<long> stat_labs;
   for (int i = 0; i < N; ++i) { stat_labs.push_back(i % 2); }
   DirectStateInitMps(mps, stat_labs, phys_idx_out, qn0);
-  sweep_params = SweepParams(5, 8, 8, 1.0E-9, true, false, LanczosParams(1.0E-7));
+  sweep_params = SweepParams(
+                     5,
+                     8, 8, 1.0E-9,
+                     true,
+                     kTwoSiteAlgoWorkflowInitial,
+                     LanczosParams(1.0E-7));
   energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -3.129385241572, 1.0E-12);
 }
@@ -165,7 +191,12 @@ TEST_F(TestTwoSiteAlgorithmFermionSystem, Cases) {
   auto zero_div = QN({QNNameVal("N", 0), QNNameVal("Sz", 0)});
   srand(0);
   RandomInitMps(mps, phys_idx_out, total_div, zero_div);
-  auto sweep_params = SweepParams(12, 8, 8, 1.0E-9, true, false, LanczosParams(1.0E-8, 20));
+  auto sweep_params = SweepParams(
+                          12,
+                          8, 8, 1.0E-9,
+                          true,
+                          kTwoSiteAlgoWorkflowInitial,
+                          LanczosParams(1.0E-8, 20));
   auto energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -6.947478526233, 1.0E-10);
 
