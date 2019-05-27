@@ -274,3 +274,139 @@ TEST_F(TestTwoSiteAlgorithmTjSystem, 2DCase) {
   energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
   EXPECT_NEAR(energy0, -8.868563739680, 1.0E-10);
 }
+
+
+struct TestTwoSiteAlgorithmHubbardSystem : public testing::Test {
+  long Nx = 2;
+  long Ny = 2;
+  double t0 = 1.0;
+  double t1 = 0.5;
+  double U = 2.0;
+
+  Index pb_out = Index({
+      QNSector(QN({QNNameVal("Nup", 0), QNNameVal("Ndn", 0)}), 1),
+      QNSector(QN({QNNameVal("Nup", 1), QNNameVal("Ndn", 0)}), 1),
+      QNSector(QN({QNNameVal("Nup", 0), QNNameVal("Ndn", 1)}), 1),
+      QNSector(QN({QNNameVal("Nup", 1), QNNameVal("Ndn", 1)}), 1)}, OUT);
+  Index pb_in = InverseIndex(pb_out);
+
+  GQTensor f = GQTensor({pb_in, pb_out});         // Jordan-Wigner string
+  GQTensor nupdn = GQTensor({pb_in, pb_out});     // n_up*n_dn
+  GQTensor adagupf = GQTensor({pb_in, pb_out});   // a^+_up*f
+  GQTensor aup = GQTensor({pb_in, pb_out});
+  GQTensor adagdn = GQTensor({pb_in, pb_out});
+  GQTensor fadn = GQTensor({pb_in, pb_out});
+  GQTensor naupf = GQTensor({pb_in, pb_out});     // -a_up*f
+  GQTensor adagup = GQTensor({pb_in, pb_out});
+  GQTensor nadn = GQTensor({pb_in, pb_out});
+  GQTensor fadagdn = GQTensor({pb_in, pb_out});   // f*a^+_dn
+
+  void SetUp(void) {
+    f({0, 0})  = 1;
+    f({1, 1})  = -1;
+    f({2, 2})  = -1;
+    f({3, 3})  = 1;
+
+    nupdn({3, 3}) = 1;
+
+    adagupf({1, 0}) = 1;
+    adagupf({3, 2}) = -1;
+    aup({0, 1}) = 1;
+    aup({2, 3}) = 1;
+    adagdn({2, 0}) = 1;
+    adagdn({3, 1}) = 1;
+    fadn({0, 2}) = 1;
+    fadn({1, 3}) = -1;
+    naupf({0, 1}) = 1;
+    naupf({2, 3}) = -1;
+    adagup({1, 0}) = 1;
+    adagup({3, 2}) = 1;
+    nadn({0, 2}) = -1;
+    nadn({1, 3}) = -1;
+    fadagdn({2, 0}) = -1;
+    fadagdn({3, 1}) = 1;
+  }
+};
+
+
+inline long coors2idx(
+    const long x, const long y, const long Nx, const long Ny) {
+  return x * Ny + y;
+}
+
+
+inline void KeepOrder(long &x, long &y) {
+  if (x > y) {
+    auto temp = y;
+    y = x;
+    x = temp;
+  }
+}
+
+
+TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
+  auto N = Nx * Ny;
+  auto mpo_gen = MPOGenerator(N, pb_out);
+  for (long i = 0; i < Nx; ++i) {
+    for (long j = 0; j < Ny; ++j) {
+      auto s0 = coors2idx(i, j, Nx, Ny);
+      mpo_gen.AddTerm(U, {OpIdx(nupdn, s0)});
+
+      if (i != Nx-1) {
+        auto s1 = coors2idx(i+1, j, Nx, Ny);
+        std::cout << s0 << " " << s1 << std::endl;
+        mpo_gen.AddTerm(1, {OpIdx(-t0*adagupf, s0), OpIdx(aup, s1)}, f);
+        mpo_gen.AddTerm(1, {OpIdx(-t0*adagdn, s0), OpIdx(fadn, s1)}, f);
+        mpo_gen.AddTerm(1, {OpIdx(naupf, s0), OpIdx(-t0*adagup, s1)}, f);
+        mpo_gen.AddTerm(1, {OpIdx(nadn, s0), OpIdx(-t0*fadagdn, s1)}, f);
+      }
+      if (j != Ny-1) {
+        auto s1 = coors2idx(i, j+1, Nx, Ny);
+        std::cout << s0 << " " << s1 << std::endl;
+        mpo_gen.AddTerm(1, {OpIdx(-t0*adagupf, s0), OpIdx(aup, s1)}, f);
+        mpo_gen.AddTerm(1, {OpIdx(-t0*adagdn, s0), OpIdx(fadn, s1)}, f);
+        mpo_gen.AddTerm(1, {OpIdx(naupf, s0), OpIdx(-t0*adagup, s1)}, f);
+        mpo_gen.AddTerm(1, {OpIdx(nadn, s0), OpIdx(-t0*fadagdn, s1)}, f);
+      }
+
+      if (j != Ny-1) {
+        if (i != 0) {
+          auto s2 = coors2idx(i-1, j+1, Nx, Ny);
+          auto temp_s0 = s0;
+          KeepOrder(temp_s0, s2);
+          std::cout << temp_s0 << " " << s2 << std::endl;
+          mpo_gen.AddTerm(1, {OpIdx(-t1*adagupf, temp_s0), OpIdx(aup, s2)}, f);
+          mpo_gen.AddTerm(1, {OpIdx(-t1*adagdn, temp_s0), OpIdx(fadn, s2)}, f);
+          mpo_gen.AddTerm(1, {OpIdx(naupf, temp_s0), OpIdx(-t1*adagup, s2)}, f);
+          mpo_gen.AddTerm(1, {OpIdx(nadn, temp_s0), OpIdx(-t1*fadagdn, s2)}, f);
+        } 
+        if (i != Nx-1) {
+          auto s2 = coors2idx(i+1, j+1, Nx, Ny);
+          auto temp_s0 = s0;
+          KeepOrder(temp_s0, s2);
+          std::cout << temp_s0 << " " << s2 << std::endl;
+          mpo_gen.AddTerm(1, {OpIdx(-t1*adagupf, temp_s0), OpIdx(aup, s2)}, f);
+          mpo_gen.AddTerm(1, {OpIdx(-t1*adagdn, temp_s0), OpIdx(fadn, s2)}, f);
+          mpo_gen.AddTerm(1, {OpIdx(naupf, temp_s0), OpIdx(-t1*adagup, s2)}, f);
+          mpo_gen.AddTerm(1, {OpIdx(nadn, temp_s0), OpIdx(-t1*fadagdn, s2)}, f);
+        } 
+      }
+    }
+  }
+  auto mpo = mpo_gen.Gen();
+
+  std::vector<GQTensor *> mps(N);
+  auto qn0 = QN({QNNameVal("Nup", 0), QNNameVal("Ndn", 0)});
+  std::vector<long> stat_labs(N);
+  for (int i = 0; i < N; ++i) { stat_labs[i] = (i % 2 == 0 ? 1 : 2); }
+  DirectStateInitMps(mps, stat_labs, pb_out, qn0);
+  auto sweep_params = SweepParams(
+                          10,
+                          16, 16, 1.0E-9,
+                          true,
+                          kTwoSiteAlgoWorkflowInitial,
+                          LanczosParams(1.0E-8, 20),
+                          N/2-1);
+  auto energy0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
+  EXPECT_NEAR(energy0, -2.828427124746, 1.0E-10);
+}
