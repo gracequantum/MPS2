@@ -19,59 +19,6 @@
 namespace gqmps2 {
 
 
-// MPO generation.
-MPOGenerator::MPOGenerator(const long N, const Index &pb) :
-    N_(N), pb_out_(pb) {
-  pb_in_ = InverseIndex(pb_out_);
-  auto null_edges = std::vector<FSMEdge>();
-  edges_set_ = std::vector<std::vector<FSMEdge>>(N_, null_edges);
-  mid_state_nums_ = std::vector<long>(N_, 0);
-  auto id_op = GQTensor({pb_in_, pb_out_});
-  for (long i = 0; i < pb_out_.dim; ++i) { id_op({i, i}) = 1; }
-  id_op_ = id_op;
-}
-
-
-void MPOGenerator::AddTerm(
-    const double coef,
-    const std::vector<OpIdx> &opidxs,
-    const GQTensor &inter_op) {
-  switch (opidxs.size()) {
-    case 1:
-      AddOneSiteTerm(coef, opidxs[0]);
-      break;
-    case 2:
-      AddTwoSiteTerm(coef, opidxs[0], opidxs[1], inter_op);
-      break;
-    default:
-      std::cout << "Unsupport term type." << std::endl;
-     exit(1); 
-  }
-}
-
-
-std::vector<GQTensor *> MPOGenerator::Gen(void) {
-  // Print MPO information.
-  std::cout << "MPO bond dimensions: " << std::endl;
-  for (auto &mid_state_num : mid_state_nums_) {
-    std::cout << std::setw(3) << mid_state_num + 2 << std::endl;
-  }
-  std::vector<GQTensor *> mpo(N_);
-  for (long i = 0; i < N_; ++i) {
-    if (i == 0) {
-      mpo[i] = GenHeadMpo(edges_set_[i], mid_state_nums_[i+1]);
-    } else if (i == N_-1) {
-      mpo[i] = GenTailMpo(edges_set_[i], mid_state_nums_[i]);
-    } else {
-      mpo[i] = GenCentMpo(
-                   edges_set_[i],
-                   mid_state_nums_[i], mid_state_nums_[i+1]);
-    }
-  }
-  return mpo;
-}
-
-
 LanczosRes LanczosSolver(
     const std::vector<GQTensor *> &rpeff_ham, GQTensor *pinit_state,
     const LanczosParams &params,

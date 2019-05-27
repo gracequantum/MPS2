@@ -40,14 +40,34 @@ struct OpIdx {
 };
 
 
-struct FSMEdge {
-  FSMEdge(const GQTensor &op, const long lstate, const long nstate) :
-      op(op), lstate(lstate), nstate(nstate) {}
-  FSMEdge(void) : FSMEdge(GQTensor(), 0, 0) {}
+struct FSMEdge;
 
-  GQTensor op;
-  long lstate;
-  long nstate;
+
+struct FSMNode {
+  FSMNode(const long loc) :
+    is_ready(false), is_final(false), mid_state_idx(0), loc(loc) {}
+  FSMNode(void) : FSMNode(-1) {}
+
+  bool is_ready;
+  bool is_final;
+  long mid_state_idx;
+  long loc;
+  std::vector<FSMEdge *> ledges;
+  std::vector<FSMEdge *> redges;
+};
+
+
+struct FSMEdge {
+  FSMEdge(
+      const GQTensor &op, const FSMNode *l_node, const FSMNode *n_node,
+      const long loc) :
+      op(op), last_node(l_node), next_node(n_node), loc(loc) {}
+  FSMEdge(void) : FSMEdge(GQTensor(), nullptr, nullptr, -1) {}
+
+  const GQTensor op;
+  const FSMNode *last_node;
+  const FSMNode *next_node;
+  long loc;
 };
 
 
@@ -65,16 +85,33 @@ private:
   long N_;
   Index pb_out_;
   Index pb_in_;
-  std::vector<std::vector<FSMEdge>> edges_set_;
-  std::vector<long> mid_state_nums_;
   GQTensor id_op_;
+  std::vector<FSMNode *> ready_nodes_;
+  std::vector<FSMNode *> final_nodes_;
+  std::vector<std::vector<FSMNode *>> middle_nodes_set_;
+  std::vector<std::vector<FSMEdge *>> edges_set_;
+  bool fsm_graph_merged_;
+  bool relable_to_end_;
   
   void AddOneSiteTerm(const double, const OpIdx &);
   void AddTwoSiteTerm(
       const double, const OpIdx &, const OpIdx &, const GQTensor &);
-  GQTensor *GenHeadMpo(const std::vector<FSMEdge> &, const long);
-  GQTensor *GenCentMpo(const std::vector<FSMEdge> &, const long, const long);
-  GQTensor *GenTailMpo(const std::vector<FSMEdge> &, const long);
+
+  void FSMGraphMerge(void);
+  void FSMGraphMergeAt(const long);   // At given middle nodes list.
+  bool FSMGraphMergeNodesTo(const long, std::vector<FSMNode *> &);
+  bool FSMGraphMergeTwoNodes(FSMNode *&, FSMNode *&);
+
+  bool CheckMergeableLeftEdgePair(const FSMEdge *, const FSMEdge *);
+  bool CheckMergeableRightEdgePair(const FSMEdge *, const FSMEdge *);
+
+  void DeletePathToRightEnd(FSMEdge *);
+  void RelabelMidNodesIdx(const long);
+  void RemoveNullEdges(void);
+
+  GQTensor *GenHeadMpo(void);
+  GQTensor *GenCentMpo(const long);
+  GQTensor *GenTailMpo(void);
 };
 
 
