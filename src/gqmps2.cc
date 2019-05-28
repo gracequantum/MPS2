@@ -61,10 +61,13 @@ LanczosRes LanczosSolver(
   pinit_state->Normalize();
   bases[0] =  pinit_state;
   auto last_mat_mul_vec_res = (*eff_ham_mul_state)(rpeff_ham, bases[0]);
-  auto temp_scalar_ten = Contract(
-             *last_mat_mul_vec_res,
-             MockDag(*bases[0]),
-             energy_measu_ctrct_axes);
+  auto temp_scalar_ten = new GQTensor();
+  gqten_dgetc(
+      energy_measu_ctrct_axes[0], energy_measu_ctrct_axes[1],
+      1.0,
+      last_mat_mul_vec_res, &MockDag(*bases[0]),
+      0.0,
+      temp_scalar_ten);
   a[0] = temp_scalar_ten->scalar; delete temp_scalar_ten;
   N[0] = 0.0;
   long m = 0;
@@ -110,10 +113,13 @@ LanczosRes LanczosSolver(
     gamma->Normalize();
     bases[m] = gamma;
     last_mat_mul_vec_res = (*eff_ham_mul_state)(rpeff_ham, bases[m]);
-    auto temp_scalar_ten = Contract(
-               *last_mat_mul_vec_res,
-               MockDag(*bases[m]),
-               energy_measu_ctrct_axes);
+    auto temp_scalar_ten = new GQTensor();
+    gqten_dgetc(
+        energy_measu_ctrct_axes[0], energy_measu_ctrct_axes[1],
+        1.0,
+        last_mat_mul_vec_res, &MockDag(*bases[m]),
+        0.0,
+        temp_scalar_ten);
     a[m] = temp_scalar_ten->scalar; delete temp_scalar_ten;
     TridiagGsSolver(a, b, m+1, eigval, eigvec, 'N');
     auto energy0_new = eigval;

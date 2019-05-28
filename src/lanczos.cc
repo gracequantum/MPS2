@@ -21,7 +21,8 @@ using namespace gqten;
 
 GQTensor *eff_ham_mul_state_cent(
     const std::vector<GQTensor *> &eff_ham, const GQTensor *state) {
-  auto res = Contract(*eff_ham[0], *state, {{0}, {0}});
+  auto res = new GQTensor();
+  gqten_dgetc({0}, {0}, 1.0, eff_ham[0], state, 0.0, res);
   InplaceContract(res, *eff_ham[1], {{0, 2}, {0, 1}});
   InplaceContract(res, *eff_ham[2], {{4, 1}, {0, 1}});
   InplaceContract(res, *eff_ham[3], {{4, 1}, {1, 0}});
@@ -31,7 +32,8 @@ GQTensor *eff_ham_mul_state_cent(
 
 GQTensor *eff_ham_mul_state_lend(
     const std::vector<GQTensor *> &eff_ham, const GQTensor *state) {
-  auto res = Contract(*state, *eff_ham[1], {{0}, {0}});
+  auto res = new GQTensor();
+  gqten_dgetc({0}, {0}, 1.0, state, eff_ham[1], 0.0, res);
   InplaceContract(res, *eff_ham[2], {{0, 2}, {1, 0}});
   InplaceContract(res, *eff_ham[3], {{0, 3}, {0, 1}});
   return res;
@@ -40,7 +42,8 @@ GQTensor *eff_ham_mul_state_lend(
 
 GQTensor *eff_ham_mul_state_rend(
     const std::vector<GQTensor *> &eff_ham, const GQTensor *state) {
-  auto res = Contract(*state, *eff_ham[0], {{0}, {0}});
+  auto res = new GQTensor();
+  gqten_dgetc({0}, {0}, 1.0, state, eff_ham[0], 0.0, res);
   InplaceContract(res, *eff_ham[1], {{2, 0}, {0, 1}});
   InplaceContract(res, *eff_ham[2], {{3, 0}, {1,0}});
   return res;
