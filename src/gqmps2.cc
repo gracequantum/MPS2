@@ -81,7 +81,7 @@ LanczosRes LanczosSolver(
       (*gamma) -= a[m-1]*(*bases[m-1]);
       (*gamma) -= std::sqrt(N[m-1])*(*bases[m-2]);
     }
-    auto norm_gamma = gamma->Norm();
+    auto norm_gamma = gamma->Normalize();
     double eigval;
     double *eigvec = nullptr;
     if (norm_gamma == 0.0) {
@@ -106,7 +106,6 @@ LanczosRes LanczosSolver(
     }
     N[m] = std::pow(norm_gamma, 2.0);
     b[m-1] = norm_gamma;
-    gamma->Normalize();
     bases[m] = gamma;
     last_mat_mul_vec_res = (*eff_ham_mul_state)(rpeff_ham, bases[m]);
     auto temp_scalar_ten = Contract(
