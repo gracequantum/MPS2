@@ -20,33 +20,33 @@ using namespace gqten;
 
 
 GQTensor *eff_ham_mul_state_cent(
-    const std::vector<GQTensor *> &eff_ham, const GQTensor *state) {
-  auto res = new GQTensor();
-  gqten_dgetc({0}, {0}, 1.0, eff_ham[0], state, 0.0, res);
-  InplaceContract(res, *eff_ham[1], {{0, 2}, {0, 1}});
-  InplaceContract(res, *eff_ham[2], {{4, 1}, {0, 1}});
-  InplaceContract(res, *eff_ham[3], {{4, 1}, {1, 0}});
-  return res;
+    const std::vector<GQTensor *> &eff_ham, GQTensor *state) {
+  return SeriesContract(
+             {eff_ham[0], state, eff_ham[1], eff_ham[2], eff_ham[3]},
+             {std::make_pair(kHamMulStateCentLCA0, kHamMulStateCentRCA0),
+              std::make_pair(kHamMulStateCentLCA1, kHamMulStateCentRCA1),
+              std::make_pair(kHamMulStateCentLCA2, kHamMulStateCentRCA2),
+              std::make_pair(kHamMulStateCentLCA3, kHamMulStateCentRCA3)});
 }
 
 
 GQTensor *eff_ham_mul_state_lend(
-    const std::vector<GQTensor *> &eff_ham, const GQTensor *state) {
-  auto res = new GQTensor();
-  gqten_dgetc({0}, {0}, 1.0, state, eff_ham[1], 0.0, res);
-  InplaceContract(res, *eff_ham[2], {{0, 2}, {1, 0}});
-  InplaceContract(res, *eff_ham[3], {{0, 3}, {0, 1}});
-  return res;
+    const std::vector<GQTensor *> &eff_ham, GQTensor *state) {
+  return SeriesContract(
+             {state, eff_ham[1], eff_ham[2], eff_ham[3]},
+             {std::make_pair(kHamMulStateLendLCA0, kHamMulStateLendRCA0),
+              std::make_pair(kHamMulStateLendLCA1, kHamMulStateLendRCA1),
+              std::make_pair(kHamMulStateLendLCA2, kHamMulStateLendRCA2)});
 }
 
 
 GQTensor *eff_ham_mul_state_rend(
-    const std::vector<GQTensor *> &eff_ham, const GQTensor *state) {
-  auto res = new GQTensor();
-  gqten_dgetc({0}, {0}, 1.0, state, eff_ham[0], 0.0, res);
-  InplaceContract(res, *eff_ham[1], {{2, 0}, {0, 1}});
-  InplaceContract(res, *eff_ham[2], {{3, 0}, {1,0}});
-  return res;
+    const std::vector<GQTensor *> &eff_ham, GQTensor *state) {
+  return SeriesContract(
+             {state, eff_ham[0], eff_ham[1], eff_ham[2]},
+             {std::make_pair(kHamMulStateRendLCA0, kHamMulStateRendRCA0),
+              std::make_pair(kHamMulStateRendLCA1, kHamMulStateRendRCA1),
+              std::make_pair(kHamMulStateRendLCA2, kHamMulStateRendRCA2)});
 }
 
 
