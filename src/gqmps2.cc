@@ -72,14 +72,17 @@ LanczosRes LanczosSolver(
   // Lanczos iterations.
   while (true) {
     m += 1; 
-    GQTensor *gamma;
+    auto gamma = last_mat_mul_vec_res;
     if (m == 1) {
-      gamma = last_mat_mul_vec_res;
-      (*gamma) -= a[m-1]*(*bases[m-1]);
+      LinearCombine(
+          {-a[m-1]},
+          {bases[m-1]},
+          gamma);
     } else {
-      gamma = last_mat_mul_vec_res;
-      (*gamma) -= a[m-1]*(*bases[m-1]);
-      (*gamma) -= std::sqrt(N[m-1])*(*bases[m-2]);
+      LinearCombine(
+          {-a[m-1], -std::sqrt(N[m-1])},
+          {bases[m-1], bases[m-2]},
+          gamma);
     }
     auto norm_gamma = gamma->Normalize();
     double eigval;
@@ -93,10 +96,8 @@ LanczosRes LanczosSolver(
         return lancz_res;
       } else {
         TridiagGsSolver(a, b, m, eigval, eigvec, 'V');
-        auto gs_vec = new GQTensor(eigvec[0]*(*bases[0]));
-        for (long i = 1; i < m; ++i) {
-          *gs_vec += (eigvec[i] * (*bases[i]));
-        }
+        auto gs_vec = new GQTensor(bases[0]->indexes);
+        LinearCombine(m, eigvec, bases, gs_vec);
         lancz_res.iters = m;
         lancz_res.gs_eng = energy0;
         lancz_res.gs_vec = gs_vec;
@@ -119,10 +120,8 @@ LanczosRes LanczosSolver(
          (m == params.max_iterations - 1)) {
       TridiagGsSolver(a, b, m+1, eigval, eigvec, 'V');
       energy0 = energy0_new;
-      auto gs_vec = new GQTensor(eigvec[0]*(*bases[0]));
-      for (long i = 0; i < m+1; ++i) {
-        *gs_vec += (eigvec[i] * (*bases[i]));
-      }
+      auto gs_vec = new GQTensor(bases[0]->indexes);
+      LinearCombine(m+1, eigvec, bases, gs_vec);
       lancz_res.iters = m;
       lancz_res.gs_eng = energy0;
       lancz_res.gs_vec = gs_vec;

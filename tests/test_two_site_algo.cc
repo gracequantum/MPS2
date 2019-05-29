@@ -44,7 +44,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DIsing) {
 
   std::vector<GQTensor *> mps(N);
   auto qn0 = QN({QNNameVal("Sz", 0)});
-  srand(0);
+  srand(0); rand();   //  One more rand() called or random init state strange for Ising model.
   RandomInitMps(mps, pb_out, qn0, qn0);
 
   auto sweep_params = SweepParams(
