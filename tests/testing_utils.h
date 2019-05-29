@@ -37,14 +37,6 @@ inline void RandRealSymMat(double *mat, long dim) {
 }
 
 
-inline void InplaceContract(
-    GQTensor * &lhs, const GQTensor &rhs,
-    const std::vector<std::vector<long>> &axes) {
-  auto res = Contract(*lhs, rhs, axes);
-  delete lhs;
-  lhs = res;
-}
-
 template<typename T>
 inline void PrintVec(const std::vector<T> &v) {
   for (auto &e : v) { std::cout << e << " "; }
