@@ -31,11 +31,10 @@ const char kTwoSiteAlgoWorkflowInitial = 'i';
 const char kTwoSiteAlgoWorkflowRestart = 'r';
 const char kTwoSiteAlgoWorkflowContinue = 'c';
 
-
-// MPO generator.
 const GQTensor kNullOperator = GQTensor();
 
 
+// MPO generator.
 struct OpIdx {
   OpIdx(const GQTensor &op, const long idx) : op(op), idx(idx) {}
 
@@ -76,6 +75,7 @@ struct FSMEdge {
 
 
 class MPOGenerator {
+/* TODO: Merge terms only with different coefficients. */
 public:
   MPOGenerator(const long, const Index &);
 

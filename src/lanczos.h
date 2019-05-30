@@ -16,7 +16,9 @@
 namespace gqmps2 {
 using namespace gqten;
 
+
 const int kLanczEnergyOutputPrecision = 16;
+
 const std::vector<long> kHamMulStateCentLCA0 = {0};
 const std::vector<long> kHamMulStateCentLCA1 = {0, 2};
 const std::vector<long> kHamMulStateCentLCA2 = {4, 1};
@@ -25,12 +27,14 @@ const std::vector<long> kHamMulStateCentRCA0 = {0};
 const std::vector<long> kHamMulStateCentRCA1 = {0, 1};
 const std::vector<long> kHamMulStateCentRCA2 = {0, 1};
 const std::vector<long> kHamMulStateCentRCA3 = {1, 0};
+
 const std::vector<long> kHamMulStateLendLCA0 = {0};
 const std::vector<long> kHamMulStateLendLCA1 = {0, 2};
 const std::vector<long> kHamMulStateLendLCA2 = {0, 3};
 const std::vector<long> kHamMulStateLendRCA0 = {0};
 const std::vector<long> kHamMulStateLendRCA1 = {1, 0};
 const std::vector<long> kHamMulStateLendRCA2 = {0, 1};
+
 const std::vector<long> kHamMulStateRendLCA0 = {0};
 const std::vector<long> kHamMulStateRendLCA1 = {2, 0};
 const std::vector<long> kHamMulStateRendLCA2 = {3, 0};
