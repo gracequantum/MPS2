@@ -100,6 +100,8 @@ double TwoSiteUpdate(
     const SweepParams &sweep_params, const char dir) {
   Timer update_timer("update");
   update_timer.Restart();
+  Timer bef_lanc_timer("bef_lanc");
+  bef_lanc_timer.Restart();
   auto N = mps.size();
   std::vector<std::vector<long>> init_state_ctrct_axes, us_ctrct_axes;
   std::string where;
@@ -187,6 +189,7 @@ double TwoSiteUpdate(
     }
   }
 
+  auto bef_lanc_elapsed_time = bef_lanc_timer.Elapsed();
   // Lanczos
   std::vector<GQTensor *>eff_ham(4);
   eff_ham[0] = lblocks[lblock_len];
@@ -205,6 +208,8 @@ double TwoSiteUpdate(
   auto lancz_elapsed_time = lancz_timer.Elapsed();
 
   // SVD
+  Timer svd_timer("svd");
+  svd_timer.Restart();
   auto svd_res = Svd(
       *lancz_res.gs_vec,
       svd_ldims, svd_rdims,
@@ -212,6 +217,7 @@ double TwoSiteUpdate(
       sweep_params.Cutoff,
       sweep_params.Dmin, sweep_params.Dmax);
   delete lancz_res.gs_vec;
+  auto svd_elapsed_time = svd_timer.Elapsed();
 
   // Measure entanglement entropy.
   double ee;
@@ -220,10 +226,18 @@ double TwoSiteUpdate(
   }
 
   // Update MPS sites and blocks.
+  Timer blk_update_timer("blkup");
+  blk_update_timer.Restart();
+  Timer new_blk_timer("new_blk");
+  double new_blk_elapsed_time;
+  Timer dump_blk_timer("dump_blk");
+  double dump_blk_elapsed_time;
+
   GQTensor *new_lblock, *new_rblock;
   bool update_block = true;
   switch (dir) {
     case 'r':
+      new_blk_timer.Restart();
       delete mps[lsite_idx];
       mps[lsite_idx] = svd_res.u;
       delete mps[rsite_idx];
@@ -249,7 +263,9 @@ double TwoSiteUpdate(
       } else {
         update_block = false;
       }
+      new_blk_elapsed_time = new_blk_timer.Elapsed();
 
+      dump_blk_timer.Restart();
       if (sweep_params.FileIO) {
         if (update_block) {
           auto target_blk_len = i+1;
@@ -270,8 +286,10 @@ double TwoSiteUpdate(
           lblocks[target_blk_len] = new_lblock;
         }
       }
+      dump_blk_elapsed_time = dump_blk_timer.Elapsed();
       break;
     case 'l':
+      new_blk_timer.Restart();
       delete mps[lsite_idx];
       mps[lsite_idx] = Contract(*svd_res.u, *svd_res.s, us_ctrct_axes);
       delete svd_res.u;
@@ -295,7 +313,9 @@ double TwoSiteUpdate(
       } else {
         update_block = false;
       }
+      new_blk_elapsed_time = new_blk_timer.Elapsed();
 
+      dump_blk_timer.Restart();
       if (sweep_params.FileIO) {
         if (update_block) {
           auto target_blk_len = N-i;
@@ -316,7 +336,9 @@ double TwoSiteUpdate(
           rblocks[target_blk_len] = new_rblock;
         }
       }
+      dump_blk_elapsed_time = dump_blk_timer.Elapsed();
   }
+  auto blk_update_elapsed_time = blk_update_timer.Elapsed();
   auto update_elapsed_time = update_timer.Elapsed();
   std::cout << "Site " << std::setw(4) << i
             << " E0 = " << std::setw(20) << std::setprecision(16) << std::fixed << lancz_res.gs_eng
@@ -329,6 +351,7 @@ double TwoSiteUpdate(
     std::cout << " S = " << std::setw(10) << std::setprecision(7) << ee;
   }
   std::cout << std::scientific << std::endl;
+  std::cout << std::fixed << bef_lanc_elapsed_time << " " << lancz_elapsed_time << " " << svd_elapsed_time << " | " << blk_update_elapsed_time << " " << new_blk_elapsed_time << " " << dump_blk_elapsed_time << " | " << update_elapsed_time << std::scientific << std::endl;
   return lancz_res.gs_eng;
 }
 } /* gqmps2 */ 

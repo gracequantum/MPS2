@@ -60,7 +60,12 @@ LanczosRes LanczosSolver(
   // Initialize Lanczos iteration.
   pinit_state->Normalize();
   bases[0] =  pinit_state;
+  std::cout << std::fixed;
+  Timer mat_vec_timer("mat_vec");
+  mat_vec_timer.Restart();
   auto last_mat_mul_vec_res = (*eff_ham_mul_state)(rpeff_ham, bases[0]);
+  mat_vec_timer.PrintElapsed();
+  std::cout << "=============" << std::endl;
   auto temp_scalar_ten = Contract(
       *last_mat_mul_vec_res, MockDag(*bases[0]),
       energy_measu_ctrct_axes);
@@ -108,7 +113,10 @@ LanczosRes LanczosSolver(
     N[m] = std::pow(norm_gamma, 2.0);
     b[m-1] = norm_gamma;
     bases[m] = gamma;
+    mat_vec_timer.Restart();
     last_mat_mul_vec_res = (*eff_ham_mul_state)(rpeff_ham, bases[m]);
+    mat_vec_timer.PrintElapsed();
+    std::cout << "=============" << std::endl;
     auto temp_scalar_ten = Contract(
         *last_mat_mul_vec_res, MockDag(*bases[m]),
         energy_measu_ctrct_axes);
