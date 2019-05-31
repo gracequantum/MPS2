@@ -57,6 +57,15 @@ void TridiagGsSolver(
 
 
 // Helpers.
+inline void InplaceContract(
+    GQTensor * &lhs, const GQTensor &rhs,
+    const std::vector<std::vector<long>> &axes) {
+  auto res = Contract(*lhs, rhs, axes);
+  delete lhs;
+  lhs = res;
+}
+
+
 inline void LanczosFree(
     double * &a,
     std::vector<GQTensor *> &b,
