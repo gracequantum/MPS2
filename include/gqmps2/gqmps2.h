@@ -62,14 +62,14 @@ struct FSMNode {
 
 struct FSMEdge {
   FSMEdge(
-      const GQTensor &op, const FSMNode *l_node, const FSMNode *n_node,
+      const GQTensor &op, FSMNode *l_node, FSMNode *n_node,
       const long loc) :
       op(op), last_node(l_node), next_node(n_node), loc(loc) {}
   FSMEdge(void) : FSMEdge(GQTensor(), nullptr, nullptr, -1) {}
 
   const GQTensor op;
-  const FSMNode *last_node;
-  const FSMNode *next_node;
+  FSMNode *last_node;
+  FSMNode *next_node;
   long loc;
 };
 
@@ -77,7 +77,7 @@ struct FSMEdge {
 class MPOGenerator {
 /* TODO: Merge terms only with different coefficients. */
 public:
-  MPOGenerator(const long, const Index &);
+  MPOGenerator(const long, const Index &, const QN &);
 
   void AddTerm(
       const double,
@@ -94,13 +94,20 @@ private:
   std::vector<FSMNode *> final_nodes_;
   std::vector<std::vector<FSMNode *>> middle_nodes_set_;
   std::vector<std::vector<FSMEdge *>> edges_set_;
+  // For nodes merge.
   bool fsm_graph_merged_;
   bool relable_to_end_;
+  // For generation process.
+  QN zero_div_;
+  std::vector<Index> rvbs_;
+  bool fsm_graph_sorted_;
   
+  // Add terms.
   void AddOneSiteTerm(const double, const OpIdx &);
   void AddTwoSiteTerm(
       const double, const OpIdx &, const OpIdx &, const GQTensor &);
 
+  // Merge finite state machine graph.
   void FSMGraphMerge(void);
   void FSMGraphMergeAt(const long);   // At given middle nodes list.
   bool FSMGraphMergeNodesTo(const long, std::vector<FSMNode *> &);
@@ -113,6 +120,9 @@ private:
   void RelabelMidNodesIdx(const long);
   void RemoveNullEdges(void);
 
+  // Generation process.
+  void FSMGraphSort(void);
+  Index FSMGraphSortAt(const long);    // At given site.
   GQTensor *GenHeadMpo(void);
   GQTensor *GenCentMpo(const long);
   GQTensor *GenTailMpo(void);

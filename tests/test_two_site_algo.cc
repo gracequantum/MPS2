@@ -18,6 +18,7 @@ using namespace gqten;
 struct TestTwoSiteAlgorithmSpinSystem : public testing::Test {
   long N = 6;
 
+  QN qn0 = QN({QNNameVal("Sz", 0)});
   Index pb_out = Index({
                      QNSector(QN({QNNameVal("Sz", 1)}), 1),
                      QNSector(QN({QNNameVal("Sz", -1)}), 1)}, OUT);
@@ -36,14 +37,13 @@ struct TestTwoSiteAlgorithmSpinSystem : public testing::Test {
 
 
 TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DIsing) {
-  auto mpo_gen = MPOGenerator(N, pb_out);
+  auto mpo_gen = MPOGenerator(N, pb_out, qn0);
   for (long i = 0; i < N-1; ++i) {
     mpo_gen.AddTerm(1, {OpIdx(sz, i), OpIdx(sz, i+1)});
   }
   auto mpo = mpo_gen.Gen();
 
   std::vector<GQTensor *> mps(N);
-  auto qn0 = QN({QNNameVal("Sz", 0)});
   srand(0); rand();   //  One more rand() called or random init state strange for Ising model.
   RandomInitMps(mps, pb_out, qn0, qn0);
 
@@ -73,7 +73,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DIsing) {
 
 
 TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DHeisenberg) {
-  auto mpo_gen = MPOGenerator(N, pb_out);
+  auto mpo_gen = MPOGenerator(N, pb_out, qn0);
   for (long i = 0; i < N-1; ++i) {
     mpo_gen.AddTerm(1, {OpIdx(sz, i), OpIdx(sz, i+1)});
     mpo_gen.AddTerm(0.5, {OpIdx(sp, i), OpIdx(sm, i+1)});
@@ -82,7 +82,6 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DHeisenberg) {
   auto mpo = mpo_gen.Gen();
 
   std::vector<GQTensor *> mps(N);
-  auto qn0 = QN({QNNameVal("Sz", 0)});
   srand(0);
   RandomInitMps(mps, pb_out, qn0, qn0);
 
@@ -116,7 +115,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DHeisenberg) {
 
 
 TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DHeisenberg) {
-  auto mpo_gen = MPOGenerator(N, pb_out);
+  auto mpo_gen = MPOGenerator(N, pb_out, qn0);
   std::vector<std::pair<long, long>> nn_pairs = {
       std::make_pair(0, 1), 
       std::make_pair(0, 2), 
@@ -134,7 +133,6 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DHeisenberg) {
   auto mpo = mpo_gen.Gen();
 
   std::vector<GQTensor *> mps(N);
-  auto qn0 = QN({QNNameVal("Sz", 0)});
   srand(0);
   RandomInitMps(mps, pb_out, qn0, qn0);
 
@@ -172,6 +170,7 @@ struct TestTwoSiteAlgorithmTjSystem : public testing::Test {
   long N = 4;
   double t = 3.;
   double J = 1.;
+  QN qn0 = QN({QNNameVal("N", 0), QNNameVal("Sz", 0)});
   Index pb_out = Index({
       QNSector(QN({QNNameVal("N", 1), QNNameVal("Sz",  1)}), 1),
       QNSector(QN({QNNameVal("N", 1), QNNameVal("Sz", -1)}), 1),
@@ -203,7 +202,7 @@ struct TestTwoSiteAlgorithmTjSystem : public testing::Test {
 
 
 TEST_F(TestTwoSiteAlgorithmTjSystem, 1DCase) {
-  auto mpo_gen = MPOGenerator(N, pb_out);
+  auto mpo_gen = MPOGenerator(N, pb_out, qn0);
   for (long i = 0; i < N-1; ++i) {
     mpo_gen.AddTerm(-t, {OpIdx(cdagup, i), OpIdx(cup, i+1)});
     mpo_gen.AddTerm(-t, {OpIdx(cdagdn, i), OpIdx(cdn, i+1)});
@@ -235,7 +234,7 @@ TEST_F(TestTwoSiteAlgorithmTjSystem, 1DCase) {
 
 
 TEST_F(TestTwoSiteAlgorithmTjSystem, 2DCase) {
-  auto mpo_gen = MPOGenerator(N, pb_out);
+  auto mpo_gen = MPOGenerator(N, pb_out, qn0);
   std::vector<std::pair<long, long>> nn_pairs = {
       std::make_pair(0, 1), 
       std::make_pair(0, 2), 
@@ -283,6 +282,7 @@ struct TestTwoSiteAlgorithmHubbardSystem : public testing::Test {
   double t1 = 0.5;
   double U = 2.0;
 
+  QN qn0 = QN({QNNameVal("Nup", 0), QNNameVal("Ndn", 0)});
   Index pb_out = Index({
       QNSector(QN({QNNameVal("Nup", 0), QNNameVal("Ndn", 0)}), 1),
       QNSector(QN({QNNameVal("Nup", 1), QNNameVal("Ndn", 0)}), 1),
@@ -346,7 +346,7 @@ inline void KeepOrder(long &x, long &y) {
 
 TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
   auto N = Nx * Ny;
-  auto mpo_gen = MPOGenerator(N, pb_out);
+  auto mpo_gen = MPOGenerator(N, pb_out, qn0);
   for (long i = 0; i < Nx; ++i) {
     for (long j = 0; j < Ny; ++j) {
       auto s0 = coors2idx(i, j, Nx, Ny);

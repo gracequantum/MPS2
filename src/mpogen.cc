@@ -21,7 +21,8 @@ namespace gqmps2 {
 using namespace gqten;
 
 
-MPOGenerator::MPOGenerator(const long N, const Index &pb) :
+MPOGenerator::MPOGenerator(
+    const long N, const Index &pb, const QN &zero_div) :
     N_(N),
     pb_out_(pb),
     ready_nodes_(N+1),
@@ -29,18 +30,44 @@ MPOGenerator::MPOGenerator(const long N, const Index &pb) :
     middle_nodes_set_(N+1),
     edges_set_(N),
     fsm_graph_merged_(false),
-    relable_to_end_(false) {
+    relable_to_end_(false),
+    zero_div_(zero_div),
+    rvbs_(N-1),
+    fsm_graph_sorted_(false) {
   pb_in_ = InverseIndex(pb_out_);    
+  // Generate identity operator.
   auto id_op = GQTensor({pb_in_, pb_out_});
   for (long i = 0; i < pb_out_.dim; ++i) { id_op({i, i}) = 1; }
   id_op_ = id_op;
+  // Generate ready nodes and final nodes.
   for (long i = 0; i < N_+1; ++i) {
     auto ready_node = new FSMNode(i);
     ready_node->is_ready = true;
+    ready_node->mid_state_idx = 0;        // For MPO generation process.
     ready_nodes_[i] = ready_node;
     auto final_node = new FSMNode(i);
     final_node->is_final = true;
+    final_node->mid_state_idx = -1;       // For MPO generation process.
     final_nodes_[i] = final_node;
+  }
+  // Generate R -> R and F -> F identity finite state machine edges.
+  for (long i = 0; i < N_; ++i) {
+    if (i != N_-1) {
+      auto r2r_edge = new FSMEdge(
+                              id_op_,
+                              ready_nodes_[i],
+                              ready_nodes_[i+1],
+                              i);
+      edges_set_[i].push_back(r2r_edge);
+    }
+    if (i != 0) {
+      auto f2f_edge = new FSMEdge(
+                              id_op_,
+                              final_nodes_[i],
+                              final_nodes_[i+1],
+                              i);
+      edges_set_[i].push_back(f2f_edge);
+    }
   }
 }
 
@@ -67,10 +94,16 @@ std::vector<GQTensor *> MPOGenerator::Gen(void) {
   if (!fsm_graph_merged_) {
     FSMGraphMerge();
     fsm_graph_merged_ = true;
+    fsm_graph_sorted_ = false;
   }
   // Print MPO tensors virtual bond dimension.
   for (auto &middle_nodes : middle_nodes_set_) {
     std::cout << std::setw(3) << middle_nodes.size() + 2 << std::endl;
+  }
+  // Generation process.
+  if (!fsm_graph_sorted_) {
+    FSMGraphSort();
+    fsm_graph_sorted_ = true;
   }
   std::vector<GQTensor *> mpo(N_);
   for (long i = 0; i < N_; ++i) {
@@ -339,68 +372,89 @@ void MPOGenerator::RemoveNullEdges(void) {
 
 
 // Gnerator MPO tensors.
-GQTensor *MPOGenerator::GenHeadMpo(void) {
-  auto rvb_dim = middle_nodes_set_[1].size() + 2;
-  auto rvb = Index({QNSector(QN(), rvb_dim)});
-  auto mpo_ten = new GQTensor({pb_in_, rvb, pb_out_});
-  // Add the R --> R identity edge.
-  AddOpToHeadMpoTen(mpo_ten, id_op_, 0);
-  // Working for other edges.
-  for (auto &edge : edges_set_[0]) {
-    if (edge->next_node->is_final) {
-      AddOpToHeadMpoTen(mpo_ten, edge->op, rvb_dim-1);
-    } else {
-      AddOpToHeadMpoTen(mpo_ten, edge->op, edge->next_node->mid_state_idx);
+// Sort finite state machine nodes by quantum numbers.
+void MPOGenerator::FSMGraphSort(void) {
+  for (long i = 0; i < N_ - 1; ++i) {
+    rvbs_[i] = FSMGraphSortAt(i);
+  }
+}
+
+
+Index MPOGenerator::FSMGraphSortAt(const long site_idx) {
+  // Sort R and F states.
+  ready_nodes_[site_idx+1]->mid_state_idx = 0;
+  final_nodes_[site_idx+1]->mid_state_idx = 1;
+  std::vector<FSMNode *> temp_sorted_nodes;
+  temp_sorted_nodes.push_back(ready_nodes_[site_idx+1]);
+  temp_sorted_nodes.push_back(final_nodes_[site_idx+1]);
+  std::vector<QNSector> rvb_qnscts;
+  rvb_qnscts.push_back(QNSector(zero_div_, 2));
+  for (auto &edge : edges_set_[site_idx]) {
+    if (std::find(temp_sorted_nodes.begin(),
+                  temp_sorted_nodes.end(),
+                  edge->next_node) == temp_sorted_nodes.end()) {
+      QN rvb_qn;
+      if (site_idx == 0) {
+        rvb_qn = zero_div_ - Div(edge->op);
+      } else {
+        rvb_qn = zero_div_ - Div(edge->op) +
+                 GetLvbTargetQN(
+                     rvbs_[site_idx-1],
+                     edge->last_node->mid_state_idx);
+      }
+      auto has_qn = false;
+      long offset = 0;
+      for (auto &qnsct : rvb_qnscts) {
+        if (qnsct.qn == rvb_qn) {
+          edge->next_node->mid_state_idx = offset + qnsct.dim;
+          temp_sorted_nodes.push_back(edge->next_node);
+          ResortNodes(temp_sorted_nodes);
+          qnsct.dim += 1;
+          has_qn = true;
+          break;
+        } else {
+          offset += qnsct.dim;
+        }
+      }
+      if (!has_qn) {
+        rvb_qnscts.push_back(QNSector(rvb_qn, 1));
+        edge->next_node->mid_state_idx = offset;
+        temp_sorted_nodes.push_back(edge->next_node);
+      }
     }
   }
-  return mpo_ten;
+  return Index(rvb_qnscts, OUT);
+}
+
+
+GQTensor *MPOGenerator::GenHeadMpo(void) {
+  auto pmpo_ten = new GQTensor({pb_in_, rvbs_[0], pb_out_});
+  for (auto &edge : edges_set_[0]) {
+    AddOpToHeadMpoTen(pmpo_ten, edge->op, edge->next_node->mid_state_idx);
+  }
+  return pmpo_ten;
 }
 
 
 GQTensor *MPOGenerator::GenTailMpo(void) {
-  auto lvb_dim = middle_nodes_set_[N_-1].size() + 2;
-  auto lvb = Index({QNSector(QN(), lvb_dim)});
-  auto mpo_ten = new GQTensor({pb_in_, lvb, pb_out_});
-  // Add the F --> F idensity edge.
-  AddOpToTailMpoTen(mpo_ten, id_op_, lvb_dim-1);
-  // Working for other edges.
+  auto lvb = InverseIndex(rvbs_.back());
+  auto pmpo_ten = new GQTensor({pb_in_, lvb, pb_out_});
   for (auto &edge : edges_set_[N_-1]) {
-    if (edge->last_node->is_ready) {
-      AddOpToTailMpoTen(mpo_ten, edge->op, 0);
-    } else {
-      AddOpToTailMpoTen(mpo_ten, edge->op, edge->last_node->mid_state_idx);
-    }
+    AddOpToTailMpoTen(pmpo_ten, edge->op, edge->last_node->mid_state_idx);
   }
-  return mpo_ten;
+  return pmpo_ten;
 }
 
 
 GQTensor *MPOGenerator::GenCentMpo(const long site_idx) {
-  auto lvb_dim = middle_nodes_set_[site_idx].size() + 2;
-  auto lvb = Index({QNSector(QN(), lvb_dim)});
-  auto rvb_dim = middle_nodes_set_[site_idx+1].size() + 2;
-  auto rvb = Index({QNSector(QN(), rvb_dim)});
-  auto mpo_ten = new GQTensor({lvb, pb_in_, pb_out_, rvb});
-  // Add the R --> R identity edge.
-  AddOpToCentMpoTen(mpo_ten, id_op_, 0, 0);
-  // Add the F --> F identity edge.
-  AddOpToCentMpoTen(mpo_ten, id_op_, lvb_dim-1, rvb_dim-1);
-  // Working for other edges.
-  long ldim_idx, rdim_idx;
+  auto lvb = InverseIndex(rvbs_[site_idx-1]);
+  auto pmpo_ten = new GQTensor({lvb, pb_in_, pb_out_, rvbs_[site_idx]});
   for (auto &edge : edges_set_[site_idx]) {
-    if (edge->last_node->is_ready) {
-      ldim_idx = 0;
-    } else {
-      ldim_idx = edge->last_node->mid_state_idx;
-    }
-    if (edge->next_node->is_final) {
-      rdim_idx = rvb_dim - 1;
-    } else {
-      rdim_idx = edge->next_node->mid_state_idx;
-    }
-    AddOpToCentMpoTen(mpo_ten, edge->op, ldim_idx, rdim_idx);
+    AddOpToCentMpoTen(
+        pmpo_ten, edge->op,
+        edge->last_node->mid_state_idx, edge->next_node->mid_state_idx);
   }
-  return mpo_ten;
+  return pmpo_ten;
 }
 
 
