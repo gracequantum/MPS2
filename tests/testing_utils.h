@@ -42,4 +42,13 @@ inline void PrintVec(const std::vector<T> &v) {
   for (auto &e : v) { std::cout << e << " "; }
   std::cout << "\n";
 }
+
+
+inline void InplaceContract(
+    GQTensor * &lhs, const GQTensor &rhs,
+    const std::vector<std::vector<long>> &axes) {
+  auto res = Contract(*lhs, rhs, axes);
+  delete lhs;
+  lhs = res;
+}
 #endif /* ifndef GQMPS2_TESTING_UTILS_H */

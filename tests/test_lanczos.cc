@@ -54,12 +54,9 @@ void RunTestCentLanczosSolverCase(
   std::vector<long> tb_ctrct_axes1 = {0};
   std::vector<long> tb_ctrct_axes2 = {0};
   std::vector<long> tb_ctrct_axes3 = {1};
-  auto eff_ham_ten = SeriesContract(
-      {eff_ham[0], eff_ham[1], eff_ham[2], eff_ham[3]},
-      {std::make_pair(ta_ctrct_axes1, tb_ctrct_axes1),
-       std::make_pair(ta_ctrct_axes2, tb_ctrct_axes2),
-       std::make_pair(ta_ctrct_axes3, tb_ctrct_axes3)}
-      );
+  auto eff_ham_ten = Contract(*eff_ham[0], *eff_ham[1], {{1}, {0}});
+  InplaceContract(eff_ham_ten, *eff_ham[2], {{4}, {0}});
+  InplaceContract(eff_ham_ten, *eff_ham[3], {{6}, {1}});
   eff_ham_ten->Transpose({0, 2, 4, 6, 1, 3, 5, 7});
 
   assert(eff_ham_ten->BlksConstRef().size() == 1);
@@ -146,10 +143,8 @@ void RunTestLendLanczosSolverCase(
   std::vector<long> ta_ctrct_axes2 = {4};
   std::vector<long> tb_ctrct_axes1 = {0};
   std::vector<long> tb_ctrct_axes2 = {1};
-  auto eff_ham_ten = SeriesContract(
-      {eff_ham[1], eff_ham[2], eff_ham[3]},
-      {std::make_pair(ta_ctrct_axes1, tb_ctrct_axes1),
-       std::make_pair(ta_ctrct_axes2, tb_ctrct_axes2)});
+  auto eff_ham_ten = Contract(*eff_ham[1], *eff_ham[2], {{1}, {0}});
+  InplaceContract(eff_ham_ten, *eff_ham[3], {{4}, {1}});
   eff_ham_ten->Transpose({0, 2, 4, 1, 3, 5});
 
   assert(eff_ham_ten->BlksConstRef().size() == 1);
