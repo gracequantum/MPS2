@@ -17,10 +17,15 @@
 
 #include <sys/stat.h>
 
+#include "nlohmann/json.hpp"
+
 
 namespace gqmps2 {
 using namespace gqten;
+using json = nlohmann::json;
 
+
+const std::string kCaseParamsJsonObjName = "CaseParams";
 
 const std::string kMpsPath = "mps";
 const std::string kRuntimeTempPath = ".temp";
@@ -32,6 +37,23 @@ const char kTwoSiteAlgoWorkflowRestart = 'r';
 const char kTwoSiteAlgoWorkflowContinue = 'c';
 
 const GQTensor kNullOperator = GQTensor();
+
+
+// Simulation case parameter parser basic class.
+class CaseParserBasic {
+public:
+  CaseParserBasic(const char *);
+
+  int ParseInt(const std::string &);
+  double ParseDouble(const std::string &);
+  char ParseChar(const std::string &);
+  std::string ParseStr(const std::string &);
+
+  json case_params;
+
+private:
+  json raw_json_;
+};
 
 
 // MPO generator.

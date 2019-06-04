@@ -7,6 +7,7 @@
 
 
 add_library(gqmps2
+  case_parser.cc
   mps_ops.cc
   mpogen.cc
   lanczos.cc
@@ -15,7 +16,8 @@ add_library(gqmps2
 
 target_include_directories(gqmps2
   PUBLIC "${PROJECT_SOURCE_DIR}/include"
-  PUBLIC "${PROJECT_SOURCE_DIR}/external/gqten/include")
+  PUBLIC "${PROJECT_SOURCE_DIR}/external/gqten/include"
+  PUBLIC "${PROJECT_SOURCE_DIR}/external/nlohmann_json/include")
 
 target_link_libraries(gqmps2
   gqten)
