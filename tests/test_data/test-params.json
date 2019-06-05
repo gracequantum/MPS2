@@ -1,0 +1,17 @@
+{
+  "CaseParams": {
+    "Int": 1,
+    "Double": 2.33,
+    "Char": "c",
+    "String": "string",
+    "Boolean": false 
+  },
+
+  "Unused": {
+    "UnusedInt": 1, 
+    "UnusedObj": {
+      "key1": "val",
+      "key2": 2.0
+    }
+  }
+}

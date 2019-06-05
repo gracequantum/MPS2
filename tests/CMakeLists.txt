@@ -30,3 +30,9 @@ add_unittest(test_mpogen test_mpogen.cc "" "gqten;gqmps2" "" "")
 
 # Test two site algorithm.
 add_unittest(test_two_site_algo test_two_site_algo.cc "" "gqten;gqmps2" "" "")
+
+# Test simulation case parameters parser.
+add_unittest(test_case_params_parser
+  test_case_params_parser.cc
+  "" "gqmps2" ""
+  "${CMAKE_CURRENT_LIST_DIR}/test_data/test-params.json")

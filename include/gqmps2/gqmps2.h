@@ -40,14 +40,15 @@ const GQTensor kNullOperator = GQTensor();
 
 
 // Simulation case parameter parser basic class.
-class CaseParserBasic {
+class CaseParamsParserBasic {
 public:
-  CaseParserBasic(const char *);
+  CaseParamsParserBasic(const char *);
 
   int ParseInt(const std::string &);
   double ParseDouble(const std::string &);
   char ParseChar(const std::string &);
   std::string ParseStr(const std::string &);
+  bool ParseBool(const std::string &);
 
   json case_params;
 
