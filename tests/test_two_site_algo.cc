@@ -45,7 +45,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DIsing) {
 
   std::vector<GQTensor *> mps(N);
   srand(0); rand();   //  One more rand() called or random init state strange for Ising model.
-  RandomInitMps(mps, pb_out, qn0, qn0);
+  RandomInitMps(mps, pb_out, qn0, qn0, 2);
 
   auto sweep_params = SweepParams(
                           4,
@@ -83,7 +83,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DHeisenberg) {
 
   std::vector<GQTensor *> mps(N);
   srand(0);
-  RandomInitMps(mps, pb_out, qn0, qn0);
+  RandomInitMps(mps, pb_out, qn0, qn0, 4);
 
   auto sweep_params = SweepParams(
                      4,
@@ -134,7 +134,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DHeisenberg) {
 
   std::vector<GQTensor *> mps(N);
   srand(0);
-  RandomInitMps(mps, pb_out, qn0, qn0);
+  RandomInitMps(mps, pb_out, qn0, qn0, 4);
 
   auto sweep_params = SweepParams(
                      4,
@@ -218,7 +218,7 @@ TEST_F(TestTwoSiteAlgorithmTjSystem, 1DCase) {
   auto total_div = QN({QNNameVal("N", N-2), QNNameVal("Sz", 0)});
   auto zero_div = QN({QNNameVal("N", 0), QNNameVal("Sz", 0)});
   srand(0);
-  RandomInitMps(mps, pb_out, total_div, zero_div);
+  RandomInitMps(mps, pb_out, total_div, zero_div, 5);
 
   auto sweep_params = SweepParams(
                           11,
@@ -255,7 +255,7 @@ TEST_F(TestTwoSiteAlgorithmTjSystem, 2DCase) {
   auto total_div = QN({QNNameVal("N", N-2), QNNameVal("Sz", 0)});
   auto zero_div = QN({QNNameVal("N", 0), QNNameVal("Sz", 0)});
   srand(0);
-  RandomInitMps(mps, pb_out, total_div, zero_div);
+  RandomInitMps(mps, pb_out, total_div, zero_div, 5);
 
   auto sweep_params = SweepParams(
                           10,

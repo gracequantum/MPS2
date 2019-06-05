@@ -215,7 +215,11 @@ void DumpMps(const std::vector<GQTensor *> &);
 void LoadMps(std::vector<GQTensor *> &);
 
 void RandomInitMps(
-    std::vector<GQTensor *> &, const Index &, const QN &, const QN &);
+    std::vector<GQTensor *> &,
+    const Index &,
+    const QN &,
+    const QN &,
+    const long);
 
 void DirectStateInitMps(
     std::vector<GQTensor *> &, const std::vector<long> &,

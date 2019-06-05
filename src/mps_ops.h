@@ -16,12 +16,19 @@ namespace gqmps2 {
 using namespace gqten;
 
 
-Index GenHeadRightVirtBond(const Index &, const QN &);
+Index GenHeadRightVirtBond(const Index &, const QN &, const long);
 
-Index GenTailLeftVirtBond(const Index &, const QN &);
+Index GenBodyRightVirtBond(
+    const Index &, const Index &, const QN &, const long);
 
-Index GenBodyRightVirtBond(const Index &, const Index &, const QN &);
+Index GenTailLeftVirtBond(const Index &, const QN &, const long);
 
-Index GenBodyLeftVirtBond(const Index &, const Index &, const QN &);
+Index GenBodyLeftVirtBond(const Index &, const Index &, const QN &, const long);
+
+void DimCut(std::vector<QNSector> &, const long, const long);
+
+inline bool GreaterQNSectorDim(const QNSector &qnsct1, const QNSector &qnsct2) {
+  return qnsct1.dim > qnsct2.dim;
+}
 } /* gqmps2 */ 
 #endif /* ifndef GQMPS2_MPS_OPS_H */
