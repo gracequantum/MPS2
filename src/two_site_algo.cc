@@ -109,8 +109,6 @@ double TwoSiteUpdate(
   long lsite_idx, rsite_idx;
   long lblock_len, rblock_len;
   std::string lblock_file, rblock_file;
-  long ee_target_site;
-  bool measure_ee = false;
 
   switch (dir) {
     case 'r':
@@ -134,8 +132,6 @@ double TwoSiteUpdate(
         svd_ldims = 2;
         svd_rdims = 2;
       }
-      ee_target_site = sweep_params.EETargetBond;
-      if (i == ee_target_site) { measure_ee = true; }
       break;
     case 'l':
       lsite_idx = i-1;
@@ -161,8 +157,6 @@ double TwoSiteUpdate(
         svd_rdims = 2;
         us_ctrct_axes = {{2}, {0}};
       }
-      ee_target_site = sweep_params.EETargetBond + 1;
-      if (i == ee_target_site) { measure_ee = true; }
       break;
     default:
       std::cout << "dir must be 'r' or 'l', but " << dir << std::endl; 
@@ -220,10 +214,7 @@ double TwoSiteUpdate(
   auto svd_elapsed_time = svd_timer.Elapsed();
 
   // Measure entanglement entropy.
-  double ee;
-  if (measure_ee) {
-    ee = MeasureEE(svd_res.s, svd_res.D);
-  }
+  auto ee = MeasureEE(svd_res.s, svd_res.D);
 
   // Update MPS sites and blocks.
   Timer blk_update_timer("blkup");
@@ -346,10 +337,8 @@ double TwoSiteUpdate(
             << " D = " << std::setw(5) << svd_res.D
             << " Iter = " << std::setw(3) << lancz_res.iters
             << " LanczT = " << std::setw(8) << lancz_elapsed_time
-            << " TotT = " << std::setw(8) << update_elapsed_time;
-  if (measure_ee) {
-    std::cout << " S = " << std::setw(10) << std::setprecision(7) << ee;
-  }
+            << " TotT = " << std::setw(8) << update_elapsed_time
+            << " S = " << std::setw(10) << std::setprecision(7) << ee;
   std::cout << std::scientific << std::endl;
   std::cout << std::fixed << bef_lanc_elapsed_time << " " << lancz_elapsed_time << " " << svd_elapsed_time << " | " << blk_update_elapsed_time << " " << new_blk_elapsed_time << " " << dump_blk_elapsed_time << " | " << update_elapsed_time << std::scientific << std::endl;
   return lancz_res.gs_eng;
