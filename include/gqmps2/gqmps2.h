@@ -223,6 +223,38 @@ void DirectStateInitMps(
     const Index &, const QN &);
 
 
+// Observation measurements.
+struct MPS {
+  MPS(std::vector<GQTensor *> &tens, const long center) :
+      tens(tens), center(center), N(tens.size()) {}
+  
+  std::vector<GQTensor *> &tens; 
+  long center;
+  std::size_t N;
+};
+
+// Single site operator.
+void MeasureOneSiteOp(MPS &, const GQTensor &, const std::string &);
+
+void MeasureOneSiteOp(
+    MPS &, const std::vector<GQTensor> &, const std::vector<std::string> &);
+
+void MeasureTwoSiteOp(
+    MPS &,
+    const std::vector<GQTensor> &,
+    const GQTensor &, const GQTensor &,
+    const std::vector<std::vector<long>> &,
+    const std::string &);
+
+void MeasureMultiSiteOp(
+    MPS &,
+    const std::vector<std::vector<GQTensor>> &,
+    const std::vector<std::vector<GQTensor>> &,
+    const GQTensor &,
+    const std::vector<std::vector<long>> &,
+    const std::string &);
+
+
 // System I/O functions.
 inline void WriteGQTensorTOFile(const GQTensor &t, const std::string &file) {
   std::ofstream ofs(file, std::ofstream::binary);  

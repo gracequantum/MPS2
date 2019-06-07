@@ -19,6 +19,7 @@ namespace  gqmps2 {
 using  namespace gqten;
 
 
+// MPS I/O.
 void DumpMps(const std::vector<GQTensor *> &mps) {
   if (!IsPathExist(kMpsPath)) { CreatPath(kMpsPath); }
   auto N = mps.size();
@@ -47,6 +48,7 @@ void LoadMps(std::vector<GQTensor *> &mps) {
 }
 
 
+// MPS initialization.
 void RandomInitMps(
     std::vector<GQTensor *> &mps,
     const Index &pb,
@@ -235,5 +237,92 @@ void DirectStateInitMps(
   mps[N-1] = new GQTensor({lvb, pb_out});
   stat_lab = stat_labs[N-1];
   (*mps[N-1])({0, stat_lab}) = 1;
+}
+
+
+// MPS centralization.
+void CentralizeMps(MPS &mps, const long target_center) {
+  auto origin_center = mps.center;
+  if (target_center > origin_center) {
+    LeftNormalizeMps(mps, origin_center, target_center-1);
+    mps.center = target_center;
+  } else if (target_center < origin_center) {
+    RightNormalizeMps(mps, origin_center, target_center+1);
+    mps.center = target_center;
+  }
+}
+
+
+void LeftNormalizeMps(MPS &mps, const long from, const long to) {
+  assert(to >= from);
+  for (long i = from; i <= to; ++i) {
+    LeftNormalizeMpsTen(mps, i);
+  }
+}
+
+
+void RightNormalizeMps(MPS &mps, const long from, const long to) {
+  assert(to <= from);
+  for (long i = from; i >= to; --i) {
+    RightNormalizeMpsTen(mps, i);
+  }
+}
+
+
+void LeftNormalizeMpsTen(MPS &mps, const long site) {
+  assert(site < mps.N-1);
+  long ldims, rdims;
+  if (site == 0) {
+    ldims = 1;
+    rdims = 1;
+  } else {
+    ldims = 2;
+    rdims = 1;
+  }
+  auto svd_res = Svd(
+      *mps.tens[site],
+      ldims, rdims,
+      Div(*mps.tens[site]), Div(*mps.tens[site+1]));
+  delete mps.tens[site];  
+  mps.tens[site] = svd_res.u;
+  auto temp_ten = Contract(*svd_res.s, *svd_res.v, {{1}, {0}});
+  delete svd_res.s;
+  delete svd_res.v;
+  auto next_ten = Contract(*temp_ten, *mps.tens[site+1], {{1}, {0}});
+  delete temp_ten;
+  delete mps.tens[site+1];
+  mps.tens[site+1] = next_ten;
+}
+
+
+void RightNormalizeMpsTen(MPS &mps, const long site) {
+  assert(site > 0);
+  long ldims, rdims;
+  if (site == mps.N-1) {
+    ldims = 1;
+    rdims = 1;
+  } else {
+    ldims = 1;
+    rdims = 2;
+  }
+  auto svd_res = Svd(
+      *mps.tens[site],
+      ldims, rdims,
+      Div(*mps.tens[site-1]), Div(*mps.tens[site]));
+  delete mps.tens[site];
+  mps.tens[site] = svd_res.v;
+  auto temp_ten = Contract(*svd_res.u, *svd_res.s, {{1}, {0}});
+  delete svd_res.u;
+  delete svd_res.s;
+  std::vector<long> ta_ctrct_axes;
+  if ((site-1) == 0) {
+    ta_ctrct_axes = {1};
+  } else {
+    ta_ctrct_axes = {2};
+  }
+  auto prev_ten = Contract(*mps.tens[site-1], *temp_ten, {ta_ctrct_axes, {0}});
+  delete temp_ten;
+  delete mps.tens[site-1];
+  mps.tens[site-1] = prev_ten;
 }
 } /* gqmps2 */ 
