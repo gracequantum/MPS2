@@ -112,7 +112,7 @@ MeasuRes OneSiteOpAvg(
   } else if (site == (N-1)) {
     ta_ctrct_axes1 = {1};
     tb_ctrct_axes1 = {0};
-    ta_ctrct_axes2 = {1, 0};
+    ta_ctrct_axes2 = {0, 1};
     tb_ctrct_axes2 = {0, 1};
   } else {
     ta_ctrct_axes1 = {1};
