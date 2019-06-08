@@ -215,11 +215,16 @@ void DirectStateInitMps(
   Index lvb, rvb;
 
   // Calculate total quantum number.
-  auto div = pb_out.qnscts[stat_labs[0]].qn;
-  for (std::size_t i = 1; i < N; ++i) { div += pb_out.qnscts[stat_labs[i]].qn; }
+  //auto div = pb_out.qnscts[stat_labs[0]].qn;
+  auto div = pb_out.CoorOffsetAndQnsct(stat_labs[0]).qnsct.qn;
+  //for (std::size_t i = 1; i < N; ++i) { div += pb_out.qnscts[stat_labs[i]].qn; }
+  for (std::size_t i = 1; i < N; ++i) {
+    div += pb_out.CoorOffsetAndQnsct(stat_labs[i]).qnsct.qn;
+  }
 
   auto stat_lab = stat_labs[0];
-  auto rvb_qn = div - pb_out.qnscts[stat_lab].qn;
+  //auto rvb_qn = div - pb_out.qnscts[stat_lab].qn;
+  auto rvb_qn = div - pb_out.CoorOffsetAndQnsct(stat_lab).qnsct.qn;
   rvb = Index({QNSector(rvb_qn, 1)}, OUT);
   mps[0] = new GQTensor({pb_out, rvb});
   (*mps[0])({stat_lab, 0}) = 1;
@@ -227,7 +232,10 @@ void DirectStateInitMps(
   for (std::size_t i = 1; i < N-1; ++i) {
     lvb = InverseIndex(rvb); 
     stat_lab = stat_labs[i];
-    rvb_qn = zero_div - pb_out.qnscts[stat_lab].qn + lvb.qnscts[0].qn;
+    //rvb_qn = zero_div - pb_out.qnscts[stat_lab].qn + lvb.qnscts[0].qn;
+    rvb_qn = zero_div - 
+             pb_out.CoorOffsetAndQnsct(stat_lab).qnsct.qn +
+             lvb.CoorOffsetAndQnsct(0).qnsct.qn;
     rvb = Index({QNSector(rvb_qn, 1)}, OUT);
     mps[i] = new GQTensor({lvb, pb_out, rvb});
     (*mps[i])({0, stat_lab, 0}) = 1;
