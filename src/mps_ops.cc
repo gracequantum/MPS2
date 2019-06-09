@@ -215,15 +215,12 @@ void DirectStateInitMps(
   Index lvb, rvb;
 
   // Calculate total quantum number.
-  //auto div = pb_out.qnscts[stat_labs[0]].qn;
   auto div = pb_out.CoorOffsetAndQnsct(stat_labs[0]).qnsct.qn;
-  //for (std::size_t i = 1; i < N; ++i) { div += pb_out.qnscts[stat_labs[i]].qn; }
   for (std::size_t i = 1; i < N; ++i) {
     div += pb_out.CoorOffsetAndQnsct(stat_labs[i]).qnsct.qn;
   }
 
   auto stat_lab = stat_labs[0];
-  //auto rvb_qn = div - pb_out.qnscts[stat_lab].qn;
   auto rvb_qn = div - pb_out.CoorOffsetAndQnsct(stat_lab).qnsct.qn;
   rvb = Index({QNSector(rvb_qn, 1)}, OUT);
   mps[0] = new GQTensor({pb_out, rvb});
@@ -232,7 +229,6 @@ void DirectStateInitMps(
   for (std::size_t i = 1; i < N-1; ++i) {
     lvb = InverseIndex(rvb); 
     stat_lab = stat_labs[i];
-    //rvb_qn = zero_div - pb_out.qnscts[stat_lab].qn + lvb.qnscts[0].qn;
     rvb_qn = zero_div - 
              pb_out.CoorOffsetAndQnsct(stat_lab).qnsct.qn +
              lvb.CoorOffsetAndQnsct(0).qnsct.qn;
@@ -246,6 +242,62 @@ void DirectStateInitMps(
   stat_lab = stat_labs[N-1];
   (*mps[N-1])({0, stat_lab}) = 1;
 }
+
+
+void ExtendDirectRandomInitMps(
+    std::vector<GQTensor *> &mps,
+    const std::vector<std::vector<long>> &stat_labs_set,
+    const Index &pb, const QN &zero_div, const long enlarged_dim) {
+  auto fusion_stats_num = stat_labs_set.size();
+  assert(fusion_stats_num >= 1);
+  auto N = mps.size();
+  assert(N == stat_labs_set[0].size());
+  Index lvb, rvb;
+  std::vector<QNSector> rvb_qnscts;
+
+  // Calculate total quantum number.
+  auto div = pb.CoorOffsetAndQnsct(stat_labs_set[0][0]).qnsct.qn;
+  for (std::size_t i = 1; i < N; ++i) {
+    div += pb.CoorOffsetAndQnsct(stat_labs_set[0][i]).qnsct.qn;
+  }
+
+  // Deal with MPS head local tensor.
+  for (std::size_t i = 0; i < fusion_stats_num; ++i) {
+    auto stat_lab = stat_labs_set[i][0];
+    auto rvb_qn = div - pb.CoorOffsetAndQnsct(stat_lab).qnsct.qn;
+    rvb_qnscts.push_back(QNSector(rvb_qn, enlarged_dim));
+  }
+  rvb = Index(rvb_qnscts, OUT);
+  rvb_qnscts.clear();
+  mps[0] = new GQTensor({pb, rvb});
+  mps[0]->Random(div);
+
+  // Deal with MPS middle local tensors.
+  for (std::size_t i = 1; i < N-1; ++i) {
+    lvb = InverseIndex(rvb);
+    for (std::size_t j = 0; j < fusion_stats_num; ++j) {
+      auto stat_lab = stat_labs_set[j][i];
+      auto rvb_qn = zero_div -
+                    pb.CoorOffsetAndQnsct(stat_lab).qnsct.qn +
+                    lvb.CoorOffsetAndQnsct(j*enlarged_dim).qnsct.qn;
+      rvb_qnscts.push_back(QNSector(rvb_qn, enlarged_dim));
+    }
+    rvb = Index(rvb_qnscts, OUT);
+    mps[i] = new GQTensor({lvb, pb, rvb});
+    rvb_qnscts.clear();
+    mps[i]->Random(zero_div);
+  }
+
+  // Deal with MPS tail local tensor.
+  lvb = InverseIndex(rvb);
+  mps[N-1] = new GQTensor({lvb, pb});
+  mps[N-1]->Random(zero_div);
+
+  // Centralize MPS.
+  auto temp_mps = MPS(mps, -1);
+  RightNormalizeMps(temp_mps, temp_mps.N-1, 1);
+}
+
 
 
 // MPS centralization.
