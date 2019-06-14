@@ -170,12 +170,18 @@ double TwoSiteUpdate(
                       "r" + kBlockFileBaseName + std::to_string(rblock_len) +
                       "." + kGQTenFileSuffix; 
         ReadGQTensorFromFile(rblocks[rblock_len], rblock_file);
+        if (rblock_len != 0) {
+          RemoveFile(rblock_file);
+        }
         break;
       case 'l':
         lblock_file = kRuntimeTempPath + "/" +
                       "l" + kBlockFileBaseName + std::to_string(lblock_len) +
                       "." + kGQTenFileSuffix; 
         ReadGQTensorFromFile(lblocks[lblock_len], lblock_file);
+        if (lblock_len != 0) {
+          RemoveFile(lblock_file);
+        }
         break;
       default:
         std::cout << "dir must be 'r' or 'l', but " << dir << std::endl; 

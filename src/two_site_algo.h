@@ -13,6 +13,7 @@
 
 #include <vector>
 #include <cmath>
+#include <cstdio>
 
 
 namespace gqmps2 {
@@ -35,6 +36,7 @@ double TwoSiteUpdate(
     const SweepParams &, const char);
 
 
+// Helpers.
 inline double MeasureEE(const GQTensor *s, const long sdim) {
   double ee = 0;
   double p;
@@ -43,6 +45,14 @@ inline double MeasureEE(const GQTensor *s, const long sdim) {
     ee += -p * std::log(p);
   }
   return ee;
+}
+
+
+inline void RemoveFile(const std::string &file) {
+  if (std::remove(file.c_str())) {
+    std::cout << "Unable to delete " << file << std::endl;
+    exit(1);
+  }
 }
 } /* gqmps2 */ 
 #endif /* ifndef GQMPS2_TWO_SITE_ALGO_H */
