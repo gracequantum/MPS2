@@ -54,5 +54,13 @@ inline void RemoveFile(const std::string &file) {
     exit(1);
   }
 }
+
+
+inline std::string GenBlockFileName(
+    const std::string &dir, const long blk_len) {
+  return kRuntimeTempPath + "/" +
+         dir + kBlockFileBaseName + std::to_string(blk_len) +
+         "." + kGQTenFileSuffix;
+}
 } /* gqmps2 */ 
 #endif /* ifndef GQMPS2_TWO_SITE_ALGO_H */

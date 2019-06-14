@@ -44,11 +44,9 @@ std::pair<std::vector<GQTensor *>, std::vector<GQTensor *>> InitBlocks(
   rblocks[1] = rblock1;
   std::string file;
   if (sweep_params.FileIO) {
-    file = kRuntimeTempPath + "/" +
-               "r" + kBlockFileBaseName + "0" + "." + kGQTenFileSuffix; 
+    file = GenBlockFileName("r", 0);
     WriteGQTensorTOFile(*rblock0, file);
-    file = kRuntimeTempPath + "/" +
-               "r" + kBlockFileBaseName + "1" + "." + kGQTenFileSuffix; 
+    file = GenBlockFileName("r", 1);
     WriteGQTensorTOFile(*rblock1, file);
   }
   for (size_t i = 2; i < N-1; ++i) {
@@ -61,16 +59,13 @@ std::pair<std::vector<GQTensor *>, std::vector<GQTensor *>> InitBlocks(
     rblocki = temp_rblocki;
     rblocks[i] = rblocki;
     if (sweep_params.FileIO) {
-      auto file = kRuntimeTempPath + "/" +
-                  "r" + kBlockFileBaseName + std::to_string(i) +
-                  "." + kGQTenFileSuffix; 
+      auto file = GenBlockFileName("r", i);
       WriteGQTensorTOFile(*rblocki, file);
     }
   }
   if (sweep_params.FileIO) { for (auto &rb : rblocks) { delete rb; } }
   if (sweep_params.FileIO) {
-    auto file = kRuntimeTempPath + "/" +
-                "l" + kBlockFileBaseName + "0" + "." + kGQTenFileSuffix; 
+    auto file = GenBlockFileName("l", 0);
     WriteGQTensorTOFile(GQTensor(), file);
   }
   return std::make_pair(lblocks, rblocks);
@@ -166,18 +161,14 @@ double TwoSiteUpdate(
   if (sweep_params.FileIO) {
     switch (dir) {
       case 'r':
-        rblock_file = kRuntimeTempPath + "/" +
-                      "r" + kBlockFileBaseName + std::to_string(rblock_len) +
-                      "." + kGQTenFileSuffix; 
+        rblock_file = GenBlockFileName("r", rblock_len);
         ReadGQTensorFromFile(rblocks[rblock_len], rblock_file);
         if (rblock_len != 0) {
           RemoveFile(rblock_file);
         }
         break;
       case 'l':
-        lblock_file = kRuntimeTempPath + "/" +
-                      "l" + kBlockFileBaseName + std::to_string(lblock_len) +
-                      "." + kGQTenFileSuffix; 
+        lblock_file = GenBlockFileName("l", lblock_len);
         ReadGQTensorFromFile(lblocks[lblock_len], lblock_file);
         if (lblock_len != 0) {
           RemoveFile(lblock_file);
@@ -267,9 +258,7 @@ double TwoSiteUpdate(
         if (update_block) {
           auto target_blk_len = i+1;
           lblocks[target_blk_len] = new_lblock;
-          auto target_blk_file = kRuntimeTempPath + "/" +
-                                 "l" + kBlockFileBaseName + std::to_string(target_blk_len) +
-                                 "." + kGQTenFileSuffix; 
+          auto target_blk_file = GenBlockFileName("l", target_blk_len);
           WriteGQTensorTOFile(*new_lblock, target_blk_file);
           delete eff_ham[0];
           delete eff_ham[3];
@@ -317,9 +306,7 @@ double TwoSiteUpdate(
         if (update_block) {
           auto target_blk_len = N-i;
           rblocks[target_blk_len] = new_rblock;
-          auto target_blk_file = kRuntimeTempPath + "/" +
-                                 "r" + kBlockFileBaseName + std::to_string(target_blk_len) +
-                                 "." + kGQTenFileSuffix; 
+          auto target_blk_file = GenBlockFileName("r", target_blk_len);
           WriteGQTensorTOFile(*new_rblock, target_blk_file);
           delete eff_ham[0];
           delete eff_ham[3];
