@@ -95,8 +95,12 @@ double TwoSiteUpdate(
     const SweepParams &sweep_params, const char dir) {
   Timer update_timer("update");
   update_timer.Restart();
+
+#ifdef GQMPS2_TIMING_MODE
   Timer bef_lanc_timer("bef_lanc");
   bef_lanc_timer.Restart();
+#endif
+
   auto N = mps.size();
   std::vector<std::vector<long>> init_state_ctrct_axes, us_ctrct_axes;
   std::string where;
@@ -180,7 +184,10 @@ double TwoSiteUpdate(
     }
   }
 
-  auto bef_lanc_elapsed_time = bef_lanc_timer.Elapsed();
+#ifdef GQMPS2_TIMING_MODE
+  bef_lanc_timer.PrintElapsed();
+#endif
+
   // Lanczos
   std::vector<GQTensor *>eff_ham(4);
   eff_ham[0] = lblocks[lblock_len];
@@ -190,42 +197,60 @@ double TwoSiteUpdate(
   auto init_state = Contract(
                         *mps[lsite_idx], *mps[rsite_idx],
                         init_state_ctrct_axes);
+
   Timer lancz_timer("Lancz");
   lancz_timer.Restart();
+
   auto lancz_res = LanczosSolver(
                        eff_ham, init_state,
                        sweep_params.LanczParams,
                        where);
+
+#ifdef GQMPS2_TIMING_MODE
+  auto lancz_elapsed_time = lancz_timer.PrintElapsed();
+#else
   auto lancz_elapsed_time = lancz_timer.Elapsed();
+#endif
 
   // SVD
+#ifdef GQMPS2_TIMING_MODE
   Timer svd_timer("svd");
   svd_timer.Restart();
+#endif
+
   auto svd_res = Svd(
       *lancz_res.gs_vec,
       svd_ldims, svd_rdims,
       Div(*mps[lsite_idx]), Div(*mps[rsite_idx]),
       sweep_params.Cutoff,
       sweep_params.Dmin, sweep_params.Dmax);
+
+#ifdef GQMPS2_TIMING_MODE
+  svd_timer.PrintElapsed();
+#endif
+
   delete lancz_res.gs_vec;
-  auto svd_elapsed_time = svd_timer.Elapsed();
 
   // Measure entanglement entropy.
   auto ee = MeasureEE(svd_res.s, svd_res.D);
 
   // Update MPS sites and blocks.
-  Timer blk_update_timer("blkup");
+#ifdef GQMPS2_TIMING_MODE
+  Timer blk_update_timer("blk_update");
   blk_update_timer.Restart();
-  Timer new_blk_timer("new_blk");
-  double new_blk_elapsed_time;
+  Timer new_blk_timer("gen_new_blk");
   Timer dump_blk_timer("dump_blk");
-  double dump_blk_elapsed_time;
+#endif
 
   GQTensor *new_lblock, *new_rblock;
   bool update_block = true;
   switch (dir) {
     case 'r':
+
+#ifdef GQMPS2_TIMING_MODE
       new_blk_timer.Restart();
+#endif
+
       delete mps[lsite_idx];
       mps[lsite_idx] = svd_res.u;
       delete mps[rsite_idx];
@@ -251,9 +276,12 @@ double TwoSiteUpdate(
       } else {
         update_block = false;
       }
-      new_blk_elapsed_time = new_blk_timer.Elapsed();
 
+#ifdef GQMPS2_TIMING_MODE
+      new_blk_timer.PrintElapsed();
       dump_blk_timer.Restart();
+#endif
+
       if (sweep_params.FileIO) {
         if (update_block) {
           auto target_blk_len = i+1;
@@ -272,10 +300,18 @@ double TwoSiteUpdate(
           lblocks[target_blk_len] = new_lblock;
         }
       }
-      dump_blk_elapsed_time = dump_blk_timer.Elapsed();
+
+#ifdef GQMPS2_TIMING_MODE
+      dump_blk_timer.PrintElapsed();
+#endif
+
       break;
     case 'l':
+
+#ifdef GQMPS2_TIMING_MODE
       new_blk_timer.Restart();
+#endif
+
       delete mps[lsite_idx];
       mps[lsite_idx] = Contract(*svd_res.u, *svd_res.s, us_ctrct_axes);
       delete svd_res.u;
@@ -299,9 +335,12 @@ double TwoSiteUpdate(
       } else {
         update_block = false;
       }
-      new_blk_elapsed_time = new_blk_timer.Elapsed();
 
+#ifdef GQMPS2_TIMING_MODE
+      new_blk_timer.PrintElapsed();
       dump_blk_timer.Restart();
+#endif
+
       if (sweep_params.FileIO) {
         if (update_block) {
           auto target_blk_len = N-i;
@@ -320,9 +359,17 @@ double TwoSiteUpdate(
           rblocks[target_blk_len] = new_rblock;
         }
       }
-      dump_blk_elapsed_time = dump_blk_timer.Elapsed();
+
+#ifdef GQMPS2_TIMING_MODE
+      dump_blk_timer.PrintElapsed();
+#endif
+
   }
-  auto blk_update_elapsed_time = blk_update_timer.Elapsed();
+
+#ifdef GQMPS2_TIMING_MODE
+  blk_update_timer.PrintElapsed();
+#endif
+
   auto update_elapsed_time = update_timer.Elapsed();
   std::cout << "Site " << std::setw(4) << i
             << " E0 = " << std::setw(20) << std::setprecision(16) << std::fixed << lancz_res.gs_eng
@@ -333,7 +380,6 @@ double TwoSiteUpdate(
             << " TotT = " << std::setw(8) << update_elapsed_time
             << " S = " << std::setw(10) << std::setprecision(7) << ee;
   std::cout << std::scientific << std::endl;
-  std::cout << std::fixed << bef_lanc_elapsed_time << " " << lancz_elapsed_time << " " << svd_elapsed_time << " | " << blk_update_elapsed_time << " " << new_blk_elapsed_time << " " << dump_blk_elapsed_time << " | " << update_elapsed_time << std::scientific << std::endl;
   return lancz_res.gs_eng;
 }
 } /* gqmps2 */ 

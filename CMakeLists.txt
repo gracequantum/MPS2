@@ -24,7 +24,14 @@ if(${CMAKE_BUILD_TYPE} MATCHES Debug)
 endif()
 
 
-# C++ options.
+# Advanced options.
+option(GQMPS2_TIMING_MODE "Timing mode." OFF)
+if(GQMPS2_TIMING_MODE)
+  add_definitions(-DGQMPS2_TIMING_MODE)
+endif()
+
+
+# Compilation and linking control.
 set(CMAKE_CXX_STANDARD 11)
 add_definitions(-g)
 

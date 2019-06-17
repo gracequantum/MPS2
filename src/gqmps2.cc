@@ -7,7 +7,6 @@
 #include "mpogen.h"
 #include "lanczos.h"
 #include "two_site_algo.h"
-#include "timer.h"
 #include "gqmps2/gqmps2.h"
 
 #include <iostream>
@@ -60,12 +59,19 @@ LanczosRes LanczosSolver(
   // Initialize Lanczos iteration.
   pinit_state->Normalize();
   bases[0] =  pinit_state;
+
+#ifdef GQMPS2_TIMING_MODE
   std::cout << std::fixed;
   Timer mat_vec_timer("mat_vec");
   mat_vec_timer.Restart();
+#endif
+
   auto last_mat_mul_vec_res = (*eff_ham_mul_state)(rpeff_ham, bases[0]);
+
+#ifdef GQMPS2_TIMING_MODE
   mat_vec_timer.PrintElapsed();
-  std::cout << "=============" << std::endl;
+#endif
+
   auto temp_scalar_ten = Contract(
       *last_mat_mul_vec_res, MockDag(*bases[0]),
       energy_measu_ctrct_axes);
@@ -113,10 +119,17 @@ LanczosRes LanczosSolver(
     N[m] = std::pow(norm_gamma, 2.0);
     b[m-1] = norm_gamma;
     bases[m] = gamma;
+
+#ifdef GQMPS2_TIMING_MODE
     mat_vec_timer.Restart();
+#endif
+
     last_mat_mul_vec_res = (*eff_ham_mul_state)(rpeff_ham, bases[m]);
+
+#ifdef GQMPS2_TIMING_MODE
     mat_vec_timer.PrintElapsed();
-    std::cout << "=============" << std::endl;
+#endif
+
     auto temp_scalar_ten = Contract(
         *last_mat_mul_vec_res, MockDag(*bases[m]),
         energy_measu_ctrct_axes);
