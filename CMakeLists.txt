@@ -30,6 +30,8 @@ if(GQMPS2_TIMING_MODE)
   add_definitions(-DGQMPS2_TIMING_MODE)
 endif()
 
+option(GQMPS2_BUILD_UNITTEST "Build unittests for GraceQ/mps2." OFF)
+
 
 # Compilation and linking control.
 set(CMAKE_CXX_STANDARD 11)
@@ -45,5 +47,7 @@ add_subdirectory(src lib)
 
 
 # Build unittests.
-enable_testing()
-add_subdirectory(tests tests)
+if(GQMPS2_BUILD_UNITTEST)
+  enable_testing()
+  add_subdirectory(tests tests)
+endif()
