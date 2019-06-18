@@ -61,7 +61,6 @@ LanczosRes LanczosSolver(
   bases[0] =  pinit_state;
 
 #ifdef GQMPS2_TIMING_MODE
-  std::cout << std::fixed;
   Timer mat_vec_timer("mat_vec");
   mat_vec_timer.Restart();
 #endif
@@ -161,7 +160,9 @@ double TwoSiteAlgorithm(
   if ( sweep_params.FileIO && !IsPathExist(kRuntimeTempPath)) {
     CreatPath(kRuntimeTempPath);
   }
+
   auto l_and_r_blocks = InitBlocks(mps, mpo, sweep_params);
+
   std::cout << "\n";
   double e0;
   Timer sweep_timer("sweep");
@@ -172,7 +173,6 @@ double TwoSiteAlgorithm(
         mps, mpo,
         l_and_r_blocks.first, l_and_r_blocks.second,
         sweep_params);
-    std::cout << std::fixed;
     sweep_timer.PrintElapsed();
     std::cout << "\n";
   }

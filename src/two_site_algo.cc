@@ -35,6 +35,7 @@ std::pair<std::vector<GQTensor *>, std::vector<GQTensor *>> InitBlocks(
   }
 
   // Generate blocks.
+  // Right blocks.
   auto rblock0 = new GQTensor();
   rblocks[0] = rblock0;
   auto rblock1 = Contract(*mps.back(), *mpo.back(), {{1}, {0}});
@@ -46,6 +47,7 @@ std::pair<std::vector<GQTensor *>, std::vector<GQTensor *>> InitBlocks(
   if (sweep_params.FileIO) {
     file = GenBlockFileName("r", 0);
     WriteGQTensorTOFile(*rblock0, file);
+    delete rblocks[0];
     file = GenBlockFileName("r", 1);
     WriteGQTensorTOFile(*rblock1, file);
   }
@@ -61,13 +63,17 @@ std::pair<std::vector<GQTensor *>, std::vector<GQTensor *>> InitBlocks(
     if (sweep_params.FileIO) {
       auto file = GenBlockFileName("r", i);
       WriteGQTensorTOFile(*rblocki, file);
+      delete rblocks[i-1];
     }
   }
-  if (sweep_params.FileIO) { for (auto &rb : rblocks) { delete rb; } }
+  if (sweep_params.FileIO) { delete rblocks[N-2]; }
+
+  // Left blocks.
   if (sweep_params.FileIO) {
     auto file = GenBlockFileName("l", 0);
     WriteGQTensorTOFile(GQTensor(), file);
   }
+
   return std::make_pair(lblocks, rblocks);
 }
 
