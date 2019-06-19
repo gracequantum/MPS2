@@ -59,8 +59,8 @@ void RunTestCentLanczosSolverCase(
   InplaceContract(eff_ham_ten, *eff_ham[3], {{6}, {1}});
   eff_ham_ten->Transpose({0, 2, 4, 6, 1, 3, 5, 7});
 
-  assert(eff_ham_ten->BlksConstRef().size() == 1);
-  auto dense_mat = eff_ham_ten->BlksRef()[0]->DataRef();
+  assert(eff_ham_ten->cblocks().size() == 1);
+  auto dense_mat = eff_ham_ten->blocks()[0]->data();
   auto dense_mat_dim = D * d * d * D;
   for (long i = 0; i < dense_mat_dim; ++i) {
     for (long j = 0; j < dense_mat_dim; ++j) {
@@ -147,8 +147,8 @@ void RunTestLendLanczosSolverCase(
   InplaceContract(eff_ham_ten, *eff_ham[3], {{4}, {1}});
   eff_ham_ten->Transpose({0, 2, 4, 1, 3, 5});
 
-  assert(eff_ham_ten->BlksConstRef().size() == 1);
-  auto dense_mat = eff_ham_ten->BlksRef()[0]->DataRef();
+  assert(eff_ham_ten->cblocks().size() == 1);
+  auto dense_mat = eff_ham_ten->blocks()[0]->data();
   auto dense_mat_dim = d * d * D;
   for (long i = 0; i < dense_mat_dim; ++i) {
     for (long j = 0; j < dense_mat_dim; ++j) {
