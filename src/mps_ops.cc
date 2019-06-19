@@ -215,13 +215,13 @@ void DirectStateInitMps(
   Index lvb, rvb;
 
   // Calculate total quantum number.
-  auto div = pb_out.CoorOffsetAndQnsct(stat_labs[0]).qnsct.qn;
+  auto div = pb_out.CoorInterOffsetAndQnsct(stat_labs[0]).qnsct.qn;
   for (std::size_t i = 1; i < N; ++i) {
-    div += pb_out.CoorOffsetAndQnsct(stat_labs[i]).qnsct.qn;
+    div += pb_out.CoorInterOffsetAndQnsct(stat_labs[i]).qnsct.qn;
   }
 
   auto stat_lab = stat_labs[0];
-  auto rvb_qn = div - pb_out.CoorOffsetAndQnsct(stat_lab).qnsct.qn;
+  auto rvb_qn = div - pb_out.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn;
   rvb = Index({QNSector(rvb_qn, 1)}, OUT);
   mps[0] = new GQTensor({pb_out, rvb});
   (*mps[0])({stat_lab, 0}) = 1;
@@ -230,8 +230,8 @@ void DirectStateInitMps(
     lvb = InverseIndex(rvb); 
     stat_lab = stat_labs[i];
     rvb_qn = zero_div - 
-             pb_out.CoorOffsetAndQnsct(stat_lab).qnsct.qn +
-             lvb.CoorOffsetAndQnsct(0).qnsct.qn;
+             pb_out.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn +
+             lvb.CoorInterOffsetAndQnsct(0).qnsct.qn;
     rvb = Index({QNSector(rvb_qn, 1)}, OUT);
     mps[i] = new GQTensor({lvb, pb_out, rvb});
     (*mps[i])({0, stat_lab, 0}) = 1;
@@ -256,15 +256,15 @@ void ExtendDirectRandomInitMps(
   std::vector<QNSector> rvb_qnscts;
 
   // Calculate total quantum number.
-  auto div = pb.CoorOffsetAndQnsct(stat_labs_set[0][0]).qnsct.qn;
+  auto div = pb.CoorInterOffsetAndQnsct(stat_labs_set[0][0]).qnsct.qn;
   for (std::size_t i = 1; i < N; ++i) {
-    div += pb.CoorOffsetAndQnsct(stat_labs_set[0][i]).qnsct.qn;
+    div += pb.CoorInterOffsetAndQnsct(stat_labs_set[0][i]).qnsct.qn;
   }
 
   // Deal with MPS head local tensor.
   for (std::size_t i = 0; i < fusion_stats_num; ++i) {
     auto stat_lab = stat_labs_set[i][0];
-    auto rvb_qn = div - pb.CoorOffsetAndQnsct(stat_lab).qnsct.qn;
+    auto rvb_qn = div - pb.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn;
     rvb_qnscts.push_back(QNSector(rvb_qn, enlarged_dim));
   }
   rvb = Index(rvb_qnscts, OUT);
@@ -278,8 +278,8 @@ void ExtendDirectRandomInitMps(
     for (std::size_t j = 0; j < fusion_stats_num; ++j) {
       auto stat_lab = stat_labs_set[j][i];
       auto rvb_qn = zero_div -
-                    pb.CoorOffsetAndQnsct(stat_lab).qnsct.qn +
-                    lvb.CoorOffsetAndQnsct(j*enlarged_dim).qnsct.qn;
+                    pb.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn +
+                    lvb.CoorInterOffsetAndQnsct(j*enlarged_dim).qnsct.qn;
       rvb_qnscts.push_back(QNSector(rvb_qn, enlarged_dim));
     }
     rvb = Index(rvb_qnscts, OUT);

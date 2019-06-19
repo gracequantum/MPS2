@@ -26,7 +26,7 @@ void AddOpToCentMpoTen(GQTensor *, const GQTensor &, const long, const long);
 
 // Helpers.
 inline QN GetLvbTargetQN(const Index &index, const long coor) {
-  auto coor_off_set_and_qnsct = index.CoorOffsetAndQnsct(coor);
+  auto coor_off_set_and_qnsct = index.CoorInterOffsetAndQnsct(coor);
   return coor_off_set_and_qnsct.qnsct.qn;
 }
 
