@@ -66,7 +66,14 @@ endif()
 add_unittest(test_mpogen test_mpogen.cc "" "gqten;gqmps2" "" "" "")
 
 # Test two site algorithm.
-add_unittest(test_two_site_algo test_two_site_algo.cc "" "gqten;gqmps2" "" "" "")
+add_unittest(test_two_site_algo
+  test_two_site_algo.cc "" "gqten;gqmps2" "" "" "")
+
+# Test distributed two site algorithm.
+if(GQMPS2_MPI_PARALLEL)
+  add_unittest(test_mpi_two_site_algo
+    test_mpi_two_site_algo.cc "" "gqten;gqmps2" "" "" "MPI_TEST")
+endif()
 
 # Test simulation case parameters parser.
 add_unittest(test_case_params_parser

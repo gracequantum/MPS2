@@ -6,16 +6,21 @@
 */
 #include "mpogen.h"
 #include "lanczos.h"
+#include "two_site_algo.h"
 #ifdef GQMPS2_MPI_PARALLEL
 #include "mpi_lanczos.h"
+#include "mpi_two_site_algo.h"
 #endif
-#include "two_site_algo.h"
 #include "gqmps2/gqmps2.h"
 
 #include <iostream>
 #include <iomanip>
 #include <cmath>
 #include <vector>
+
+#ifdef GQMPS2_MPI_PARALLEL
+#include "mpi.h"
+#endif
 
 
 namespace gqmps2 {
@@ -154,6 +159,32 @@ LanczosRes LanczosSolver(
       energy0 = energy0_new;
     }
   }
+}
+
+
+double TwoSiteAlgorithm(
+    std::vector<GQTensor *> &mps, const std::vector<GQTensor *> &mpo,
+    const SweepParams &sweep_params) {
+  if ( sweep_params.FileIO && !IsPathExist(kRuntimeTempPath)) {
+    CreatPath(kRuntimeTempPath);
+  }
+
+  auto l_and_r_blocks = InitBlocks(mps, mpo, sweep_params);
+
+  std::cout << "\n";
+  double e0;
+  Timer sweep_timer("sweep");
+  for (long sweep = 0; sweep < sweep_params.Sweeps; ++sweep) {
+    std::cout << "sweep " << sweep << std::endl;
+    sweep_timer.Restart();
+    e0 = TwoSiteSweep(
+        mps, mpo,
+        l_and_r_blocks.first, l_and_r_blocks.second,
+        sweep_params);
+    sweep_timer.PrintElapsed();
+    std::cout << "\n";
+  }
+  return e0;
 }
 
 
@@ -300,12 +331,12 @@ LanczosRes GQMPS2_MPI_LanczosSolver(
     }
   }
 }
-#endif
 
 
-double TwoSiteAlgorithm(
+double GQMPS2_MPI_TwoSiteAlgorithm(
     std::vector<GQTensor *> &mps, const std::vector<GQTensor *> &mpo,
-    const SweepParams &sweep_params) {
+    const SweepParams &sweep_params,
+    MPI_Comm comm, const int workers) {
   if ( sweep_params.FileIO && !IsPathExist(kRuntimeTempPath)) {
     CreatPath(kRuntimeTempPath);
   }
@@ -318,13 +349,15 @@ double TwoSiteAlgorithm(
   for (long sweep = 0; sweep < sweep_params.Sweeps; ++sweep) {
     std::cout << "sweep " << sweep << std::endl;
     sweep_timer.Restart();
-    e0 = TwoSiteSweep(
+    e0 = GQMPS2_MPI_TwoSiteSweep(
         mps, mpo,
         l_and_r_blocks.first, l_and_r_blocks.second,
-        sweep_params);
+        sweep_params,
+        comm, workers);
     sweep_timer.PrintElapsed();
     std::cout << "\n";
   }
   return e0;
 }
+#endif
 } /* gqmps2 */ 

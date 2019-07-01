@@ -12,8 +12,9 @@ if(GQMPS2_MPI_PARALLEL)
     mps_ops.cc
     mpogen.cc
     lanczos.cc
-    mpi_lanczos.cc
     two_site_algo.cc
+    mpi_lanczos.cc
+    mpi_two_site_algo.cc
     mps_measu.cc
     gqmps2.cc)
 
