@@ -19,6 +19,10 @@
 
 #include "nlohmann/json.hpp"
 
+#ifdef GQMPS2_MPI_PARALLEL
+#include "mpi.h"
+#endif
+
 
 namespace gqmps2 {
 using namespace gqten;
@@ -176,6 +180,14 @@ LanczosRes LanczosSolver(
     const LanczosParams &,
     const std::string &);
 
+#ifdef GQMPS2_MPI_PARALLEL
+LanczosRes GQMPS2_MPI_LanczosSolver(
+    const std::vector<GQTensor *> &, GQTensor *,
+    const LanczosParams &,
+    const std::string &,
+    MPI_Comm, const int);
+#endif
+
 
 // Two sites update algorithm.
 struct SweepParams {
@@ -204,6 +216,13 @@ struct SweepParams {
 double TwoSiteAlgorithm(
     std::vector<GQTensor *> &, const std::vector<GQTensor *> &,
     const SweepParams &);
+
+#ifdef GQMPS2_MPI_PARALLEL
+double GQMPS2_MPI_TwoSiteAlgorithm(
+    std::vector<GQTensor *> &, const std::vector<GQTensor *> &,
+    const SweepParams &,
+    MPI_Comm, const int);
+#endif
 
 
 // MPS operations.

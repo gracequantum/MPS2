@@ -32,6 +32,14 @@ endif()
 
 option(GQMPS2_BUILD_UNITTEST "Build unittests for GraceQ/mps2." OFF)
 
+option(GQMPS2_MPI_PARALLEL "Build MPI support." OFF)
+if(GQMPS2_MPI_PARALLEL)
+  find_package(MPI REQUIRED)
+  add_definitions(-DGQMPS2_MPI_PARALLEL)
+  set(GQTEN_MPI_PARALLEL ON)
+  add_definitions(-DGQTEN_MPI_PARALLEL)
+endif()
+
 
 # Compilation and linking control.
 set(CMAKE_CXX_STANDARD 11)
