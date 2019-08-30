@@ -244,67 +244,6 @@ void DirectStateInitMps(
 }
 
 
-void ExtendDirectInitMps(
-    std::vector<GQTensor *> &mps,
-    const std::vector<std::vector<long>> &stat_labs_set,
-    const Index &pb, const QN &zero_div) {
-  auto fusion_stats_num = stat_labs_set.size();
-  assert(fusion_stats_num >= 1);
-  auto N = mps.size();
-  assert(N == stat_labs_set[0].size());
-  Index lvb, rvb;
-  std::vector<QNSector> rvb_qnscts;
-
-  // Calculate total quantum number.
-  auto div = pb.CoorInterOffsetAndQnsct(stat_labs_set[0][0]).qnsct.qn;
-  for (std::size_t i = 1; i < N; ++i) {
-    div += pb.CoorInterOffsetAndQnsct(stat_labs_set[0][i]).qnsct.qn;
-  }
-
-  // Deal with MPS head local tensor.
-  for (std::size_t i = 0; i < fusion_stats_num; ++i) {
-    auto stat_lab = stat_labs_set[i][0];
-    auto rvb_qn = div - pb.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn;
-    rvb_qnscts.push_back(QNSector(rvb_qn, 1));
-  }
-  rvb = Index(rvb_qnscts, OUT);
-  rvb_qnscts.clear();
-  mps[0] = new GQTensor({pb, rvb});
-  for (long i = 0; i < fusion_stats_num; ++i) {
-    (*mps[0])({stat_labs_set[i][0], i}) = 1;
-  }
-
-  // Deal with MPS middle local tensors.
-  for (std::size_t i = 1; i < N-1; ++i) {
-    lvb = InverseIndex(rvb);
-    for (std::size_t j = 0; j < fusion_stats_num; ++j) {
-      auto stat_lab = stat_labs_set[j][i];
-      auto rvb_qn = zero_div -
-                    pb.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn +
-                    lvb.CoorInterOffsetAndQnsct(j).qnsct.qn;
-      rvb_qnscts.push_back(QNSector(rvb_qn, 1));
-    }
-    rvb = Index(rvb_qnscts, OUT);
-    rvb_qnscts.clear();
-    mps[i] = new GQTensor({lvb, pb, rvb});
-    for (long k = 0;k < fusion_stats_num; ++k) {
-      (*mps[i])({k, stat_labs_set[k][i], k}) = 1;
-    }
-  }
-
-  // Deal with MPS tail local tensor.
-  lvb = InverseIndex(rvb);
-  mps[N-1] = new GQTensor({lvb, pb});
-  for (long i = 0; i < fusion_stats_num; ++i) {
-    (*mps[N-1])({i, stat_labs_set[i][N-1]}) = 1;
-  }
-
-  // Centralize MPS.
-  auto temp_mps = MPS(mps, -1);
-  RightNormalizeMps(temp_mps, temp_mps.N-1, 1);
-}
-
-
 void ExtendDirectRandomInitMps(
     std::vector<GQTensor *> &mps,
     const std::vector<std::vector<long>> &stat_labs_set,

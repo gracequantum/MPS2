@@ -241,10 +241,6 @@ void DirectStateInitMps(
     std::vector<GQTensor *> &, const std::vector<long> &,
     const Index &, const QN &);
 
-void ExtendDirectInitMps(
-    std::vector<GQTensor *> &, const std::vector<std::vector<long>> &,
-    const Index &, const QN &);
-
 void ExtendDirectRandomInitMps(
     std::vector<GQTensor *> &, const std::vector<std::vector<long>> &,
     const Index &, const QN &, const long);
