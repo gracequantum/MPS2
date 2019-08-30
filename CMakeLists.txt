@@ -36,6 +36,7 @@ option(GQMPS2_MPI_PARALLEL "Build MPI support." OFF)
 if(GQMPS2_MPI_PARALLEL)
   find_package(MPI REQUIRED)
   add_definitions(-DGQMPS2_MPI_PARALLEL)
+  # For dependence setting.
   set(GQTEN_MPI_PARALLEL ON)
   add_definitions(-DGQTEN_MPI_PARALLEL)
 endif()

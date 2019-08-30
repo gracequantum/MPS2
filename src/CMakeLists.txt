@@ -4,8 +4,6 @@
 #  
 #  Description: GraceQ/mps2 project. Cmake file to control the library source code.
 # 
-
-
 if(GQMPS2_MPI_PARALLEL)
   add_library(gqmps2
     case_parser.cc
@@ -15,8 +13,7 @@ if(GQMPS2_MPI_PARALLEL)
     two_site_algo.cc
     mpi_lanczos.cc
     mpi_two_site_algo.cc
-    mps_measu.cc
-    gqmps2.cc)
+    mps_measu.cc)
 
   target_include_directories(gqmps2
     PUBLIC "${PROJECT_SOURCE_DIR}/include"
@@ -37,8 +34,7 @@ else()
     mpogen.cc
     lanczos.cc
     two_site_algo.cc
-    mps_measu.cc
-    gqmps2.cc)
+    mps_measu.cc)
 
   target_include_directories(gqmps2
     PUBLIC "${PROJECT_SOURCE_DIR}/include"

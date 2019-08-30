@@ -25,6 +25,34 @@ namespace gqmps2 {
 using namespace gqten;
 
 
+double GQMPS2_MPI_TwoSiteAlgorithm(
+    std::vector<GQTensor *> &mps, const std::vector<GQTensor *> &mpo,
+    const SweepParams &sweep_params,
+    MPI_Comm comm, const int workers) {
+  if ( sweep_params.FileIO && !IsPathExist(kRuntimeTempPath)) {
+    CreatPath(kRuntimeTempPath);
+  }
+
+  auto l_and_r_blocks = InitBlocks(mps, mpo, sweep_params);
+
+  std::cout << "\n";
+  double e0;
+  Timer sweep_timer("sweep");
+  for (long sweep = 0; sweep < sweep_params.Sweeps; ++sweep) {
+    std::cout << "sweep " << sweep << std::endl;
+    sweep_timer.Restart();
+    e0 = GQMPS2_MPI_TwoSiteSweep(
+        mps, mpo,
+        l_and_r_blocks.first, l_and_r_blocks.second,
+        sweep_params,
+        comm, workers);
+    sweep_timer.PrintElapsed();
+    std::cout << "\n";
+  }
+  return e0;
+}
+
+
 double GQMPS2_MPI_TwoSiteSweep(
     std::vector<GQTensor *> &mps, const std::vector<GQTensor *> &mpo,
     std::vector<GQTensor *> &lblocks, std::vector<GQTensor *> &rblocks,

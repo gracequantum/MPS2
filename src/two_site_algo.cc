@@ -22,6 +22,32 @@ namespace gqmps2 {
 using namespace gqten;
 
 
+double TwoSiteAlgorithm(
+    std::vector<GQTensor *> &mps, const std::vector<GQTensor *> &mpo,
+    const SweepParams &sweep_params) {
+  if ( sweep_params.FileIO && !IsPathExist(kRuntimeTempPath)) {
+    CreatPath(kRuntimeTempPath);
+  }
+
+  auto l_and_r_blocks = InitBlocks(mps, mpo, sweep_params);
+
+  std::cout << "\n";
+  double e0;
+  Timer sweep_timer("sweep");
+  for (long sweep = 0; sweep < sweep_params.Sweeps; ++sweep) {
+    std::cout << "sweep " << sweep << std::endl;
+    sweep_timer.Restart();
+    e0 = TwoSiteSweep(
+        mps, mpo,
+        l_and_r_blocks.first, l_and_r_blocks.second,
+        sweep_params);
+    sweep_timer.PrintElapsed();
+    std::cout << "\n";
+  }
+  return e0;
+}
+
+
 std::pair<std::vector<GQTensor *>, std::vector<GQTensor *>> InitBlocks(
     const std::vector<GQTensor *> &mps, const std::vector<GQTensor *> &mpo,
     const SweepParams &sweep_params) {
