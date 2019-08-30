@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # 
 #  Author: Rongyang Sun <sun-rongyang@outlook.com>
