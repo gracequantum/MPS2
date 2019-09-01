@@ -10,7 +10,6 @@
 #include "gqten/gqten.h"
 
 #include <iostream>
-
 #include <cstring>
 
 #include "mkl.h"

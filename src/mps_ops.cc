@@ -8,12 +8,15 @@
 #include "gqmps2/gqmps2.h"
 #include "gqten/gqten.h"
 
-#include <cmath>
 #include <algorithm>
+#include <cmath>
+
+#include <assert.h>
+
 #ifdef Release
   #define NDEBUG
 #endif
-#include <assert.h>
+
 
 namespace  gqmps2 {
 using  namespace gqten;

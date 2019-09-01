@@ -10,11 +10,13 @@
 
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
+
+#include <assert.h>
+
 #ifdef Release
   #define NDEBUG
 #endif
-#include <assert.h>
-#include <algorithm>
 
 
 namespace gqmps2 {

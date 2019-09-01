@@ -12,13 +12,14 @@
 #include <vector>
 #include <iostream>
 
-#ifdef Release
-  #define NDEBUG
-#endif
 #include <assert.h>
 
 #include "mkl.h"
 #include "mpi.h"
+
+#ifdef Release
+  #define NDEBUG
+#endif
 
 
 using namespace gqmps2;
