@@ -1,19 +1,19 @@
 # GraceQ/MPS2
 A high-performance matrix product state(MPS) algorithms library based on GraceQ/tensor
 
-_"Easy push your D to 10k"_
+_"Easily push your D to 10k"_
 
 
 ## Design Goals
 
 - High-performance MPS algorithms implementation based on the power of [GraceQ/tensor](https://github.com/gracequantum/tensor).
-- Perform MPS optimization on kinds of HPC hardware architectures which also bases on the GraceQ/tensor project.
+- Performing MPS optimization on kinds of HPC hardware architectures based on the GraceQ/tensor project.
 - Flexible API design to cope with complex research tasks. We do not offer something like t-J model, but you can define it in 5 minutes.
 
 
 ## Installation
 
-GraceQ/MPS2 library depends [GraceQ/tensor](https://github.com/gracequantum/tensor) as its basic tensor library and [nlohmann/json](https://github.com/nlohmann/json) to parser input JSON file. So you need to install these dependencies first or use `--recurse-submodules` option to clone them as submodules.
+GraceQ/MPS2 library needs [GraceQ/tensor](https://github.com/gracequantum/tensor) to be its basic tensor library and [nlohmann/json](https://github.com/nlohmann/json) to parse input JSON file. So you need to install these dependencies first or use `--recurse-submodules` option to clone them as submodules.
 
 ```
 git clone --recurse-submodules https://github.com/gracequantum/mps2.git gqmps2
@@ -41,14 +41,14 @@ It is easy to use GraceQ/MPS2.
 using namespace gqmps2;
 ```
 
-Because this library highly depends on the GraceQ/tensor, you also want to include it.
+Because this library highly depends on the GraceQ/tensor, you maybe need to include it.
 
 ```cpp
 #include "gqten/gqten.h"
 using namespace gqten;
 ```
 
-Then we calculate the ground state of the one dimensional [Heisenberg model](https://en.wikipedia.org/wiki/Heisenberg_model_(quantum)) to how to use GraceQ/MPS2.
+We will calculate the ground state of the one dimensional [Heisenberg model](https://en.wikipedia.org/wiki/Heisenberg_model_(quantum)) to show how to use GraceQ/MPS2 in the following sections.
 
 ### Input JSON file and `CaseParams` parser
 A typical input [JSON](https://en.wikipedia.org/wiki/JSON) file looks like
@@ -67,9 +67,10 @@ A typical input [JSON](https://en.wikipedia.org/wiki/JSON) file looks like
   }
 }
 ```
-`"CaseParams"` object is necessary for the parameter parser. `"N"` is the system size. `"Sweeps"` is the MPS update time. `"Dmin"` is the minimal kept bond dimensions. `"Dmax"` is the maximal kept bond dimensions. `"CutOff"` is the truncation error. `"LanczErr"` is the [Lanczos algorithm](https://en.wikipedia.org/wiki/Lanczos_algorithm) iteration error. `"MaxLanczIter"` is the maximal Lanczos iteration time. `"TenTransNumThreads"` tells the GraceQ/tensor library use how many threads to perform tensor transpose.
+`"CaseParams"` object is necessary for the parameter parser. `"N"` is the system size. `"Sweeps"` is the MPS update time. `"Dmin"` is the minimal kept bond dimensions. `"Dmax"` is the maximal kept bond dimensions. `"CutOff"` is the truncation error. `"LanczErr"` is the [Lanczos algorithm](https://en.wikipedia.org/wiki/Lanczos_algorithm) iteration error. `"MaxLanczIter"` is the maximal Lanczos iteration time. `"TenTransNumThreads"` tells that the GraceQ/tensor library uses how many threads to perform tensor transpose.
 
-To parser this JSON file, you can define your own parameter parser class.
+To parse this JSON file, you can define your own parser class which inherits from `gqmps2:CaseParamsParserBasic` class or use any other methods you want.
+
 ```cpp
 struct CaseParams : public CaseParamsParserBasic {
   CaseParams(const char *pf) : CaseParamsParserBasic(pf) {
@@ -102,7 +103,7 @@ int main(int argc, char *argv[]) {
 Then you can use these parameters in you program.
 
 ### Define operators
-Quantum operator can be represented as two ranks tensor. About how to define tensor in GraceQ/tensor library, you can refer [GraceQ/tensor](https://github.com/gracequantum/tensor).
+Quantum operator can be represented as two ranks tensor. About how to define tensor in GraceQ/tensor library, you can refer to [GraceQ/tensor](https://github.com/gracequantum/tensor).
 ```cpp
 auto pb_out = Index({
                    QNSector(QN({QNNameVal("Sz", 1)}), 1),
@@ -121,7 +122,7 @@ sm({1, 0}) = 1;
 Where the physical bond `pb_out` will also be used latter.
 
 ### Generate matrix product operator(MPO)
-You can use `gqmps2::MPOGenerator` to generate MPO contains any one-site and two-site terms. The following example tells you how to generate the Hamiltonian of the Heisenberg model.
+You can use `gqmps2::MPOGenerator` to generate MPO contains any one-site or two-site terms. The following example tells you how to generate the Hamiltonian of the Heisenberg model.
 
 ```cpp
 auto zero_div = QN({QNNameVal("Sz", 0)});
@@ -133,10 +134,10 @@ for (long i = 0; i < params.N-1; ++i) {
 }
 auto mpo = mpo_gen.Gen();
 ```
-The `OpIdx` defines the operator and the site which lives on. The type of the result MPO `mpo` is `std::vector<GQTensor *>`.
+The `OpIdx` defines the operator and the site which the operator lives on. The type of the result MPO `mpo` is `std::vector<GQTensor *>`.
 
 ### Define initial MPS
-You can define a base direct product state as the initial MPS. Because the U1 symmetry is kept during the iteration process, The quantum number of this initial MPS also labels the sector you are working in the whole Hilbert space. Temperately, MPS is also defined as a `std::vector<GQTensor *>` now.
+You can define a base direct product state as the initial MPS. Because the U1 symmetry is kept during the iteration process, the quantum number of this initial MPS also labels the sector you are working in the whole Hilbert space. MPS is also defined as a `std::vector<GQTensor *>` for now.
 
 ```cpp
 std::vector<GQTensor *> mps(params.N);
