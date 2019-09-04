@@ -8,7 +8,7 @@ _"Easy push your D to 10k"_
 
 - High-performance MPS algorithms implementation based on the power of [GraceQ/tensor](https://github.com/gracequantum/tensor).
 - Perform MPS optimization on kinds of HPC hardware architectures which also bases on the GraceQ/tensor project.
-- Flexible API design to cope with complex research tasks. We do not offer something like $t$-$J$ model, but you can define it in 5 minutes.
+- Flexible API design to cope with complex research tasks. We do not offer something like t-J model, but you can define it in 5 minutes.
 
 
 ## Installation
@@ -136,7 +136,7 @@ auto mpo = mpo_gen.Gen();
 The `OpIdx` defines the operator and the site which lives on. The type of the result MPO `mpo` is `std::vector<GQTensor *>`.
 
 ### Define initial MPS
-You can define a base direct product state as the initial MPS. Because the $U1$ symmetry is kept during the iteration process, The quantum number of this initial MPS also labels the sector you are working in the whole Hilbert space. Temperately, MPS is also defined as a `std::vector<GQTensor *>` now.
+You can define a base direct product state as the initial MPS. Because the U1 symmetry is kept during the iteration process, The quantum number of this initial MPS also labels the sector you are working in the whole Hilbert space. Temperately, MPS is also defined as a `std::vector<GQTensor *>` now.
 
 ```cpp
 std::vector<GQTensor *> mps(params.N);
