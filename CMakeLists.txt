@@ -38,10 +38,16 @@ if(GQMPS2_MPI_PARALLEL)
   find_package(MPI REQUIRED)
   add_definitions(-DGQMPS2_MPI_PARALLEL)
   # For dependence setting.
-  set(GQTEN_MPI_PARALLEL ON)
+  #set(GQTEN_MPI_PARALLEL ON)
+  option(GQTEN_MPI_PARALLEL "Set related option in external/gqten" ON)
   add_definitions(-DGQTEN_MPI_PARALLEL)
 endif()
 
+option(GQMPS2_BUILD_GQTEN_USE_EXTERNAL_HPTT_LIB "Use external hptt library when building dependency external/gqten." OFF)
+if(GQMPS2_BUILD_GQTEN_USE_EXTERNAL_HPTT_LIB)
+  option(GQTEN_USE_EXTERNAL_HPTT_LIB "Set related option in external/gqten" ON)
+  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/external/gqten/cmake/Modules/")
+endif()
 
 # Compilation and linking control.
 set(CMAKE_CXX_STANDARD 11)
