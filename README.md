@@ -8,7 +8,7 @@ _"Easily push your D to 10k"_
 
 - High-performance MPS algorithms implementation based on the power of [GraceQ/tensor](https://github.com/gracequantum/tensor).
 - Performing MPS optimization on kinds of HPC hardware architectures based on the GraceQ/tensor project.
-- Flexible API design to cope with complex research tasks. We do not offer something like t-J model, but you can define it in 5 minutes.
+- Flexible API design to cope with complex research tasks. We do not offer something like t-J model, but you can easily define it.
 
 
 ## Installation
@@ -24,11 +24,10 @@ Then you can use the [CMake](https://cmake.org/) tool to build the library.
 ```
 cd gqmps2
 mkdir build && cd build
-cmake ..
+cmake .. -DCMAKE_INSTALL_PREFIX=<your_gqmps2_installation_root>
 make
+make install
 ```
-
-Finally, you can get the library file `libgqmps2.a` at `./lib/libmps2.a`.
 
 
 ## Minimal tutorial
@@ -47,6 +46,14 @@ Because this library highly depends on the GraceQ/tensor, you maybe need to incl
 #include "gqten/gqten.h"
 using namespace gqten;
 ```
+
+GraceQ/MPS2 needs gqten, hptt and MKL during linking process. So you should use the following flags when you link the library.
+
+```
+-lgqmps2 -lgqten -lhptt <your_mkl_linking_flags>
+```
+
+We highly recommend that you use [MKL Link Line Advisor](https://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/) to set `<your_mkl_linking_flags>`.
 
 We will calculate the ground state of the one dimensional [Heisenberg model](https://en.wikipedia.org/wiki/Heisenberg_model_(quantum)) to show how to use GraceQ/MPS2 in the following sections.
 
