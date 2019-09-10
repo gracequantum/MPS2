@@ -9,7 +9,7 @@ cmake_minimum_required(VERSION 3.12)
 
 
 project("GraceQ/mps2"
-  DESCRIPTION "MPS-MPO algorithm library based on GraceQ/tensor."
+  DESCRIPTION "A high-performance matrix product state(MPS) algorithms library based on GraceQ/tensor"
   LANGUAGES CXX)
 
 
@@ -38,7 +38,6 @@ if(GQMPS2_MPI_PARALLEL)
   find_package(MPI REQUIRED)
   add_definitions(-DGQMPS2_MPI_PARALLEL)
   # For dependence setting.
-  #set(GQTEN_MPI_PARALLEL ON)
   option(GQTEN_MPI_PARALLEL "Set related option in external/gqten" ON)
   add_definitions(-DGQTEN_MPI_PARALLEL)
 endif()
@@ -54,16 +53,30 @@ set(CMAKE_CXX_STANDARD 11)
 add_definitions(-g)
 
 
+# Installation path
+set(GQMPS2_TOOL_SCRIPT_DEST "${CMAKE_INSTALL_PREFIX}/bin")
+set(GQMPS2_INCLUDE_DEST "${CMAKE_INSTALL_PREFIX}/include/gqmps2")
+set(GQMPS2_LIB_DEST "${CMAKE_INSTALL_PREFIX}/lib")
+
+
 # Build dependencies.
 add_subdirectory(external)
 
 
 # Build library.
+set(GQMPS2_HEADER_PATH "${PROJECT_SOURCE_DIR}/include")
+set(GQMPS2_TENSOR_LIB_HEADER_PATH "${PROJECT_SOURCE_DIR}/external/gqten/include")
+set(GQMPS2_JSON_LIB_HEADER_PATH "${PROJECT_SOURCE_DIR}/external/nlohmann_json/include")
 add_subdirectory(src lib)
+
+
+# Build tool scripts
+add_subdirectory(script)
 
 
 # Build unittests.
 if(GQMPS2_BUILD_UNITTEST)
   enable_testing()
+  find_package(GTest REQUIRED)
   add_subdirectory(tests tests)
 endif()

@@ -3,7 +3,7 @@
 #  Author: Rongyang Sun <sun-rongyang@outlook.com>
 #  Creation Date: 2019-05-12 10:15
 #  
-#  Description: GraceQ/tensor project. CMake file to control unittest.
+#  Description: GraceQ/MPS2 project. CMake file to control unittest.
 # 
 if(NOT GQMPS2_BUILD_GQTEN_USE_EXTERNAL_HPTT_LIB)
   set(hptt_LIBRARY "${CMAKE_BINARY_DIR}/external/gqten/external/hptt/libhptt.a")
@@ -31,44 +31,46 @@ macro(add_unittest
 
   if(GQMPS2_MPI_PARALLEL)
     target_include_directories(${TEST_NAME}
-      PUBLIC "${PROJECT_SOURCE_DIR}/include"
-      PUBLIC "${PROJECT_SOURCE_DIR}/external/gqten/include"
-      PUBLIC "/usr/local/include"
+      PRIVATE ${GQMPS2_HEADER_PATH}
+      PRIVATE ${GQMPS2_TENSOR_LIB_HEADER_PATH}
+      PRIVATE ${GQMPS2_JSON_LIB_HEADER_PATH}
       PRIVATE ${MPI_CXX_INCLUDE_PATH}
       PRIVATE ${CFLAGS})
     target_compile_options(${TEST_NAME}
       PRIVATE ${MPI_CXX_COMPILE_FLAGS})
     target_link_libraries(${TEST_NAME}
-        "-L/usr/local/lib"
-        gtest gtest_main
-        ${hptt_LIBRARY}
-        ${MPI_CXX_LIBRARIES} ${MPI_CXX_LINK_FLAGS}
-        ${LINK_LIBS} "${LINK_LIB_FLAGS}")
+      gqmps2
+      gqten
+      GTest::GTest GTest::Main
+      ${hptt_LIBRARY}
+      ${MPI_CXX_LIBRARIES} ${MPI_CXX_LINK_FLAGS}
+      ${LINK_LIBS} "${LINK_LIB_FLAGS}")
   else()
     target_include_directories(${TEST_NAME}
-      PUBLIC "${PROJECT_SOURCE_DIR}/include"
-      PUBLIC "${PROJECT_SOURCE_DIR}/external/gqten/include"
-      PUBLIC "/usr/local/include"
+      PRIVATE ${GQMPS2_HEADER_PATH}
+      PRIVATE ${GQMPS2_TENSOR_LIB_HEADER_PATH}
+      PRIVATE ${GQMPS2_JSON_LIB_HEADER_PATH}
       PRIVATE ${CFLAGS})
     target_link_libraries(${TEST_NAME}
-        "-L/usr/local/lib"
-        gtest gtest_main
-        ${hptt_LIBRARY}
-        ${LINK_LIBS} "${LINK_LIB_FLAGS}")
-  endif()
+      gqmps2
+      gqten
+      GTest::GTest GTest::Main
+      ${hptt_LIBRARY}
+      ${LINK_LIBS} "${LINK_LIB_FLAGS}")
+endif()
 
   if("${MPI_TEST}" STREQUAL "")
     add_test(
         NAME ${TEST_NAME}
         COMMAND "${TEST_NAME}" "${INPUT_ARGS}")
   else()
-    set(GEMM_BATCH_WORKER ../external/gqten/bin/gqten_mpi_gemm_batch_worker)
+    set(GQTEN_GEMM_BATCH_WORKER ${CMAKE_BINARY_DIR}/external/gqten/bin/gqten_mpi_gemm_batch_worker)
     if(APPLE)
       add_test(${TEST_NAME}
-        mpirun --host localhost:4 -np 1 ${TEST_NAME} : --host localhost:4 -np 3 ${GEMM_BATCH_WORKER})
+        mpirun --host localhost:4 -np 1 ${TEST_NAME} : --host localhost:4 -np 3 ${GQTEN_GEMM_BATCH_WORKER})
     else()
       add_test(${TEST_NAME}
-          mpirun -np 1 ./${TEST_NAME} : -np 3 ${GEMM_BATCH_WORKER})
+        mpirun -np 1 ./${TEST_NAME} : -np 3 ${GQTEN_GEMM_BATCH_WORKER})
     endif()
   endif()
 
@@ -76,29 +78,29 @@ macro(add_unittest
 endmacro()
 
 # Test Lanczos algorithm.
-add_unittest(test_lanczos test_lanczos.cc "" "gqten;gqmps2" "${MATH_LIB_LINK_FLAGS}" "" "")
+add_unittest(test_lanczos test_lanczos.cc "" "" "${MATH_LIB_LINK_FLAGS}" "" "")
 
 # Test distributed Lanczos algorithm.
 if(GQMPS2_MPI_PARALLEL)
   add_unittest(test_mpi_lanczos
-    test_mpi_lanczos.cc "" "gqten;gqmps2" "${MATH_LIB_LINK_FLAGS}" "" "MPI_TEST")
+    test_mpi_lanczos.cc "" "" "${MATH_LIB_LINK_FLAGS}" "" "MPI_TEST")
 endif()
 
 # Test MPO generation.
-add_unittest(test_mpogen test_mpogen.cc "" "gqten;gqmps2" "${MATH_LIB_LINK_FLAGS}" "" "")
+add_unittest(test_mpogen test_mpogen.cc "" "" "${MATH_LIB_LINK_FLAGS}" "" "")
 
 # Test two site algorithm.
 add_unittest(test_two_site_algo
-  test_two_site_algo.cc "" "gqten;gqmps2" "${MATH_LIB_LINK_FLAGS}" "" "")
+  test_two_site_algo.cc "" "" "${MATH_LIB_LINK_FLAGS}" "" "")
 
 # Test distributed two site algorithm.
 if(GQMPS2_MPI_PARALLEL)
   add_unittest(test_mpi_two_site_algo
-    test_mpi_two_site_algo.cc "" "gqten;gqmps2" "${MATH_LIB_LINK_FLAGS}" "" "MPI_TEST")
+    test_mpi_two_site_algo.cc "" "" "${MATH_LIB_LINK_FLAGS}" "" "MPI_TEST")
 endif()
 
 # Test simulation case parameters parser.
 add_unittest(test_case_params_parser
   test_case_params_parser.cc
-  "" "gqmps2" "${MATH_LIB_LINK_FLAGS}"
+  "" "" "${MATH_LIB_LINK_FLAGS}"
   "${CMAKE_CURRENT_LIST_DIR}/test_data/test-params.json" "")

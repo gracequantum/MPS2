@@ -11,4 +11,5 @@ add_subdirectory(gqten)
 
 # nlohmann_json
 set(JSON_BuildTests OFF CACHE INTERNAL "")
+option(JSON_Install OFF)
 add_subdirectory(nlohmann_json)

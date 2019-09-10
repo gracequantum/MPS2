@@ -5,43 +5,46 @@
 #  
 #  Description: GraceQ/mps2 project. Cmake file to control the library source code.
 # 
+set(GQMPS2_HEASERS ${GQMPS2_HEADER_PATH}/gqmps2/gqmps2.h)
+set(GQMPS2_BASIC_SRC
+  case_parser.cc
+  mps_ops.cc
+  mpogen.cc
+  lanczos.cc
+  two_site_algo.cc
+  mps_measu.cc
+  )
+
+
 if(GQMPS2_MPI_PARALLEL)
   add_library(gqmps2
-    case_parser.cc
-    mps_ops.cc
-    mpogen.cc
-    lanczos.cc
-    two_site_algo.cc
+    ${GQMPS2_BASIC_SRC}
+    mps_measu.cc
     mpi_lanczos.cc
-    mpi_two_site_algo.cc
-    mps_measu.cc)
+    mpi_two_site_algo.cc)
 
   target_include_directories(gqmps2
-    PUBLIC "${PROJECT_SOURCE_DIR}/include"
-    PUBLIC "${PROJECT_SOURCE_DIR}/external/gqten/include"
-    PUBLIC "${PROJECT_SOURCE_DIR}/external/nlohmann_json/include"
+    PRIVATE ${GQMPS2_HEADER_PATH}
+    PRIVATE ${GQMPS2_TENSOR_LIB_HEADER_PATH}
+    PRIVATE ${GQMPS2_JSON_LIB_HEADER_PATH}
     PRIVATE ${MPI_CXX_INCLUDE_PATH})
 
   target_compile_options(gqten
     PRIVATE ${MPI_CXX_COMPILE_FLAGS})
-
-  target_link_libraries(gqmps2
-    ${MPI_CXX_LIBRARIES} ${MPI_CXX_LINK_FLAGS}
-    gqten)
 else()
   add_library(gqmps2
-    case_parser.cc
-    mps_ops.cc
-    mpogen.cc
-    lanczos.cc
-    two_site_algo.cc
-    mps_measu.cc)
+    ${GQMPS2_BASIC_SRC})
 
   target_include_directories(gqmps2
-    PUBLIC "${PROJECT_SOURCE_DIR}/include"
-    PUBLIC "${PROJECT_SOURCE_DIR}/external/gqten/include"
-    PUBLIC "${PROJECT_SOURCE_DIR}/external/nlohmann_json/include")
-
-  target_link_libraries(gqmps2
-    gqten)
+    PRIVATE ${GQMPS2_HEADER_PATH}
+    PRIVATE ${GQMPS2_TENSOR_LIB_HEADER_PATH}
+    PRIVATE ${GQMPS2_JSON_LIB_HEADER_PATH})
 endif()
+
+
+install(
+  FILES ${GQMPS2_HEASERS}
+  DESTINATION ${GQMPS2_INCLUDE_DEST})
+install(
+  TARGETS gqmps2
+  DESTINATION "${GQMPS2_LIB_DEST}")
