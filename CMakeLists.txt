@@ -33,15 +33,6 @@ endif()
 
 option(GQMPS2_BUILD_UNITTEST "Build unittests for GraceQ/mps2." OFF)
 
-option(GQMPS2_MPI_PARALLEL "Build MPI support." OFF)
-if(GQMPS2_MPI_PARALLEL)
-  find_package(MPI REQUIRED)
-  add_definitions(-DGQMPS2_MPI_PARALLEL)
-  # For dependence setting.
-  option(GQTEN_MPI_PARALLEL "Set related option in external/gqten" ON)
-  add_definitions(-DGQTEN_MPI_PARALLEL)
-endif()
-
 option(GQMPS2_BUILD_GQTEN_USE_EXTERNAL_HPTT_LIB "Use external hptt library when building dependency external/gqten." OFF)
 if(GQMPS2_BUILD_GQTEN_USE_EXTERNAL_HPTT_LIB)
   option(GQTEN_USE_EXTERNAL_HPTT_LIB "Set related option in external/gqten" ON)
