@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 /*
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
-* Creation Date: 2019-05-11 21:44
+* Creation Date: 2019-09-24 17:46
 * 
-* Description: GraceQ/mps2 project. Private objects for Lanczos solver,
-*              implementation.
+* Description: GraceQ/MPS2 project. Implementation details for Lanczos solver.
 */
-#include "lanczos.h"
 #include "gqmps2/gqmps2.h"
 #include "gqten/gqten.h"
 
@@ -17,19 +15,71 @@
 
 
 namespace gqmps2 {
+
+
 using namespace gqten;
 
 
-LanczosRes LanczosSolver(
-    const std::vector<GQTensor *> &rpeff_ham, GQTensor *pinit_state,
+// Forward declarations.
+template <typename TenElemType>
+GQTensor<TenElemType> *eff_ham_mul_state_cent(
+    const std::vector<GQTensor<TenElemType> *> &, GQTensor<TenElemType> *);
+
+template <typename TenElemType>
+GQTensor<TenElemType> *eff_ham_mul_state_lend(
+    const std::vector<GQTensor<TenElemType> *> &, GQTensor<TenElemType> *);
+
+template <typename TenElemType>
+GQTensor<TenElemType> *eff_ham_mul_state_rend(
+    const std::vector<GQTensor<TenElemType> *> &, GQTensor<TenElemType> *);
+
+void TridiagGsSolver(
+    const std::vector<double> &, const std::vector<double> &, const long,
+    double &, double * &, const char);
+
+
+// Helpers.
+template <typename TenElemType>
+inline void InplaceContract(
+    GQTensor<TenElemType> * &lhs, const GQTensor<TenElemType> &rhs,
+    const std::vector<std::vector<long>> &axes) {
+  auto res = Contract(*lhs, rhs, axes);
+  delete lhs;
+  lhs = res;
+}
+
+
+template <typename TenElemType>
+inline void LanczosFree(
+    double * &a,
+    std::vector<GQTensor<TenElemType> *> &b,
+    GQTensor<TenElemType> * &last_mat_mul_vec_res) {
+  if (a != nullptr) { delete [] a; }
+  for (auto &ptr : b) { delete ptr; }
+  delete last_mat_mul_vec_res;
+}
+
+
+inline double Real(const double d) { return d; }
+
+
+inline double Real(const GQTEN_Complex z) { return z.real(); }
+
+
+// Lanczos solver.
+template <typename TenElemType>
+LanczosRes<TenElemType> LanczosSolver(
+    const std::vector<GQTensor<TenElemType> *> &rpeff_ham,
+    GQTensor<TenElemType> *pinit_state,
     const LanczosParams &params,
     const std::string &where) {
   // Take care that init_state will be destroyed after call the solver.
   long eff_ham_eff_dim = 1;
-  GQTensor *(* eff_ham_mul_state)(
-      const std::vector<GQTensor *> &, GQTensor *) = nullptr;
+  GQTensor<TenElemType> *(* eff_ham_mul_state)(
+      const std::vector<GQTensor<TenElemType> *> &,
+      GQTensor<TenElemType> *) = nullptr;
   std::vector<std::vector<long>> energy_measu_ctrct_axes;
-  LanczosRes lancz_res;
+  LanczosRes<TenElemType> lancz_res;
 
   // Calculate position dependent parameters.
   if (where == "cent") {
@@ -53,7 +103,7 @@ LanczosRes LanczosSolver(
     energy_measu_ctrct_axes = {{0, 1, 2}, {0, 1, 2}};
   }
 
-  std::vector<GQTensor *> bases(params.max_iterations);
+  std::vector<GQTensor<TenElemType> *> bases(params.max_iterations);
   std::vector<double> a(params.max_iterations, 0.0);
   std::vector<double> b(params.max_iterations, 0.0);
   std::vector<double> N(params.max_iterations, 0.0);
@@ -74,9 +124,9 @@ LanczosRes LanczosSolver(
 #endif
 
   auto temp_scalar_ten = Contract(
-      *last_mat_mul_vec_res, MockDag(*bases[0]),
+      *last_mat_mul_vec_res, Dag(*bases[0]),
       energy_measu_ctrct_axes);
-  a[0] = temp_scalar_ten->scalar; delete temp_scalar_ten;
+  a[0] = Real(temp_scalar_ten->scalar); delete temp_scalar_ten;
   N[0] = 0.0;
   long m = 0;
   double energy0;
@@ -103,12 +153,12 @@ LanczosRes LanczosSolver(
       if (m == 1) {
         lancz_res.iters = m;
         lancz_res.gs_eng = energy0;
-        lancz_res.gs_vec = new GQTensor(*bases[0]);
+        lancz_res.gs_vec = new GQTensor<TenElemType>(*bases[0]);
         LanczosFree(eigvec, bases, last_mat_mul_vec_res);
         return lancz_res;
       } else {
         TridiagGsSolver(a, b, m, eigval, eigvec, 'V');
-        auto gs_vec = new GQTensor(bases[0]->indexes);
+        auto gs_vec = new GQTensor<TenElemType>(bases[0]->indexes);
         LinearCombine(m, eigvec, bases, gs_vec);
         lancz_res.iters = m;
         lancz_res.gs_eng = energy0;
@@ -132,9 +182,9 @@ LanczosRes LanczosSolver(
 #endif
 
     auto temp_scalar_ten = Contract(
-        *last_mat_mul_vec_res, MockDag(*bases[m]),
+        *last_mat_mul_vec_res, Dag(*bases[m]),
         energy_measu_ctrct_axes);
-    a[m] = temp_scalar_ten->scalar; delete temp_scalar_ten;
+    a[m] = Real(temp_scalar_ten->scalar); delete temp_scalar_ten;
     TridiagGsSolver(a, b, m+1, eigval, eigvec, 'N');
     auto energy0_new = eigval;
     if (((energy0 - energy0_new) < params.error) ||
@@ -142,7 +192,7 @@ LanczosRes LanczosSolver(
          (m == params.max_iterations - 1)) {
       TridiagGsSolver(a, b, m+1, eigval, eigvec, 'V');
       energy0 = energy0_new;
-      auto gs_vec = new GQTensor(bases[0]->indexes);
+      auto gs_vec = new GQTensor<TenElemType>(bases[0]->indexes);
       LinearCombine(m+1, eigvec, bases, gs_vec);
       lancz_res.iters = m;
       lancz_res.gs_eng = energy0;
@@ -156,8 +206,10 @@ LanczosRes LanczosSolver(
 }
 
 
-GQTensor *eff_ham_mul_state_cent(
-    const std::vector<GQTensor *> &eff_ham, GQTensor *state) {
+template <typename TenElemType>
+GQTensor<TenElemType> *eff_ham_mul_state_cent(
+    const std::vector<GQTensor<TenElemType> *> &eff_ham,
+    GQTensor<TenElemType> *state) {
   auto res = Contract(*eff_ham[0], *state, {{0}, {0}});
   InplaceContract(res, *eff_ham[1], {{0, 2}, {0, 1}});
   InplaceContract(res, *eff_ham[2], {{4, 1}, {0, 1}});
@@ -166,8 +218,10 @@ GQTensor *eff_ham_mul_state_cent(
 }
 
 
-GQTensor *eff_ham_mul_state_lend(
-    const std::vector<GQTensor *> &eff_ham, GQTensor *state) {
+template <typename TenElemType>
+GQTensor<TenElemType> *eff_ham_mul_state_lend(
+    const std::vector<GQTensor<TenElemType> *> &eff_ham,
+    GQTensor<TenElemType> *state) {
   auto res = Contract(*state, *eff_ham[1], {{0}, {0}});
   InplaceContract(res, *eff_ham[2], {{0, 2}, {1, 0}});
   InplaceContract(res, *eff_ham[3], {{0, 3}, {0, 1}});
@@ -175,8 +229,10 @@ GQTensor *eff_ham_mul_state_lend(
 }
 
 
-GQTensor *eff_ham_mul_state_rend(
-    const std::vector<GQTensor *> &eff_ham, GQTensor *state) {
+template <typename TenElemType>
+GQTensor<TenElemType> *eff_ham_mul_state_rend(
+    const std::vector<GQTensor<TenElemType> *> &eff_ham,
+    GQTensor<TenElemType> *state) {
   auto res = Contract(*state, *eff_ham[0], {{0}, {0}});
   InplaceContract(res, *eff_ham[1], {{2, 0}, {0, 1}});
   InplaceContract(res, *eff_ham[2], {{3, 0}, {1,0}});
@@ -184,7 +240,7 @@ GQTensor *eff_ham_mul_state_rend(
 }
 
 
-void TridiagGsSolver(
+inline void TridiagGsSolver(
     const std::vector<double> &a, const std::vector<double> &b, const long n,
     double &gs_eng, double * &gs_vec, const char jobz) {
   auto d = new double [n];

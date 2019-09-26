@@ -7,12 +7,11 @@
 # 
 set(GQMPS2_HEASERS ${GQMPS2_HEADER_PATH}/gqmps2/gqmps2.h)
 set(GQMPS2_BASIC_SRC
-  case_parser.cc
-  mps_ops.cc
-  mpogen.cc
-  lanczos.cc
-  two_site_algo.cc
-  mps_measu.cc
+  #case_parser.cc
+  #mps_ops.cc
+  #mpogen.cc
+  #two_site_algo.cc
+  #mps_measu.cc
   )
 
 add_library(gqmps2

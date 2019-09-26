@@ -15,6 +15,8 @@
 #include <vector>
 #include <cstdlib>
 
+#include "mkl.h"
+
 
 using namespace gqten;
 
@@ -38,18 +40,30 @@ inline void RandRealSymMat(double *mat, long dim) {
 }
 
 
-template<typename T>
-inline void PrintVec(const std::vector<T> &v) {
-  for (auto &e : v) { std::cout << e << " "; }
-  std::cout << "\n";
+inline void RandCplxHerMat(GQTEN_Complex *mat, long dim) {
+  for (long i = 0; i < dim; ++i) {
+    for (long j = 0; j < i; ++j) {
+      GQTEN_Complex elem(Rand(), Rand());
+      mat[(i*dim + j)] = elem;
+      mat[(j*dim + i)] = std::conj(elem);
+    }
+  }
+  for (long i = 0; i < dim; ++i) {
+    mat[i*dim + i] = Rand();
+  }
 }
 
 
-inline void InplaceContract(
-    GQTensor * &lhs, const GQTensor &rhs,
-    const std::vector<std::vector<long>> &axes) {
-  auto res = Contract(*lhs, rhs, axes);
-  delete lhs;
-  lhs = res;
+inline void LapackeSyev(
+    int matrix_layout, char jobz, char uplo,
+    MKL_INT n, double *a, MKL_INT lda, double *w) {
+  LAPACKE_dsyev(matrix_layout, jobz, uplo, n, a, lda, w);
+}
+
+
+inline void LapackeSyev(
+    int matrix_layout, char jobz, char uplo,
+    MKL_INT n, GQTEN_Complex *a, MKL_INT lda, double *w) {
+  LAPACKE_zheev(matrix_layout, jobz, uplo, n, a, lda, w);
 }
 #endif /* ifndef GQMPS2_TESTING_UTILS_H */

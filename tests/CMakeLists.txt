@@ -35,7 +35,7 @@ macro(add_unittest
       PRIVATE ${GQMPS2_JSON_LIB_HEADER_PATH}
       PRIVATE ${CFLAGS})
     target_link_libraries(${TEST_NAME}
-      gqmps2
+      #gqmps2
       gqten
       GTest::GTest GTest::Main
       ${hptt_LIBRARY}
@@ -51,15 +51,15 @@ endmacro()
 # Test Lanczos algorithm.
 add_unittest(test_lanczos test_lanczos.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
 
-# Test MPO generation.
-add_unittest(test_mpogen test_mpogen.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
+## Test MPO generation.
+#add_unittest(test_mpogen test_mpogen.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
 
-# Test two site algorithm.
-add_unittest(test_two_site_algo
-  test_two_site_algo.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
+## Test two site algorithm.
+#add_unittest(test_two_site_algo
+  #test_two_site_algo.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
 
-# Test simulation case parameters parser.
-add_unittest(test_case_params_parser
-  test_case_params_parser.cc
-  "" "" "${MATH_LIB_LINK_FLAGS}"
-  "${CMAKE_CURRENT_LIST_DIR}/test_data/test-params.json" "")
+## Test simulation case parameters parser.
+#add_unittest(test_case_params_parser
+  #test_case_params_parser.cc
+  #"" "" "${MATH_LIB_LINK_FLAGS}"
+  #"${CMAKE_CURRENT_LIST_DIR}/test_data/test-params.json" "")

@@ -58,7 +58,7 @@ add_subdirectory(external)
 set(GQMPS2_HEADER_PATH "${PROJECT_SOURCE_DIR}/include")
 set(GQMPS2_TENSOR_LIB_HEADER_PATH "${PROJECT_SOURCE_DIR}/external/gqten/include")
 set(GQMPS2_JSON_LIB_HEADER_PATH "${PROJECT_SOURCE_DIR}/external/nlohmann_json/include")
-add_subdirectory(src lib)
+#add_subdirectory(src lib)
 
 
 # Build tool scripts
