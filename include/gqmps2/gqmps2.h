@@ -60,15 +60,6 @@ const GQTensor<TenElemType> kNullOperator = GQTensor<TenElemType>();    // C++14
 
 
 // MPO generator.
-template <typename TenElemType>
-struct OpIdx {
-  OpIdx(const GQTensor<TenElemType> &op, const long idx) : op(op), idx(idx) {}
-
-  GQTensor<TenElemType> op;
-  long idx;
-};
-
-
 template <typename>
 struct FSMEdge;
 
@@ -112,7 +103,8 @@ public:
 
   void AddTerm(
       const double,
-      const std::vector<OpIdx<TenElemType>> &,
+      const std::vector<GQTensor<TenElemType>> &,
+      const std::vector<long> &,
       const GQTensor<TenElemType> &inter_op=kNullOperator<TenElemType>);
   std::vector<GQTensor<TenElemType> *> Gen(void);
 
@@ -134,10 +126,14 @@ private:
   bool fsm_graph_sorted_;
   
   // Add terms.
-  void AddOneSiteTerm(const double, const OpIdx<TenElemType> &);
+  void AddOneSiteTerm(
+      const double,
+      const GQTensor<TenElemType> &,
+      const long);
   void AddTwoSiteTerm(
       const double,
-      const OpIdx<TenElemType> &, const OpIdx<TenElemType> &,
+      const GQTensor<TenElemType> &, const GQTensor<TenElemType> &,
+      const long, const long,
       const GQTensor<TenElemType> &);
 
   // Merge finite state machine graph.

@@ -33,7 +33,7 @@ TEST_F(TestMpoGenerator, TestOneSiteOpCase) {
   long N = 4;
   auto mpo_gen = MPOGenerator<GQTEN_Double>(N, phys_idx_out, qn0);
   for (long i = 0; i < N; ++i) {
-    mpo_gen.AddTerm(1., {OpIdx<GQTEN_Double>(sz, i)});
+    mpo_gen.AddTerm(1., {sz}, {i});
   }
   auto mpo = mpo_gen.Gen();
   auto lmpo_ten = *mpo[0];
@@ -67,7 +67,7 @@ TEST_F(TestMpoGenerator, TestTwoSiteOpCase) {
   long N = 3;
   auto mpo_gen = MPOGenerator<GQTEN_Double>(N, phys_idx_out, qn0);
   for (long i = 0; i < N-1; ++i) {
-    mpo_gen.AddTerm(1., {OpIdx<GQTEN_Double>(sz, i), OpIdx<GQTEN_Double>(sz, i+1)});
+    mpo_gen.AddTerm(1., {sz, sz}, {i, i+1});
   }
   auto mpo = mpo_gen.Gen();
   auto lmpo_ten = *mpo[0];
@@ -95,9 +95,9 @@ TEST_F(TestMpoGenerator, TestOneTwoSiteMixCase) {
   sx({1, 0}) = 0.5;
   auto mpo_gen = MPOGenerator<GQTEN_Double>(N, phys_idx_out, qn0);
   for (long i = 0; i < N; ++i) {
-    mpo_gen.AddTerm(h, {OpIdx<GQTEN_Double>(sx, i)});
+    mpo_gen.AddTerm(h, {sx}, {i});
     if (i != N-1) {
-      mpo_gen.AddTerm(1., {OpIdx<GQTEN_Double>(sz, i), OpIdx<GQTEN_Double>(sz, i+1)});
+      mpo_gen.AddTerm(1., {sz, sz}, {i, i+1});
     }
   }
   auto mpo = mpo_gen.Gen();

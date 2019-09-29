@@ -110,14 +110,17 @@ MPOGenerator<TenElemType>::MPOGenerator(
 template <typename TenElemType>
 void MPOGenerator<TenElemType>::AddTerm(
     const double coef,
-    const std::vector<OpIdx<TenElemType>> &opidxs,
+    const std::vector<GQTensor<TenElemType>> &ops,
+    const std::vector<long> &idxs,
     const GQTensor<TenElemType> &inter_op) {
-  switch (opidxs.size()) {
+  assert(ops.size() == idxs.size());
+  auto term_num = ops.size();
+  switch (term_num) {
     case 1:
-      AddOneSiteTerm(coef, opidxs[0]);
+      AddOneSiteTerm(coef, ops[0], idxs[0]);
       break;
     case 2:
-      AddTwoSiteTerm(coef, opidxs[0], opidxs[1], inter_op);
+      AddTwoSiteTerm(coef, ops[0], ops[1], idxs[0], idxs[1], inter_op);
       break;
     default:
       std::cout << "Unsupport term type." << std::endl;
@@ -159,22 +162,23 @@ std::vector<GQTensor<TenElemType> *> MPOGenerator<TenElemType>::Gen(void) {
 
 template <typename TenElemType>
 void MPOGenerator<TenElemType>::AddOneSiteTerm(
-    const double coef, const OpIdx<TenElemType> &opidx) {
+    const double coef, const GQTensor<TenElemType> &op, const long idx) {
   auto new_edge = new FSMEdge<TenElemType>(
-                          coef*opidx.op,
-                          ready_nodes_[opidx.idx],
-                          final_nodes_[opidx.idx+1],
-                          opidx.idx);
-  edges_set_[opidx.idx].push_back(new_edge);
+                          coef*op,
+                          ready_nodes_[idx],
+                          final_nodes_[idx+1],
+                          idx);
+  edges_set_[idx].push_back(new_edge);
 }
 
 
 template <typename TenElemType>
 void MPOGenerator<TenElemType>::AddTwoSiteTerm(
     const double coef,
-    const OpIdx<TenElemType> &opidx1, const OpIdx<TenElemType> &opidx2,
+    const GQTensor<TenElemType> &op1, const GQTensor<TenElemType> &op2,
+    const long idx1, const long idx2,
     const GQTensor<TenElemType> &inter_op) {
-  assert(opidx1.idx < opidx2.idx);
+  assert(idx1 < idx2);
     GQTensor<TenElemType> itrop;   // Inter operator.
     if (inter_op == kNullOperator<TenElemType>) {
       itrop  = id_op_;
@@ -182,16 +186,16 @@ void MPOGenerator<TenElemType>::AddTwoSiteTerm(
       itrop = inter_op;
   }
 
-  auto last_node = ready_nodes_[opidx1.idx];
-  auto next_node = new FSMNode<TenElemType>(opidx1.idx+1);
-  next_node->mid_state_idx = middle_nodes_set_[opidx1.idx+1].size() + 1;
+  auto last_node = ready_nodes_[idx1];
+  auto next_node = new FSMNode<TenElemType>(idx1+1);
+  next_node->mid_state_idx = middle_nodes_set_[idx1+1].size() + 1;
   auto new_edge = new FSMEdge<TenElemType>(
-                          coef*opidx1.op, last_node, next_node, opidx1.idx);
+                          coef*op1, last_node, next_node, idx1);
   next_node->ledges.push_back(new_edge);
-  edges_set_[opidx1.idx].push_back(new_edge);
-  middle_nodes_set_[opidx1.idx+1].push_back(next_node);
+  edges_set_[idx1].push_back(new_edge);
+  middle_nodes_set_[idx1+1].push_back(next_node);
 
-  for (long i = opidx1.idx+1; i < opidx2.idx; ++i) {
+  for (long i = idx1+1; i < idx2; ++i) {
     last_node = next_node;
     next_node = new FSMNode<TenElemType>(i+1);
     next_node->mid_state_idx = middle_nodes_set_[i+1].size() + 1;
@@ -203,11 +207,11 @@ void MPOGenerator<TenElemType>::AddTwoSiteTerm(
   }
 
   last_node = next_node;
-  next_node = final_nodes_[opidx2.idx+1];
+  next_node = final_nodes_[idx2+1];
   new_edge = new FSMEdge<TenElemType>(
-                     opidx2.op, last_node, next_node, opidx2.idx);
+                     op2, last_node, next_node, idx2);
   last_node->redges.push_back(new_edge);
-  edges_set_[opidx2.idx].push_back(new_edge);
+  edges_set_[idx2].push_back(new_edge);
 }
 
 
