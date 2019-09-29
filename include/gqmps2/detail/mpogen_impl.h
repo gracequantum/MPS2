@@ -109,7 +109,7 @@ MPOGenerator<TenElemType>::MPOGenerator(
 
 template <typename TenElemType>
 void MPOGenerator<TenElemType>::AddTerm(
-    const double coef,
+    const TenElemType coef,
     const std::vector<GQTensor<TenElemType>> &ops,
     const std::vector<long> &idxs,
     const GQTensor<TenElemType> &inter_op) {
@@ -162,7 +162,7 @@ std::vector<GQTensor<TenElemType> *> MPOGenerator<TenElemType>::Gen(void) {
 
 template <typename TenElemType>
 void MPOGenerator<TenElemType>::AddOneSiteTerm(
-    const double coef, const GQTensor<TenElemType> &op, const long idx) {
+    const TenElemType coef, const GQTensor<TenElemType> &op, const long idx) {
   auto new_edge = new FSMEdge<TenElemType>(
                           coef*op,
                           ready_nodes_[idx],
@@ -174,7 +174,7 @@ void MPOGenerator<TenElemType>::AddOneSiteTerm(
 
 template <typename TenElemType>
 void MPOGenerator<TenElemType>::AddTwoSiteTerm(
-    const double coef,
+    const TenElemType coef,
     const GQTensor<TenElemType> &op1, const GQTensor<TenElemType> &op2,
     const long idx1, const long idx2,
     const GQTensor<TenElemType> &inter_op) {

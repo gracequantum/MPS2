@@ -15,6 +15,7 @@
 #include <vector>
 #include <cstdlib>
 
+#include "gtest/gtest.h"
 #include "mkl.h"
 
 
@@ -65,5 +66,13 @@ inline void LapackeSyev(
     int matrix_layout, char jobz, char uplo,
     MKL_INT n, GQTEN_Complex *a, MKL_INT lda, double *w) {
   LAPACKE_zheev(matrix_layout, jobz, uplo, n, a, lda, w);
+}
+
+
+inline void EXPECT_COMPLEX_EQ(
+    const GQTEN_Complex &lhs,
+    const GQTEN_Complex &rhs) {
+  EXPECT_DOUBLE_EQ(lhs.real(), rhs.real());
+  EXPECT_DOUBLE_EQ(lhs.imag(), rhs.imag());
 }
 #endif /* ifndef GQMPS2_TESTING_UTILS_H */

@@ -102,7 +102,7 @@ public:
   MPOGenerator(const long, const Index &, const QN &);
 
   void AddTerm(
-      const double,
+      const TenElemType,
       const std::vector<GQTensor<TenElemType>> &,
       const std::vector<long> &,
       const GQTensor<TenElemType> &inter_op=kNullOperator<TenElemType>);
@@ -127,11 +127,11 @@ private:
   
   // Add terms.
   void AddOneSiteTerm(
-      const double,
+      const TenElemType,
       const GQTensor<TenElemType> &,
       const long);
   void AddTwoSiteTerm(
-      const double,
+      const TenElemType,
       const GQTensor<TenElemType> &, const GQTensor<TenElemType> &,
       const long, const long,
       const GQTensor<TenElemType> &);
