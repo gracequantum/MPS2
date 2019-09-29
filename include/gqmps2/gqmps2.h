@@ -37,7 +37,8 @@ using json = nlohmann::json;
 //const char kTwoSiteAlgoWorkflowRestart = 'r';
 //const char kTwoSiteAlgoWorkflowContinue = 'c';
 
-//const GQTensor kNullOperator = GQTensor();
+template <typename TenElemType>
+const GQTensor<TenElemType> kNullOperator = GQTensor<TenElemType>();    // C++14
 
 
 //// Simulation case parameter parser basic class.
@@ -58,99 +59,111 @@ using json = nlohmann::json;
 //};
 
 
-//// MPO generator.
-//struct OpIdx {
-  //OpIdx(const GQTensor &op, const long idx) : op(op), idx(idx) {}
+// MPO generator.
+template <typename TenElemType>
+struct OpIdx {
+  OpIdx(const GQTensor<TenElemType> &op, const long idx) : op(op), idx(idx) {}
 
-  //GQTensor op;
-  //long idx;
-//};
-
-
-//struct FSMEdge;
+  GQTensor<TenElemType> op;
+  long idx;
+};
 
 
-//struct FSMNode {
-  //FSMNode(const long loc) :
-    //is_ready(false), is_final(false), mid_state_idx(0), loc(loc) {}
-  //FSMNode(void) : FSMNode(-1) {}
-
-  //bool is_ready;
-  //bool is_final;
-  //long mid_state_idx;
-  //long loc;
-  //std::vector<FSMEdge *> ledges;
-  //std::vector<FSMEdge *> redges;
-//};
+template <typename>
+struct FSMEdge;
 
 
-//struct FSMEdge {
-  //FSMEdge(
-      //const GQTensor &op, FSMNode *l_node, FSMNode *n_node,
-      //const long loc) :
-      //op(op), last_node(l_node), next_node(n_node), loc(loc) {}
-  //FSMEdge(void) : FSMEdge(GQTensor(), nullptr, nullptr, -1) {}
+template <typename TenElemType>
+struct FSMNode {
+  FSMNode(const long loc) :
+    is_ready(false), is_final(false), mid_state_idx(0), loc(loc) {}
+  FSMNode(void) : FSMNode(-1) {}
 
-  //const GQTensor op;
-  //FSMNode *last_node;
-  //FSMNode *next_node;
-  //long loc;
-//};
+  bool is_ready;
+  bool is_final;
+  long mid_state_idx;
+  long loc;
+  std::vector<FSMEdge<TenElemType> *> ledges;
+  std::vector<FSMEdge<TenElemType> *> redges;
+};
 
 
-//class MPOGenerator {
+template <typename TenElemType>
+struct FSMEdge {
+  FSMEdge(
+      const GQTensor<TenElemType> &op,
+      FSMNode<TenElemType> *l_node, FSMNode<TenElemType> *n_node,
+      const long loc) :
+      op(op), last_node(l_node), next_node(n_node), loc(loc) {}
+  FSMEdge(void) : FSMEdge(GQTensor<TenElemType>(), nullptr, nullptr, -1) {}
+
+  const GQTensor<TenElemType> op;
+  FSMNode<TenElemType> *last_node;
+  FSMNode<TenElemType> *next_node;
+  long loc;
+};
+
+
+template <typename TenElemType>
+class MPOGenerator {
 //[> TODO: Merge terms only with different coefficients. <]
-//public:
-  //MPOGenerator(const long, const Index &, const QN &);
+public:
+  MPOGenerator(const long, const Index &, const QN &);
 
-  //void AddTerm(
-      //const double,
-      //const std::vector<OpIdx> &,
-      //const GQTensor &inter_op=kNullOperator);
-  //std::vector<GQTensor *> Gen(void);
+  void AddTerm(
+      const double,
+      const std::vector<OpIdx<TenElemType>> &,
+      const GQTensor<TenElemType> &inter_op=kNullOperator<TenElemType>);
+  std::vector<GQTensor<TenElemType> *> Gen(void);
 
-//private:
-  //long N_;
-  //Index pb_out_;
-  //Index pb_in_;
-  //GQTensor id_op_;
-  //std::vector<FSMNode *> ready_nodes_;
-  //std::vector<FSMNode *> final_nodes_;
-  //std::vector<std::vector<FSMNode *>> middle_nodes_set_;
-  //std::vector<std::vector<FSMEdge *>> edges_set_;
-  //// For nodes merge.
-  //bool fsm_graph_merged_;
-  //bool relable_to_end_;
-  //// For generation process.
-  //QN zero_div_;
-  //std::vector<Index> rvbs_;
-  //bool fsm_graph_sorted_;
+private:
+  long N_;
+  Index pb_out_;
+  Index pb_in_;
+  GQTensor<TenElemType> id_op_;
+  std::vector<FSMNode<TenElemType> *> ready_nodes_;
+  std::vector<FSMNode<TenElemType> *> final_nodes_;
+  std::vector<std::vector<FSMNode<TenElemType> *>> middle_nodes_set_;
+  std::vector<std::vector<FSMEdge<TenElemType> *>> edges_set_;
+  // For nodes merge.
+  bool fsm_graph_merged_;
+  bool relable_to_end_;
+  // For generation process.
+  QN zero_div_;
+  std::vector<Index> rvbs_;
+  bool fsm_graph_sorted_;
   
-  //// Add terms.
-  //void AddOneSiteTerm(const double, const OpIdx &);
-  //void AddTwoSiteTerm(
-      //const double, const OpIdx &, const OpIdx &, const GQTensor &);
+  // Add terms.
+  void AddOneSiteTerm(const double, const OpIdx<TenElemType> &);
+  void AddTwoSiteTerm(
+      const double,
+      const OpIdx<TenElemType> &, const OpIdx<TenElemType> &,
+      const GQTensor<TenElemType> &);
 
-  //// Merge finite state machine graph.
-  //void FSMGraphMerge(void);
-  //void FSMGraphMergeAt(const long);   // At given middle nodes list.
-  //bool FSMGraphMergeNodesTo(const long, std::vector<FSMNode *> &);
-  //bool FSMGraphMergeTwoNodes(FSMNode *&, FSMNode *&);
+  // Merge finite state machine graph.
+  void FSMGraphMerge(void);
+  void FSMGraphMergeAt(const long);   // At given middle nodes list.
+  bool FSMGraphMergeNodesTo(const long, std::vector<FSMNode<TenElemType> *> &);
+  bool FSMGraphMergeTwoNodes(FSMNode<TenElemType> *&, FSMNode<TenElemType> *&);
 
-  //bool CheckMergeableLeftEdgePair(const FSMEdge *, const FSMEdge *);
-  //bool CheckMergeableRightEdgePair(const FSMEdge *, const FSMEdge *);
+  bool CheckMergeableLeftEdgePair(
+      const FSMEdge<TenElemType> *,
+      const FSMEdge<TenElemType> *);
+  bool CheckMergeableRightEdgePair(
+      const FSMEdge<TenElemType> *,
+      const FSMEdge<TenElemType> *);
 
-  //void DeletePathToRightEnd(FSMEdge *);
-  //void RelabelMidNodesIdx(const long);
-  //void RemoveNullEdges(void);
+  void DeletePathToRightEnd(FSMEdge<TenElemType> *);
+  void RelabelMidNodesIdx(const long);
+  void RemoveNullEdges(void);
 
-  //// Generation process.
-  //void FSMGraphSort(void);
-  //Index FSMGraphSortAt(const long);    // At given site.
-  //GQTensor *GenHeadMpo(void);
-  //GQTensor *GenCentMpo(const long);
-  //GQTensor *GenTailMpo(void);
-//};
+  // Generation process.
+  void FSMGraphSort(void);
+  Index FSMGraphSortAt(const long);    // At given site.
+  GQTensor<TenElemType> *GenHeadMpo(void);
+  GQTensor<TenElemType> *GenCentMpo(const long);
+  GQTensor<TenElemType> *GenTailMpo(void);
+};
 
 
 // Lanczos Ground state search algorithm.
@@ -300,6 +313,7 @@ LanczosRes<TenElemType> LanczosSolver(
 
 // Implementation details
 #include "gqmps2/detail/lanczos_impl.h"
+#include "gqmps2/detail/mpogen_impl.h"
 
 
 #endif /* ifndef GQMPS2_GQMPS2_H */

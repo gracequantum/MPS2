@@ -19,7 +19,7 @@ struct TestMpoGenerator : public testing::Test {
                            QNSector(QN({QNNameVal("Sz", -1)}), 1),
                            QNSector(QN({QNNameVal("Sz",  1)}), 1)}, OUT);
   Index phys_idx_in = InverseIndex(phys_idx_out);
-  GQTensor sz = GQTensor({phys_idx_in, phys_idx_out});
+  DGQTensor sz = DGQTensor({phys_idx_in, phys_idx_out});
   QN qn0 = QN({QNNameVal("Sz", 0)});
 
   void SetUp(void) {
@@ -31,9 +31,9 @@ struct TestMpoGenerator : public testing::Test {
 
 TEST_F(TestMpoGenerator, TestOneSiteOpCase) {
   long N = 4;
-  auto mpo_gen = MPOGenerator(N, phys_idx_out, qn0);
+  auto mpo_gen = MPOGenerator<GQTEN_Double>(N, phys_idx_out, qn0);
   for (long i = 0; i < N; ++i) {
-    mpo_gen.AddTerm(1., {OpIdx(sz, i)});
+    mpo_gen.AddTerm(1., {OpIdx<GQTEN_Double>(sz, i)});
   }
   auto mpo = mpo_gen.Gen();
   auto lmpo_ten = *mpo[0];
@@ -65,9 +65,9 @@ TEST_F(TestMpoGenerator, TestOneSiteOpCase) {
 
 TEST_F(TestMpoGenerator, TestTwoSiteOpCase) {
   long N = 3;
-  auto mpo_gen = MPOGenerator(N, phys_idx_out, qn0);
+  auto mpo_gen = MPOGenerator<GQTEN_Double>(N, phys_idx_out, qn0);
   for (long i = 0; i < N-1; ++i) {
-    mpo_gen.AddTerm(1., {OpIdx(sz, i), OpIdx(sz, i+1)});
+    mpo_gen.AddTerm(1., {OpIdx<GQTEN_Double>(sz, i), OpIdx<GQTEN_Double>(sz, i+1)});
   }
   auto mpo = mpo_gen.Gen();
   auto lmpo_ten = *mpo[0];
@@ -90,14 +90,14 @@ TEST_F(TestMpoGenerator, TestTwoSiteOpCase) {
 TEST_F(TestMpoGenerator, TestOneTwoSiteMixCase) {
   long N = 10;
   auto h = 2.33;
-  auto sx = GQTensor({phys_idx_in, phys_idx_out});
+  auto sx = DGQTensor({phys_idx_in, phys_idx_out});
   sx({0, 1}) = 0.5;
   sx({1, 0}) = 0.5;
-  auto mpo_gen = MPOGenerator(N, phys_idx_out, qn0);
+  auto mpo_gen = MPOGenerator<GQTEN_Double>(N, phys_idx_out, qn0);
   for (long i = 0; i < N; ++i) {
-    mpo_gen.AddTerm(h, {OpIdx(sx, i)});
+    mpo_gen.AddTerm(h, {OpIdx<GQTEN_Double>(sx, i)});
     if (i != N-1) {
-      mpo_gen.AddTerm(1., {OpIdx(sz, i), OpIdx(sz, i+1)});
+      mpo_gen.AddTerm(1., {OpIdx<GQTEN_Double>(sz, i), OpIdx<GQTEN_Double>(sz, i+1)});
     }
   }
   auto mpo = mpo_gen.Gen();

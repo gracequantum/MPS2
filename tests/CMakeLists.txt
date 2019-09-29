@@ -52,7 +52,7 @@ endmacro()
 add_unittest(test_lanczos test_lanczos.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
 
 ## Test MPO generation.
-#add_unittest(test_mpogen test_mpogen.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
+add_unittest(test_mpogen test_mpogen.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
 
 ## Test two site algorithm.
 #add_unittest(test_two_site_algo
