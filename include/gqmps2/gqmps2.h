@@ -28,14 +28,16 @@ using json = nlohmann::json;
 
 //const std::string kCaseParamsJsonObjName = "CaseParams";
 
-//const std::string kMpsPath = "mps";
-//const std::string kRuntimeTempPath = ".temp";
-//const std::string kBlockFileBaseName = "block";
-//const std::string kMpsTenBaseName = "mps_ten";
+const std::string kMpsPath = "mps";
+const std::string kRuntimeTempPath = ".temp";
+const std::string kBlockFileBaseName = "block";
+const std::string kMpsTenBaseName = "mps_ten";
 
-//const char kTwoSiteAlgoWorkflowInitial = 'i';
-//const char kTwoSiteAlgoWorkflowRestart = 'r';
-//const char kTwoSiteAlgoWorkflowContinue = 'c';
+const char kTwoSiteAlgoWorkflowInitial = 'i';
+const char kTwoSiteAlgoWorkflowRestart = 'r';
+const char kTwoSiteAlgoWorkflowContinue = 'c';
+
+const int kLanczEnergyOutputPrecision = 16;
 
 template <typename TenElemType>
 const GQTensor<TenElemType> kNullOperator = GQTensor<TenElemType>();    // C++14
@@ -189,46 +191,49 @@ LanczosRes<TenElemType> LanczosSolver(
     const std::string &);
 
 
-//// Two sites update algorithm.
-//struct SweepParams {
-  //SweepParams(
-      //const long sweeps,
-      //const long dmin, const long dmax, const double cutoff,
-      //const bool fileio,
-      //const char workflow,
-      //const LanczosParams &lancz_params) :
-      //Sweeps(sweeps), Dmin(dmin), Dmax(dmax), Cutoff(cutoff), FileIO(fileio),
-      //Workflow(workflow),
-      //LanczParams(lancz_params) {}
+// Two sites update algorithm.
+struct SweepParams {
+  SweepParams(
+      const long sweeps,
+      const long dmin, const long dmax, const double cutoff,
+      const bool fileio,
+      const char workflow,
+      const LanczosParams &lancz_params) :
+      Sweeps(sweeps), Dmin(dmin), Dmax(dmax), Cutoff(cutoff), FileIO(fileio),
+      Workflow(workflow),
+      LanczParams(lancz_params) {}
 
-  //long Sweeps;
+  long Sweeps;
 
-  //long Dmin;
-  //long Dmax;
-  //double Cutoff;
+  long Dmin;
+  long Dmax;
+  double Cutoff;
 
-  //bool FileIO;
-  //char Workflow;
+  bool FileIO;
+  char Workflow;
 
-  //LanczosParams LanczParams;
-//};
+  LanczosParams LanczParams;
+};
 
-//double TwoSiteAlgorithm(
-    //std::vector<GQTensor *> &, const std::vector<GQTensor *> &,
-    //const SweepParams &);
+template <typename TenType>
+double TwoSiteAlgorithm(
+    std::vector<TenType *> &,
+    const std::vector<TenType *> &,
+    const SweepParams &);
 
 
-//// MPS operations.
+// MPS operations.
 //void DumpMps(const std::vector<GQTensor *> &);
 
 //void LoadMps(std::vector<GQTensor *> &);
 
-//void RandomInitMps(
-    //std::vector<GQTensor *> &,
-    //const Index &,
-    //const QN &,
-    //const QN &,
-    //const long);
+template <typename TenType>
+void RandomInitMps(
+    std::vector<TenType> &,
+    const Index &,
+    const QN &,
+    const QN &,
+    const long);
 
 //void DirectStateInitMps(
     //std::vector<GQTensor *> &, const std::vector<long> &,
@@ -271,45 +276,47 @@ LanczosRes<TenElemType> LanczosSolver(
     //const std::string &);
 
 
-//// System I/O functions.
-//inline void WriteGQTensorTOFile(const GQTensor &t, const std::string &file) {
-  //std::ofstream ofs(file, std::ofstream::binary);  
-  //bfwrite(ofs, t);
-  //ofs.close();
-//}
+// System I/O functions.
+template <typename TenType>
+inline void WriteGQTensorTOFile(const TenType &t, const std::string &file) {
+  std::ofstream ofs(file, std::ofstream::binary);
+  bfwrite(ofs, t);
+  ofs.close();
+}
 
 
-//inline void ReadGQTensorFromFile(GQTensor * &rpt, const std::string &file) {
-  //std::ifstream ifs(file, std::ifstream::binary);
-  //rpt = new GQTensor();
-  //bfread(ifs, *rpt);
-  //ifs.close();
-//}
+template <typename TenType>
+inline void ReadGQTensorFromFile(TenType * &rpt, const std::string &file) {
+  std::ifstream ifs(file, std::ifstream::binary);
+  rpt = new TenType();
+  bfread(ifs, *rpt);
+  ifs.close();
+}
 
 
-//inline bool IsPathExist(const std::string &path) {
-  //struct stat buffer;
-  //return (stat(path.c_str(), &buffer) == 0);
-//}
+inline bool IsPathExist(const std::string &path) {
+  struct stat buffer;
+  return (stat(path.c_str(), &buffer) == 0);
+}
 
 
-//inline void CreatPath(const std::string &path) {
-  //const int dir_err = mkdir(
-                          //path.c_str(),
-                          //S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  //if (dir_err == -1) {
-    //std::cout << "error creating directory!" << std::endl;
-    //exit(1);
-  //}
-//}
-
-
+inline void CreatPath(const std::string &path) {
+  const int dir_err = mkdir(
+                          path.c_str(),
+                          S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  if (dir_err == -1) {
+    std::cout << "error creating directory!" << std::endl;
+    exit(1);
+  }
+}
 } /* gqmps2 */ 
 
 
 // Implementation details
 #include "gqmps2/detail/lanczos_impl.h"
 #include "gqmps2/detail/mpogen_impl.h"
+#include "gqmps2/detail/two_site_algo_impl.h"
+#include "gqmps2/detail/mps_ops_impl.h"
 
 
 #endif /* ifndef GQMPS2_GQMPS2_H */
