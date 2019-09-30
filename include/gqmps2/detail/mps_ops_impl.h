@@ -42,7 +42,44 @@ inline bool GreaterQNSectorDim(const QNSector &qnsct1, const QNSector &qnsct2) {
 }
 
 
+template <typename TenType>
+inline void MpsFree(std::vector<TenType *> &mps) {
+  for (auto &pmps_ten : mps) { delete pmps_ten; }
+}
+
+
 // MPS operations
+// MPS I/O.
+template <typename TenType>
+void DumpMps(const std::vector<TenType *> &mps) {
+  if (!IsPathExist(kMpsPath)) { CreatPath(kMpsPath); }
+  auto N = mps.size();
+  std::string file;
+  for (std::size_t i = 0; i < N; ++i) {
+    file = kMpsPath + "/" +
+           kMpsTenBaseName + std::to_string(i) + "." + kGQTenFileSuffix;
+    std::ofstream ofs(file, std::ofstream::binary);
+    bfwrite(ofs, *mps[i]);
+    ofs.close();
+  }
+}
+
+
+template <typename TenType>
+void LoadMps(std::vector<TenType *> &mps) {
+  auto N = mps.size();
+  std::string file;
+  for (std::size_t i = 0; i < N; ++i) {
+    file = kMpsPath + "/" +
+           kMpsTenBaseName + std::to_string(i) + "." + kGQTenFileSuffix;
+    std::ifstream ifs(file, std::ifstream::binary);
+    mps[i] = new TenType();
+    bfread(ifs, *mps[i]);
+    ifs.close();
+  }
+}
+
+
 // MPS initialization.
 template <typename TenType>
 void RandomInitMps(
@@ -51,6 +88,7 @@ void RandomInitMps(
     const QN &tot_div,
     const QN &zero_div,
     const long dmax) {
+  MpsFree(mps);
   Index lvb, rvb;
 
   // Left to center.
@@ -200,5 +238,44 @@ inline void DimCut(std::vector<QNSector> &qnscts, const long dmax, const long pd
     }
   }
   qnscts.resize(kept_qn_cnt);
+}
+
+
+template <typename TenType>
+void DirectStateInitMps(
+    std::vector<TenType *> &mps, const std::vector<long> &stat_labs,
+    const Index &pb_out, const QN &zero_div) {
+  auto N = mps.size();
+  assert(N == stat_labs.size());
+  MpsFree(mps);
+  Index lvb, rvb;
+
+  // Calculate total quantum number.
+  auto div = pb_out.CoorInterOffsetAndQnsct(stat_labs[0]).qnsct.qn;
+  for (std::size_t i = 1; i < N; ++i) {
+    div += pb_out.CoorInterOffsetAndQnsct(stat_labs[i]).qnsct.qn;
+  }
+
+  auto stat_lab = stat_labs[0];
+  auto rvb_qn = div - pb_out.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn;
+  rvb = Index({QNSector(rvb_qn, 1)}, OUT);
+  mps[0] = new TenType({pb_out, rvb});
+  (*mps[0])({stat_lab, 0}) = 1;
+
+  for (std::size_t i = 1; i < N-1; ++i) {
+    lvb = InverseIndex(rvb); 
+    stat_lab = stat_labs[i];
+    rvb_qn = zero_div - 
+             pb_out.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn +
+             lvb.CoorInterOffsetAndQnsct(0).qnsct.qn;
+    rvb = Index({QNSector(rvb_qn, 1)}, OUT);
+    mps[i] = new TenType({lvb, pb_out, rvb});
+    (*mps[i])({0, stat_lab, 0}) = 1;
+  }
+
+  lvb = InverseIndex(rvb);
+  mps[N-1] = new TenType({lvb, pb_out});
+  stat_lab = stat_labs[N-1];
+  (*mps[N-1])({0, stat_lab}) = 1;
 }
 } /* gqmps2 */ 

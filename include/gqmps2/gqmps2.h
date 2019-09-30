@@ -223,9 +223,11 @@ double TwoSiteAlgorithm(
 
 
 // MPS operations.
-//void DumpMps(const std::vector<GQTensor *> &);
+template <typename TenType>
+void DumpMps(const std::vector<TenType *> &);
 
-//void LoadMps(std::vector<GQTensor *> &);
+template <typename TenType>
+void LoadMps(std::vector<TenType *> &);
 
 template <typename TenType>
 void RandomInitMps(
@@ -235,9 +237,10 @@ void RandomInitMps(
     const QN &,
     const long);
 
-//void DirectStateInitMps(
-    //std::vector<GQTensor *> &, const std::vector<long> &,
-    //const Index &, const QN &);
+template <typename TenType>
+void DirectStateInitMps(
+    std::vector<TenType *> &, const std::vector<long> &,
+    const Index &, const QN &);
 
 //void ExtendDirectRandomInitMps(
     //std::vector<GQTensor *> &, const std::vector<std::vector<long>> &,
