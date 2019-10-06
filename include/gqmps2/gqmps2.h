@@ -242,20 +242,22 @@ void DirectStateInitMps(
     std::vector<TenType *> &, const std::vector<long> &,
     const Index &, const QN &);
 
-//void ExtendDirectRandomInitMps(
-    //std::vector<GQTensor *> &, const std::vector<std::vector<long>> &,
-    //const Index &, const QN &, const long);
+template <typename TenType>
+void ExtendDirectRandomInitMps(
+    std::vector<TenType *> &, const std::vector<std::vector<long>> &,
+    const Index &, const QN &, const long);
 
 
-//// Observation measurements.
-//struct MPS {
-  //MPS(std::vector<GQTensor *> &tens, const long center) :
-      //tens(tens), center(center), N(tens.size()) {}
+// Observation measurements.
+template <typename TenType>
+struct MPS {
+  MPS(std::vector<TenType *> &tens, const long center) :
+      tens(tens), center(center), N(tens.size()) {}
   
-  //std::vector<GQTensor *> &tens; 
-  //long center;
-  //std::size_t N;
-//};
+  std::vector<TenType *> &tens; 
+  long center;
+  std::size_t N;
+};
 
 //// Single site operator.
 //void MeasureOneSiteOp(MPS &, const GQTensor &, const std::string &);

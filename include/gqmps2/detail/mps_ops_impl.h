@@ -35,6 +35,13 @@ Index GenBodyLeftVirtBond(const Index &, const Index &, const QN &, const long);
 
 void DimCut(std::vector<QNSector> &, const long, const long);
 
+// For MPS centralization.
+template <typename MpsType>
+void RightNormalizeMps(MpsType &, const long, const long);
+
+template <typename MpsType>
+void RightNormalizeMpsTen(MpsType &, const long);
+
 
 // Helpers
 inline bool GreaterQNSectorDim(const QNSector &qnsct1, const QNSector &qnsct2) {
@@ -277,5 +284,150 @@ void DirectStateInitMps(
   mps[N-1] = new TenType({lvb, pb_out});
   stat_lab = stat_labs[N-1];
   (*mps[N-1])({0, stat_lab}) = 1;
+}
+
+
+template <typename TenType>
+void ExtendDirectRandomInitMps(
+    std::vector<TenType *> &mps,
+    const std::vector<std::vector<long>> &stat_labs_set,
+    const Index &pb, const QN &zero_div, const long enlarged_dim) {
+  auto fusion_stats_num = stat_labs_set.size();
+  assert(fusion_stats_num >= 1);
+  auto N = mps.size();
+  assert(N == stat_labs_set[0].size());
+  Index lvb, rvb;
+  std::vector<QNSector> rvb_qnscts;
+
+  // Calculate total quantum number.
+  auto div = pb.CoorInterOffsetAndQnsct(stat_labs_set[0][0]).qnsct.qn;
+  for (std::size_t i = 1; i < N; ++i) {
+    div += pb.CoorInterOffsetAndQnsct(stat_labs_set[0][i]).qnsct.qn;
+  }
+
+  // Deal with MPS head local tensor.
+  for (std::size_t i = 0; i < fusion_stats_num; ++i) {
+    auto stat_lab = stat_labs_set[i][0];
+    auto rvb_qn = div - pb.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn;
+    rvb_qnscts.push_back(QNSector(rvb_qn, enlarged_dim));
+  }
+  rvb = Index(rvb_qnscts, OUT);
+  rvb_qnscts.clear();
+  mps[0] = new TenType({pb, rvb});
+  mps[0]->Random(div);
+
+  // Deal with MPS middle local tensors.
+  for (std::size_t i = 1; i < N-1; ++i) {
+    lvb = InverseIndex(rvb);
+    for (std::size_t j = 0; j < fusion_stats_num; ++j) {
+      auto stat_lab = stat_labs_set[j][i];
+      auto rvb_qn = zero_div -
+                    pb.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn +
+                    lvb.CoorInterOffsetAndQnsct(j*enlarged_dim).qnsct.qn;
+      rvb_qnscts.push_back(QNSector(rvb_qn, enlarged_dim));
+    }
+    rvb = Index(rvb_qnscts, OUT);
+    mps[i] = new TenType({lvb, pb, rvb});
+    rvb_qnscts.clear();
+    mps[i]->Random(zero_div);
+  }
+
+  // Deal with MPS tail local tensor.
+  lvb = InverseIndex(rvb);
+  mps[N-1] = new TenType({lvb, pb});
+  mps[N-1]->Random(zero_div);
+
+  // Centralize MPS.
+  auto temp_mps = MPS<TenType>(mps, -1);
+  RightNormalizeMps(temp_mps, temp_mps.N-1, 1);
+}
+
+
+// MPS centralization.
+//void CentralizeMps(MPS &mps, const long target_center) {
+  //auto origin_center = mps.center;
+  //if (target_center > origin_center) {
+    //LeftNormalizeMps(mps, origin_center, target_center-1);
+    //mps.center = target_center;
+  //} else if (target_center < origin_center) {
+    //RightNormalizeMps(mps, origin_center, target_center+1);
+    //mps.center = target_center;
+  //}
+//}
+
+
+//void LeftNormalizeMps(MPS &mps, const long from, const long to) {
+  //assert(to >= from);
+  //for (long i = from; i <= to; ++i) {
+    //LeftNormalizeMpsTen(mps, i);
+  //}
+//}
+
+
+template <typename MpsType>
+void RightNormalizeMps(MpsType &mps, const long from, const long to) {
+  assert(to <= from);
+  for (long i = from; i >= to; --i) {
+    RightNormalizeMpsTen(mps, i);
+  }
+}
+
+
+//void LeftNormalizeMpsTen(MPS &mps, const long site) {
+  //assert(site < mps.N-1);
+  //long ldims, rdims;
+  //if (site == 0) {
+    //ldims = 1;
+    //rdims = 1;
+  //} else {
+    //ldims = 2;
+    //rdims = 1;
+  //}
+  //auto svd_res = Svd(
+      //*mps.tens[site],
+      //ldims, rdims,
+      //Div(*mps.tens[site]), Div(*mps.tens[site+1]));
+  //delete mps.tens[site];  
+  //mps.tens[site] = svd_res.u;
+  //auto temp_ten = Contract(*svd_res.s, *svd_res.v, {{1}, {0}});
+  //delete svd_res.s;
+  //delete svd_res.v;
+  //auto next_ten = Contract(*temp_ten, *mps.tens[site+1], {{1}, {0}});
+  //delete temp_ten;
+  //delete mps.tens[site+1];
+  //mps.tens[site+1] = next_ten;
+//}
+
+
+template <typename MpsType>
+void RightNormalizeMpsTen(MpsType &mps, const long site) {
+  assert(site > 0);
+  long ldims, rdims;
+  if (site == mps.N-1) {
+    ldims = 1;
+    rdims = 1;
+  } else {
+    ldims = 1;
+    rdims = 2;
+  }
+  auto svd_res = Svd(
+      *mps.tens[site],
+      ldims, rdims,
+      Div(*mps.tens[site-1]), Div(*mps.tens[site]));
+  delete mps.tens[site];
+  mps.tens[site] = svd_res.v;
+  auto temp_ten = Contract(*svd_res.u, *svd_res.s, {{1}, {0}});
+  delete svd_res.u;
+  delete svd_res.s;
+  std::vector<long> ta_ctrct_axes;
+  if ((site-1) == 0) {
+    ta_ctrct_axes = {1};
+  } else {
+    ta_ctrct_axes = {2};
+  }
+  auto prev_ten = Contract(*mps.tens[site-1], *temp_ten, {ta_ctrct_axes, {0}});
+  delete temp_ten;
+  delete mps.tens[site-1];
+  mps.tens[site-1] = prev_ten;
 }
 } /* gqmps2 */ 

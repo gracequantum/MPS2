@@ -18,6 +18,39 @@ using DTenPtrVec = std::vector<DGQTensor *>;
 using ZTenPtrVec = std::vector<ZGQTensor *>;
 
 
+template <typename TenType>
+void RunTestTwoSiteAlgorithmCase(
+    std::vector<TenType *> &mps, const std::vector<TenType *> &mpo,
+    const SweepParams &sweep_params,
+    const double benmrk_e0, const double precision) {
+  auto e0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
+  EXPECT_NEAR(e0, benmrk_e0, precision);
+}
+
+
+// Helpers
+inline void KeepOrder(long &x, long &y) {
+  if (x > y) {
+    auto temp = y;
+    y = x;
+    x = temp;
+  }
+}
+
+
+inline long coors2idxSquare(
+    const long x, const long y, const long Nx, const long Ny) {
+  return x * Ny + y;
+}
+
+
+inline long coors2idxHoneycomb(
+    const long x, const long y, const long Nx, const long Ny) {
+  return Ny * (x%Nx) + y%Ny;
+}
+
+
+// Test spin systems
 struct TestTwoSiteAlgorithmSpinSystem : public testing::Test {
   long N = 6;
 
@@ -49,16 +82,6 @@ struct TestTwoSiteAlgorithmSpinSystem : public testing::Test {
     zsm({1, 0}) = 1;
   }
 };
-
-
-template <typename TenType>
-void RunTestTwoSiteAlgorithmCase(
-    std::vector<TenType *> &mps, const std::vector<TenType *> &mpo,
-    const SweepParams &sweep_params,
-    const double benmrk_e0, const double precision) {
-  auto e0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
-  EXPECT_NEAR(e0, benmrk_e0, precision);
-}
 
 
 TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DIsing) {
@@ -228,7 +251,65 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DHeisenberg) {
 }
 
 
-// Test Fermion models.
+TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DKitaev) {
+  long Nx = 4;
+  long Ny = 2;
+  long N1 = Nx*Ny;
+  auto dmpo_gen = MPOGenerator<GQTEN_Double>(N1, pb_out, qn0);
+  for (long x = 0; x < Nx; ++x) {
+    for (long y = 0; y < Ny; ++y) {
+      if (x % 2 == 1) {
+        auto s0 = coors2idxHoneycomb(x, y, Nx, Ny);
+        auto s1 = coors2idxHoneycomb(x-1, y+1, Nx, Ny);
+        KeepOrder(s0, s1);
+        dmpo_gen.AddTerm(1, {dsz, dsz}, {s0, s1});
+      }
+    }
+  }
+  auto dmpo = dmpo_gen.Gen();
+
+  auto sweep_params = SweepParams(
+                          4,
+                          8, 8, 1.0E-4,
+                          true,
+                          kTwoSiteAlgoWorkflowInitial,
+                          LanczosParams(1.0E-10));
+  // Test extend direct product state random initialization.
+  std::vector<long> stat_labs1, stat_labs2;
+  for (long i = 0; i < N1; ++i) {
+    stat_labs1.push_back(i%2);
+    stat_labs2.push_back((i+1)%2);
+  }
+  auto dmps_8sites = DTenPtrVec(N1);
+  ExtendDirectRandomInitMps(
+      dmps_8sites, {stat_labs1, stat_labs2}, pb_out, qn0, 2);
+  RunTestTwoSiteAlgorithmCase(
+      dmps_8sites, dmpo, sweep_params,
+      -1.0, 1.0E-12);
+
+  // Complex Hamiltonian
+  auto zmpo_gen = MPOGenerator<GQTEN_Complex>(N1, pb_out, qn0);
+  for (long x = 0; x < Nx; ++x) {
+    for (long y = 0; y < Ny; ++y) {
+      if (x % 2 == 1) {
+        auto s0 = coors2idxHoneycomb(x, y, Nx, Ny);
+        auto s1 = coors2idxHoneycomb(x-1, y+1, Nx, Ny);
+        KeepOrder(s0, s1);
+        zmpo_gen.AddTerm(1, {zsz, zsz}, {s0, s1});
+      }
+    }
+  }
+  auto zmpo = zmpo_gen.Gen();
+  auto zmps_8sites = ZTenPtrVec(N1);
+  ExtendDirectRandomInitMps(
+      zmps_8sites, {stat_labs1, stat_labs2}, pb_out, qn0, 2);
+  RunTestTwoSiteAlgorithmCase(
+      zmps_8sites, zmpo, sweep_params,
+      -1.0, 1.0E-12);
+}
+
+
+// Test fermion models.
 struct TestTwoSiteAlgorithmTjSystem : public testing::Test {
   long N = 4;
   double t = 3.;
@@ -482,30 +563,15 @@ struct TestTwoSiteAlgorithmHubbardSystem : public testing::Test {
 };
 
 
-inline long coors2idx(
-    const long x, const long y, const long Nx, const long Ny) {
-  return x * Ny + y;
-}
-
-
-inline void KeepOrder(long &x, long &y) {
-  if (x > y) {
-    auto temp = y;
-    y = x;
-    x = temp;
-  }
-}
-
-
 TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
   auto dmpo_gen = MPOGenerator<GQTEN_Double>(N, pb_out, qn0);
   for (long i = 0; i < Nx; ++i) {
     for (long j = 0; j < Ny; ++j) {
-      auto s0 = coors2idx(i, j, Nx, Ny);
+      auto s0 = coors2idxSquare(i, j, Nx, Ny);
       dmpo_gen.AddTerm(U, {dnupdn}, {s0});
 
       if (i != Nx-1) {
-        auto s1 = coors2idx(i+1, j, Nx, Ny);
+        auto s1 = coors2idxSquare(i+1, j, Nx, Ny);
         std::cout << s0 << " " << s1 << std::endl;
         dmpo_gen.AddTerm(1, {-t0*dadagupf, daup},  {s0, s1}, df);
         dmpo_gen.AddTerm(1, {-t0*dadagdn, dfadn},  {s0, s1}, df);
@@ -513,7 +579,7 @@ TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
         dmpo_gen.AddTerm(1, {dnadn, -t0*dfadagdn}, {s0, s1}, df);
       }
       if (j != Ny-1) {
-        auto s1 = coors2idx(i, j+1, Nx, Ny);
+        auto s1 = coors2idxSquare(i, j+1, Nx, Ny);
         std::cout << s0 << " " << s1 << std::endl;
         dmpo_gen.AddTerm(1, {-t0*dadagupf, daup},  {s0, s1}, df);
         dmpo_gen.AddTerm(1, {-t0*dadagdn, dfadn},  {s0, s1}, df);
@@ -523,7 +589,7 @@ TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
 
       if (j != Ny-1) {
         if (i != 0) {
-          auto s2 = coors2idx(i-1, j+1, Nx, Ny);
+          auto s2 = coors2idxSquare(i-1, j+1, Nx, Ny);
           auto temp_s0 = s0;
           KeepOrder(temp_s0, s2);
           std::cout << temp_s0 << " " << s2 << std::endl;
@@ -533,7 +599,7 @@ TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
           dmpo_gen.AddTerm(1, {dnadn, -t1*dfadagdn}, {temp_s0, s2}, df);
         } 
         if (i != Nx-1) {
-          auto s2 = coors2idx(i+1, j+1, Nx, Ny);
+          auto s2 = coors2idxSquare(i+1, j+1, Nx, Ny);
           auto temp_s0 = s0;
           KeepOrder(temp_s0, s2);
           std::cout << temp_s0 << " " << s2 << std::endl;
@@ -565,11 +631,11 @@ TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
   auto zmpo_gen = MPOGenerator<GQTEN_Complex>(N, pb_out, qn0);
   for (long i = 0; i < Nx; ++i) {
     for (long j = 0; j < Ny; ++j) {
-      auto s0 = coors2idx(i, j, Nx, Ny);
+      auto s0 = coors2idxSquare(i, j, Nx, Ny);
       zmpo_gen.AddTerm(U, {znupdn}, {s0});
 
       if (i != Nx-1) {
-        auto s1 = coors2idx(i+1, j, Nx, Ny);
+        auto s1 = coors2idxSquare(i+1, j, Nx, Ny);
         std::cout << s0 << " " << s1 << std::endl;
         zmpo_gen.AddTerm(-t0, {zadagupf, zaup},  {s0, s1}, zf);
         zmpo_gen.AddTerm(-t0, {zadagdn, zfadn},  {s0, s1}, zf);
@@ -577,7 +643,7 @@ TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
         zmpo_gen.AddTerm(-t0, {znadn, zfadagdn}, {s0, s1}, zf);
       }
       if (j != Ny-1) {
-        auto s1 = coors2idx(i, j+1, Nx, Ny);
+        auto s1 = coors2idxSquare(i, j+1, Nx, Ny);
         std::cout << s0 << " " << s1 << std::endl;
         zmpo_gen.AddTerm(-t0, {zadagupf, zaup},  {s0, s1}, zf);
         zmpo_gen.AddTerm(-t0, {zadagdn, zfadn},  {s0, s1}, zf);
@@ -587,7 +653,7 @@ TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
 
       if (j != Ny-1) {
         if (i != 0) {
-          auto s2 = coors2idx(i-1, j+1, Nx, Ny);
+          auto s2 = coors2idxSquare(i-1, j+1, Nx, Ny);
           auto temp_s0 = s0;
           KeepOrder(temp_s0, s2);
           std::cout << temp_s0 << " " << s2 << std::endl;
@@ -597,7 +663,7 @@ TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
           zmpo_gen.AddTerm(-t1, {znadn, zfadagdn}, {temp_s0, s2}, zf);
         } 
         if (i != Nx-1) {
-          auto s2 = coors2idx(i+1, j+1, Nx, Ny);
+          auto s2 = coors2idxSquare(i+1, j+1, Nx, Ny);
           auto temp_s0 = s0;
           KeepOrder(temp_s0, s2);
           std::cout << temp_s0 << " " << s2 << std::endl;
