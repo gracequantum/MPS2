@@ -37,6 +37,12 @@ void DimCut(std::vector<QNSector> &, const long, const long);
 
 // For MPS centralization.
 template <typename MpsType>
+void LeftNormalizeMps(MpsType &, const long, const long);
+
+template <typename MpsType>
+void LeftNormalizeMpsTen(MpsType &, const long);
+
+template <typename MpsType>
 void RightNormalizeMps(MpsType &, const long, const long);
 
 template <typename MpsType>
@@ -226,7 +232,8 @@ inline Index GenBodyLeftVirtBond(
 }
 
 
-inline void DimCut(std::vector<QNSector> &qnscts, const long dmax, const long pdim) {
+inline void DimCut(
+    std::vector<QNSector> &qnscts, const long dmax, const long pdim) {
   std::sort(qnscts.begin(), qnscts.end(), GreaterQNSectorDim);
   auto kept_qn_cnt = 0;
   auto dim = 0;
@@ -344,24 +351,26 @@ void ExtendDirectRandomInitMps(
 
 
 // MPS centralization.
-//void CentralizeMps(MPS &mps, const long target_center) {
-  //auto origin_center = mps.center;
-  //if (target_center > origin_center) {
-    //LeftNormalizeMps(mps, origin_center, target_center-1);
-    //mps.center = target_center;
-  //} else if (target_center < origin_center) {
-    //RightNormalizeMps(mps, origin_center, target_center+1);
-    //mps.center = target_center;
-  //}
-//}
+template <typename MpsType>
+void CentralizeMps(MpsType &mps, const long target_center) {
+  auto origin_center = mps.center;
+  if (target_center > origin_center) {
+    LeftNormalizeMps(mps, origin_center, target_center-1);
+    mps.center = target_center;
+  } else if (target_center < origin_center) {
+    RightNormalizeMps(mps, origin_center, target_center+1);
+    mps.center = target_center;
+  }
+}
 
 
-//void LeftNormalizeMps(MPS &mps, const long from, const long to) {
-  //assert(to >= from);
-  //for (long i = from; i <= to; ++i) {
-    //LeftNormalizeMpsTen(mps, i);
-  //}
-//}
+template <typename MpsType>
+void LeftNormalizeMps(MpsType &mps, const long from, const long to) {
+  assert(to >= from);
+  for (long i = from; i <= to; ++i) {
+    LeftNormalizeMpsTen(mps, i);
+  }
+}
 
 
 template <typename MpsType>
@@ -373,30 +382,31 @@ void RightNormalizeMps(MpsType &mps, const long from, const long to) {
 }
 
 
-//void LeftNormalizeMpsTen(MPS &mps, const long site) {
-  //assert(site < mps.N-1);
-  //long ldims, rdims;
-  //if (site == 0) {
-    //ldims = 1;
-    //rdims = 1;
-  //} else {
-    //ldims = 2;
-    //rdims = 1;
-  //}
-  //auto svd_res = Svd(
-      //*mps.tens[site],
-      //ldims, rdims,
-      //Div(*mps.tens[site]), Div(*mps.tens[site+1]));
-  //delete mps.tens[site];  
-  //mps.tens[site] = svd_res.u;
-  //auto temp_ten = Contract(*svd_res.s, *svd_res.v, {{1}, {0}});
-  //delete svd_res.s;
-  //delete svd_res.v;
-  //auto next_ten = Contract(*temp_ten, *mps.tens[site+1], {{1}, {0}});
-  //delete temp_ten;
-  //delete mps.tens[site+1];
-  //mps.tens[site+1] = next_ten;
-//}
+template <typename MpsType>
+void LeftNormalizeMpsTen(MpsType &mps, const long site) {
+  assert(site < mps.N-1);
+  long ldims, rdims;
+  if (site == 0) {
+    ldims = 1;
+    rdims = 1;
+  } else {
+    ldims = 2;
+    rdims = 1;
+  }
+  auto svd_res = Svd(
+      *mps.tens[site],
+      ldims, rdims,
+      Div(*mps.tens[site]), Div(*mps.tens[site+1]));
+  delete mps.tens[site];
+  mps.tens[site] = svd_res.u;
+  auto temp_ten = Contract(*svd_res.s, *svd_res.v, {{1}, {0}});
+  delete svd_res.s;
+  delete svd_res.v;
+  auto next_ten = Contract(*temp_ten, *mps.tens[site+1], {{1}, {0}});
+  delete temp_ten;
+  delete mps.tens[site+1];
+  mps.tens[site+1] = next_ten;
+}
 
 
 template <typename MpsType>
