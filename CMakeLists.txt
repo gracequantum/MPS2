@@ -46,18 +46,19 @@ add_definitions(-g)
 
 # Installation path
 set(GQMPS2_TOOL_SCRIPT_DEST "${CMAKE_INSTALL_PREFIX}/bin")
-set(GQMPS2_INCLUDE_DEST "${CMAKE_INSTALL_PREFIX}/include/gqmps2")
-set(GQMPS2_LIB_DEST "${CMAKE_INSTALL_PREFIX}/lib")
+set(GQMPS2_INCLUDE_DEST "${CMAKE_INSTALL_PREFIX}/include")
 
 
 # Build dependencies.
 add_subdirectory(external)
 
 
-# Build library.
+# Build(install) library.
 set(GQMPS2_HEADER_PATH "${PROJECT_SOURCE_DIR}/include")
-set(GQMPS2_TENSOR_LIB_HEADER_PATH "${PROJECT_SOURCE_DIR}/external/gqten/include")
-set(GQMPS2_JSON_LIB_HEADER_PATH "${PROJECT_SOURCE_DIR}/external/nlohmann_json/include")
+set(GQMPS2_HEADER_DIR ${GQMPS2_HEADER_PATH}/gqmps2)
+install(
+  DIRECTORY ${GQMPS2_HEADER_DIR}
+  DESTINATION ${GQMPS2_INCLUDE_DEST})
 
 
 # Build tool scripts
@@ -65,6 +66,8 @@ add_subdirectory(script)
 
 
 # Build unittests.
+set(GQMPS2_TENSOR_LIB_HEADER_PATH "${PROJECT_SOURCE_DIR}/external/gqten/include")
+set(GQMPS2_JSON_LIB_HEADER_PATH "${PROJECT_SOURCE_DIR}/external/nlohmann_json/include")
 if(GQMPS2_BUILD_UNITTEST)
   enable_testing()
   find_package(GTest REQUIRED)
