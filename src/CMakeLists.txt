@@ -8,8 +8,6 @@
 set(GQMPS2_HEASERS ${GQMPS2_HEADER_PATH}/gqmps2/gqmps2.h)
 set(GQMPS2_BASIC_SRC
   #case_parser.cc
-  #mps_ops.cc
-  #mps_measu.cc
   )
 
 add_library(gqmps2

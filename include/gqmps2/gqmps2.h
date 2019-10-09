@@ -278,23 +278,29 @@ MeasuRes<TenElemType> MeasureOneSiteOp(
     MPS<GQTensor<TenElemType>> &,
     const GQTensor<TenElemType> &, const std::string &);
 
-//void MeasureOneSiteOp(
-    //MPS &, const std::vector<GQTensor> &, const std::vector<std::string> &);
+template <typename TenElemType>
+MeasuRes<TenElemType> MeasureOneSiteOp(
+    MPS<GQTensor<TenElemType>> &,
+    const std::vector<GQTensor<TenElemType>> &,
+    const std::vector<std::string> &);
 
-//void MeasureTwoSiteOp(
-    //MPS &,
-    //const std::vector<GQTensor> &,
-    //const GQTensor &, const GQTensor &,
-    //const std::vector<std::vector<long>> &,
-    //const std::string &);
+template <typename TenElemType>
+MeasuRes<TenElemType> MeasureTwoSiteOp(
+    MPS<GQTensor<TenElemType>> &,
+    const std::vector<GQTensor<TenElemType>> &,
+    const GQTensor<TenElemType> &,
+    const GQTensor<TenElemType> &,
+    const std::vector<std::vector<long>> &,
+    const std::string &);
 
-//void MeasureMultiSiteOp(
-    //MPS &,
-    //const std::vector<std::vector<GQTensor>> &,
-    //const std::vector<std::vector<GQTensor>> &,
-    //const GQTensor &,
-    //const std::vector<std::vector<long>> &,
-    //const std::string &);
+template <typename TenElemType>
+MeasuRes<TenElemType> MeasureMultiSiteOp(
+    MPS<GQTensor<TenElemType>> &,
+    const std::vector<std::vector<GQTensor<TenElemType>>> &,
+    const std::vector<std::vector<GQTensor<TenElemType>>> &,
+    const GQTensor<TenElemType> &,
+    const std::vector<std::vector<long>> &,
+    const std::string &);
 
 
 // System I/O functions.
