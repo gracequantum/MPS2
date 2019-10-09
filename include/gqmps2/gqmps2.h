@@ -297,6 +297,10 @@ struct MeasuResElem {
 template <typename AvgType>
 using MeasuRes = std::vector<MeasuResElem<AvgType>>;
 
+template <typename AvgType>
+using MeasuResSet = std::vector<MeasuRes<AvgType>>;
+
+
 // Single site operator.
 template <typename TenElemType>
 MeasuRes<TenElemType> MeasureOneSiteOp(
@@ -304,7 +308,7 @@ MeasuRes<TenElemType> MeasureOneSiteOp(
     const GQTensor<TenElemType> &, const std::string &);
 
 template <typename TenElemType>
-MeasuRes<TenElemType> MeasureOneSiteOp(
+MeasuResSet<TenElemType> MeasureOneSiteOp(
     MPS<GQTensor<TenElemType>> &,
     const std::vector<GQTensor<TenElemType>> &,
     const std::vector<std::string> &);

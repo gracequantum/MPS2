@@ -18,10 +18,6 @@ namespace gqmps2 {
 using namespace gqten;
 
 
-template <typename AvgType>
-using MeasuResSet = std::vector<MeasuRes<AvgType>>;
-
-
 // Forward declaration.
 template <typename TenElemType>
 MeasuResElem<TenElemType> OneSiteOpAvg(
@@ -98,7 +94,7 @@ MeasuRes<TenElemType> MeasureOneSiteOp(
 
 
 template <typename TenElemType>
-MeasuRes<TenElemType> MeasureOneSiteOp(
+MeasuResSet<TenElemType> MeasureOneSiteOp(
     MPS<GQTensor<TenElemType>> &mps,
     const std::vector<GQTensor<TenElemType>> &ops,
     const std::vector<std::string> &res_file_basenames) {
