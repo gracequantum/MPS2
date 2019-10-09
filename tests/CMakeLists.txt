@@ -58,6 +58,10 @@ add_unittest(test_mpogen test_mpogen.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
 add_unittest(test_two_site_algo
   test_two_site_algo.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
 
+# Test MPS measurement.
+add_unittest(test_mps_measu
+  test_mps_measu.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
+
 ## Test simulation case parameters parser.
 #add_unittest(test_case_params_parser
   #test_case_params_parser.cc

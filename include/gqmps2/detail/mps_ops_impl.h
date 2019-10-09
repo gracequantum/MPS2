@@ -354,12 +354,19 @@ void ExtendDirectRandomInitMps(
 template <typename MpsType>
 void CentralizeMps(MpsType &mps, const long target_center) {
   auto origin_center = mps.center;
-  if (target_center > origin_center) {
-    LeftNormalizeMps(mps, origin_center, target_center-1);
+  if (origin_center < 0) {
+    auto end = mps.N-1;
+    if (target_center != 0) { LeftNormalizeMps(mps, 0, target_center-1); }
+    if (target_center != end) { RightNormalizeMps(mps, end, target_center+1); }
     mps.center = target_center;
-  } else if (target_center < origin_center) {
-    RightNormalizeMps(mps, origin_center, target_center+1);
-    mps.center = target_center;
+  } else {
+    if (target_center > origin_center) {
+      LeftNormalizeMps(mps, origin_center, target_center-1);
+      mps.center = target_center;
+    } else if (target_center < origin_center) {
+      RightNormalizeMps(mps, origin_center, target_center+1);
+      mps.center = target_center;
+    }
   }
 }
 

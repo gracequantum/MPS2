@@ -259,8 +259,24 @@ struct MPS {
   std::size_t N;
 };
 
-//// Single site operator.
-//void MeasureOneSiteOp(MPS &, const GQTensor &, const std::string &);
+template <typename AvgType>
+struct MeasuResElem {
+  MeasuResElem(void) = default;
+  MeasuResElem(const std::vector<long> &sites, const AvgType avg) :
+    sites(sites), avg(avg) {}
+
+  std::vector<long> sites;
+  AvgType avg;
+};
+
+template <typename AvgType>
+using MeasuRes = std::vector<MeasuResElem<AvgType>>;
+
+// Single site operator.
+template <typename TenElemType>
+MeasuRes<TenElemType> MeasureOneSiteOp(
+    MPS<GQTensor<TenElemType>> &,
+    const GQTensor<TenElemType> &, const std::string &);
 
 //void MeasureOneSiteOp(
     //MPS &, const std::vector<GQTensor> &, const std::vector<std::string> &);
@@ -322,6 +338,7 @@ inline void CreatPath(const std::string &path) {
 #include "gqmps2/detail/mpogen_impl.h"
 #include "gqmps2/detail/two_site_algo_impl.h"
 #include "gqmps2/detail/mps_ops_impl.h"
+#include "gqmps2/detail/mps_measu_impl.h"
 
 
 #endif /* ifndef GQMPS2_GQMPS2_H */
