@@ -40,7 +40,7 @@ if(GQMPS2_BUILD_GQTEN_USE_EXTERNAL_HPTT_LIB)
 endif()
 
 # Compilation and linking control.
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 add_definitions(-g)
 
 
