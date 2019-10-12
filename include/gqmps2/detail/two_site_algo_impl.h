@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 /*
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
-* Creation Date: 2019-07-01 14:54
+* Creation Date: 2019-09-29 21:20
 * 
-* Description: GraceQ/mps2 project. Private objects for MPI parallel two sites algorithm. Implementation.
+* Description: GraceQ/MPS2 project. Implementation details for two-site algorithm.
 */
-#include "mpi_two_site_algo.h"
-#include "two_site_algo.h"
-#include "lanczos.h"
 #include "gqmps2/gqmps2.h"
 #include "gqten/gqten.h"
 
@@ -18,8 +15,6 @@
 
 #include <assert.h>
 
-#include "mpi.h"
-
 #ifdef Release
   #define NDEBUG
 #endif
@@ -29,10 +24,43 @@ namespace gqmps2 {
 using namespace gqten;
 
 
-double GQMPS2_MPI_TwoSiteAlgorithm(
-    std::vector<GQTensor *> &mps, const std::vector<GQTensor *> &mpo,
-    const SweepParams &sweep_params,
-    MPI_Comm comm, const int workers) {
+
+// Forward declarations
+
+
+// Helpers
+inline double MeasureEE(const DGQTensor *s, const long sdim) {
+  double ee = 0;
+  double p;
+  for (long i = 0; i < sdim; ++i) {
+    p = std::pow(s->Elem({i, i}), 2.0);
+    ee += (-p * std::log(p));
+  }
+  return ee;
+}
+
+
+inline std::string GenBlockFileName(
+    const std::string &dir, const long blk_len) {
+  return kRuntimeTempPath + "/" +
+         dir + kBlockFileBaseName + std::to_string(blk_len) +
+         "." + kGQTenFileSuffix;
+}
+
+
+inline void RemoveFile(const std::string &file) {
+  if (std::remove(file.c_str())) {
+    std::cout << "Unable to delete " << file << std::endl;
+    exit(1);
+  }
+}
+
+
+// Two-site algorithm
+template <typename TenType>
+double TwoSiteAlgorithm(
+    std::vector<TenType *> &mps, const std::vector<TenType *> &mpo,
+    const SweepParams &sweep_params) {
   if ( sweep_params.FileIO && !IsPathExist(kRuntimeTempPath)) {
     CreatPath(kRuntimeTempPath);
   }
@@ -45,11 +73,10 @@ double GQMPS2_MPI_TwoSiteAlgorithm(
   for (long sweep = 0; sweep < sweep_params.Sweeps; ++sweep) {
     std::cout << "sweep " << sweep << std::endl;
     sweep_timer.Restart();
-    e0 = GQMPS2_MPI_TwoSiteSweep(
+    e0 = TwoSiteSweep(
         mps, mpo,
         l_and_r_blocks.first, l_and_r_blocks.second,
-        sweep_params,
-        comm, workers);
+        sweep_params);
     sweep_timer.PrintElapsed();
     std::cout << "\n";
   }
@@ -57,39 +84,86 @@ double GQMPS2_MPI_TwoSiteAlgorithm(
 }
 
 
-double GQMPS2_MPI_TwoSiteSweep(
-    std::vector<GQTensor *> &mps, const std::vector<GQTensor *> &mpo,
-    std::vector<GQTensor *> &lblocks, std::vector<GQTensor *> &rblocks,
-    const SweepParams &sweep_params,
-    MPI_Comm comm, const int workers) {
+template<typename TenType>
+std::pair<std::vector<TenType *>, std::vector<TenType *>> InitBlocks(
+    const std::vector<TenType *> &mps, const std::vector<TenType *> &mpo,
+    const SweepParams &sweep_params) {
+  assert(mps.size() == mpo.size());
+  auto N = mps.size();
+  std::vector<TenType *> rblocks(N-1);
+  std::vector<TenType *> lblocks(N-1);
+
+  if (sweep_params.Workflow == kTwoSiteAlgoWorkflowContinue) {
+    return std::make_pair(lblocks, rblocks);
+  }
+
+  // Generate blocks.
+  // Right blocks.
+  auto rblock0 = new TenType();
+  rblocks[0] = rblock0;
+  auto rblock1 = Contract(*mps.back(), *mpo.back(), {{1}, {0}});
+  auto temp_rblock1 = Contract(*rblock1, Dag(*mps.back()), {{2}, {1}});
+  delete rblock1;
+  rblock1 = temp_rblock1;
+  rblocks[1] = rblock1;
+  std::string file;
+  if (sweep_params.FileIO) {
+    file = GenBlockFileName("r", 0);
+    WriteGQTensorTOFile(*rblock0, file);
+    delete rblocks[0];
+    file = GenBlockFileName("r", 1);
+    WriteGQTensorTOFile(*rblock1, file);
+  }
+  for (size_t i = 2; i < N-1; ++i) {
+    auto rblocki = Contract(*mps[N-i], *rblocks[i-1], {{2}, {0}});
+    auto temp_rblocki = Contract(*rblocki, *mpo[N-i], {{1, 2}, {1, 3}});
+    delete rblocki;
+    rblocki = temp_rblocki;
+    temp_rblocki = Contract(*rblocki, Dag(*mps[N-i]), {{3, 1}, {1, 2}});
+    delete rblocki;
+    rblocki = temp_rblocki;
+    rblocks[i] = rblocki;
+    if (sweep_params.FileIO) {
+      auto file = GenBlockFileName("r", i);
+      WriteGQTensorTOFile(*rblocki, file);
+      delete rblocks[i-1];
+    }
+  }
+  if (sweep_params.FileIO) { delete rblocks[N-2]; }
+
+  // Left blocks.
+  if (sweep_params.FileIO) {
+    auto file = GenBlockFileName("l", 0);
+    WriteGQTensorTOFile(TenType(), file);
+  }
+
+  return std::make_pair(lblocks, rblocks);
+}
+
+
+template <typename TenType>
+double TwoSiteSweep(
+    std::vector<TenType *> &mps, const std::vector<TenType *> &mpo,
+    std::vector<TenType *> &lblocks, std::vector<TenType *> &rblocks,
+    const SweepParams &sweep_params) {
   auto N = mps.size();
   double e0;
   for (size_t i = 0; i < N-1; ++i) {
-    e0 = GQMPS2_MPI_TwoSiteUpdate(
-             i,
-             mps, mpo,
-             lblocks, rblocks,
-             sweep_params, 'r',
-             comm, workers);
+    e0 = TwoSiteUpdate(i, mps, mpo, lblocks, rblocks, sweep_params, 'r');
   }
   for (size_t i = N-1; i > 0; --i) {
-    e0 = GQMPS2_MPI_TwoSiteUpdate(
-             i,
-             mps, mpo,
-             lblocks, rblocks,
-             sweep_params, 'l',
-             comm, workers);
+    e0 = TwoSiteUpdate(i, mps, mpo, lblocks, rblocks, sweep_params, 'l');
   }
   return e0;
 }
 
 
-double GQMPS2_MPI_TwoSiteUpdate(
+template <typename TenType>
+double TwoSiteUpdate(
     const long i,
-    std::vector<GQTensor *> &mps, const std::vector<GQTensor *> &mpo,
-    std::vector<GQTensor *> &lblocks, std::vector<GQTensor *> &rblocks,
-    const SweepParams &sweep_params, const char dir,
-    MPI_Comm comm, const int workers) {
+    std::vector<TenType *> &mps, const std::vector<TenType *> &mpo,
+    std::vector<TenType *> &lblocks, std::vector<TenType *> &rblocks,
+    const SweepParams &sweep_params, const char dir) {
   Timer update_timer("update");
   update_timer.Restart();
 
@@ -186,24 +260,22 @@ double GQMPS2_MPI_TwoSiteUpdate(
 #endif
 
   // Lanczos
-  std::vector<GQTensor *>eff_ham(4);
+  std::vector<TenType *>eff_ham(4);
   eff_ham[0] = lblocks[lblock_len];
   eff_ham[1] = mpo[lsite_idx];
   eff_ham[2] = mpo[rsite_idx];
   eff_ham[3] = rblocks[rblock_len];
-  auto init_state = GQTEN_MPI_Contract(
+  auto init_state = Contract(
                         *mps[lsite_idx], *mps[rsite_idx],
-                        init_state_ctrct_axes,
-                        comm, workers);
+                        init_state_ctrct_axes);
 
   Timer lancz_timer("Lancz");
   lancz_timer.Restart();
 
-  auto lancz_res = GQMPS2_MPI_LanczosSolver(
+  auto lancz_res = LanczosSolver(
                        eff_ham, init_state,
                        sweep_params.LanczParams,
-                       where,
-                       comm, workers);
+                       where);
 
 #ifdef GQMPS2_TIMING_MODE
   auto lancz_elapsed_time = lancz_timer.PrintElapsed();
@@ -241,7 +313,7 @@ double GQMPS2_MPI_TwoSiteUpdate(
   Timer dump_blk_timer("dump_blk");
 #endif
 
-  GQTensor *new_lblock, *new_rblock;
+  TenType *new_lblock, *new_rblock;
   bool update_block = true;
   switch (dir) {
     case 'r':
@@ -258,26 +330,18 @@ double GQMPS2_MPI_TwoSiteUpdate(
       delete svd_res.v;
 
       if (i == 0) {
-        new_lblock = GQTEN_MPI_Contract(
-                         *mps[i], *mpo[i], {{0}, {0}},
-                         comm, workers);
-        auto temp_new_lblock = GQTEN_MPI_Contract(
-                                   *new_lblock, MockDag(*mps[i]), {{2}, {0}},
-                                   comm, workers);
+        new_lblock = Contract(*mps[i], *mpo[i], {{0}, {0}});
+        auto temp_new_lblock = Contract(
+                                   *new_lblock, Dag(*mps[i]),
+                                   {{2}, {0}});
         delete new_lblock;
         new_lblock = temp_new_lblock;
       } else if (i != N-2) {
-        new_lblock = GQTEN_MPI_Contract(
-                         *lblocks[i], *mps[i], {{0}, {0}},
-                         comm, workers);
-        auto temp_new_lblock = GQTEN_MPI_Contract(
-                                   *new_lblock, *mpo[i], {{0, 2}, {0, 1}},
-                                   comm, workers);
+        new_lblock = Contract(*lblocks[i], *mps[i], {{0}, {0}});
+        auto temp_new_lblock = Contract(*new_lblock, *mpo[i], {{0, 2}, {0, 1}});
         delete new_lblock;
         new_lblock = temp_new_lblock;
-        temp_new_lblock = GQTEN_MPI_Contract(
-                              *new_lblock, MockDag(*mps[i]), {{0, 2}, {0, 1}},
-                              comm, workers);
+        temp_new_lblock = Contract(*new_lblock, Dag(*mps[i]), {{0, 2}, {0, 1}});
         delete new_lblock;
         new_lblock = temp_new_lblock;
       } else {
@@ -327,26 +391,16 @@ double GQMPS2_MPI_TwoSiteUpdate(
       mps[rsite_idx] = svd_res.v;
 
       if (i == N-1) {
-        new_rblock = GQTEN_MPI_Contract(
-                         *mps[i], *mpo[i], {{1}, {0}},
-                         comm, workers);
-        auto temp_new_rblock = GQTEN_MPI_Contract(
-                                   *new_rblock, MockDag(*mps[i]), {{2}, {1}},
-                                   comm, workers);
+        new_rblock = Contract(*mps[i], *mpo[i], {{1}, {0}});
+        auto temp_new_rblock = Contract(*new_rblock, Dag(*mps[i]), {{2}, {1}});
         delete new_rblock;
         new_rblock = temp_new_rblock;
       } else if (i != 1) {
-        new_rblock = GQTEN_MPI_Contract(
-                         *mps[i], *eff_ham[3], {{2}, {0}},
-                         comm, workers);
-        auto temp_new_rblock = GQTEN_MPI_Contract(
-                                   *new_rblock, *mpo[i], {{1, 2}, {1, 3}},
-                                   comm, workers);
+        new_rblock = Contract(*mps[i], *eff_ham[3], {{2}, {0}});
+        auto temp_new_rblock = Contract(*new_rblock, *mpo[i], {{1, 2}, {1, 3}});
         delete new_rblock;
         new_rblock = temp_new_rblock;
-        temp_new_rblock = GQTEN_MPI_Contract(
-                              *new_rblock, MockDag(*mps[i]), {{3, 1}, {1, 2}},
-                              comm, workers);
+        temp_new_rblock = Contract(*new_rblock, Dag(*mps[i]), {{3, 1}, {1, 2}});
         delete new_rblock;
         new_rblock = temp_new_rblock;
       } else {

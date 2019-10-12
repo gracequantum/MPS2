@@ -20,10 +20,6 @@
 
 #include "nlohmann/json.hpp"
 
-#ifdef GQMPS2_MPI_PARALLEL
-#include "mpi.h"
-#endif
-
 
 namespace gqmps2 {
 using namespace gqten;
@@ -41,19 +37,47 @@ const char kTwoSiteAlgoWorkflowInitial = 'i';
 const char kTwoSiteAlgoWorkflowRestart = 'r';
 const char kTwoSiteAlgoWorkflowContinue = 'c';
 
-const GQTensor kNullOperator = GQTensor();
+const int kLanczEnergyOutputPrecision = 16;
+
+template <typename TenElemType>
+const GQTensor<TenElemType> kNullOperator = GQTensor<TenElemType>();    // C++14
 
 
 // Simulation case parameter parser basic class.
 class CaseParamsParserBasic {
 public:
-  CaseParamsParserBasic(const char *);
+  CaseParamsParserBasic(const char *file) {
+    std::ifstream ifs(file);
+    ifs >> raw_json_;
+    ifs.close();
+    if (raw_json_.find(kCaseParamsJsonObjName) != raw_json_.end()) {
+      case_params = raw_json_[kCaseParamsJsonObjName];
+    } else {
+      std::cout << "CaseParams object not found, exit!" << std::endl;
+      exit(1);
+    }
+  }
 
-  int ParseInt(const std::string &);
-  double ParseDouble(const std::string &);
-  char ParseChar(const std::string &);
-  std::string ParseStr(const std::string &);
-  bool ParseBool(const std::string &);
+  int ParseInt(const std::string &item) {
+    return case_params[item].get<int>();
+  }
+
+  double ParseDouble(const std::string &item) {
+    return case_params[item].get<double>();
+  }
+
+  char ParseChar(const std::string &item) {
+    auto char_str = case_params[item].get<std::string>();
+    return char_str.at(0);
+  }
+
+  std::string ParseStr(const std::string &item) {
+    return case_params[item].get<std::string>();
+  }
+
+  bool ParseBool(const std::string &item) {
+    return case_params[item].get<bool>();
+  }
 
   json case_params;
 
@@ -63,17 +87,11 @@ private:
 
 
 // MPO generator.
-struct OpIdx {
-  OpIdx(const GQTensor &op, const long idx) : op(op), idx(idx) {}
-
-  GQTensor op;
-  long idx;
-};
-
-
+template <typename>
 struct FSMEdge;
 
 
+template <typename TenElemType>
 struct FSMNode {
   FSMNode(const long loc) :
     is_ready(false), is_final(false), mid_state_idx(0), loc(loc) {}
@@ -83,45 +101,49 @@ struct FSMNode {
   bool is_final;
   long mid_state_idx;
   long loc;
-  std::vector<FSMEdge *> ledges;
-  std::vector<FSMEdge *> redges;
+  std::vector<FSMEdge<TenElemType> *> ledges;
+  std::vector<FSMEdge<TenElemType> *> redges;
 };
 
 
+template <typename TenElemType>
 struct FSMEdge {
   FSMEdge(
-      const GQTensor &op, FSMNode *l_node, FSMNode *n_node,
+      const GQTensor<TenElemType> &op,
+      FSMNode<TenElemType> *l_node, FSMNode<TenElemType> *n_node,
       const long loc) :
       op(op), last_node(l_node), next_node(n_node), loc(loc) {}
-  FSMEdge(void) : FSMEdge(GQTensor(), nullptr, nullptr, -1) {}
+  FSMEdge(void) : FSMEdge(GQTensor<TenElemType>(), nullptr, nullptr, -1) {}
 
-  const GQTensor op;
-  FSMNode *last_node;
-  FSMNode *next_node;
+  const GQTensor<TenElemType> op;
+  FSMNode<TenElemType> *last_node;
+  FSMNode<TenElemType> *next_node;
   long loc;
 };
 
 
+template <typename TenElemType>
 class MPOGenerator {
-/* TODO: Merge terms only with different coefficients. */
+//[> TODO: Merge terms only with different coefficients. <]
 public:
   MPOGenerator(const long, const Index &, const QN &);
 
   void AddTerm(
-      const double,
-      const std::vector<OpIdx> &,
-      const GQTensor &inter_op=kNullOperator);
-  std::vector<GQTensor *> Gen(void);
+      const TenElemType,
+      const std::vector<GQTensor<TenElemType>> &,
+      const std::vector<long> &,
+      const GQTensor<TenElemType> &inter_op=kNullOperator<TenElemType>);
+  std::vector<GQTensor<TenElemType> *> Gen(void);
 
 private:
   long N_;
   Index pb_out_;
   Index pb_in_;
-  GQTensor id_op_;
-  std::vector<FSMNode *> ready_nodes_;
-  std::vector<FSMNode *> final_nodes_;
-  std::vector<std::vector<FSMNode *>> middle_nodes_set_;
-  std::vector<std::vector<FSMEdge *>> edges_set_;
+  GQTensor<TenElemType> id_op_;
+  std::vector<FSMNode<TenElemType> *> ready_nodes_;
+  std::vector<FSMNode<TenElemType> *> final_nodes_;
+  std::vector<std::vector<FSMNode<TenElemType> *>> middle_nodes_set_;
+  std::vector<std::vector<FSMEdge<TenElemType> *>> edges_set_;
   // For nodes merge.
   bool fsm_graph_merged_;
   bool relable_to_end_;
@@ -131,29 +153,39 @@ private:
   bool fsm_graph_sorted_;
   
   // Add terms.
-  void AddOneSiteTerm(const double, const OpIdx &);
+  void AddOneSiteTerm(
+      const TenElemType,
+      const GQTensor<TenElemType> &,
+      const long);
   void AddTwoSiteTerm(
-      const double, const OpIdx &, const OpIdx &, const GQTensor &);
+      const TenElemType,
+      const GQTensor<TenElemType> &, const GQTensor<TenElemType> &,
+      const long, const long,
+      const GQTensor<TenElemType> &);
 
   // Merge finite state machine graph.
   void FSMGraphMerge(void);
   void FSMGraphMergeAt(const long);   // At given middle nodes list.
-  bool FSMGraphMergeNodesTo(const long, std::vector<FSMNode *> &);
-  bool FSMGraphMergeTwoNodes(FSMNode *&, FSMNode *&);
+  bool FSMGraphMergeNodesTo(const long, std::vector<FSMNode<TenElemType> *> &);
+  bool FSMGraphMergeTwoNodes(FSMNode<TenElemType> *&, FSMNode<TenElemType> *&);
 
-  bool CheckMergeableLeftEdgePair(const FSMEdge *, const FSMEdge *);
-  bool CheckMergeableRightEdgePair(const FSMEdge *, const FSMEdge *);
+  bool CheckMergeableLeftEdgePair(
+      const FSMEdge<TenElemType> *,
+      const FSMEdge<TenElemType> *);
+  bool CheckMergeableRightEdgePair(
+      const FSMEdge<TenElemType> *,
+      const FSMEdge<TenElemType> *);
 
-  void DeletePathToRightEnd(FSMEdge *);
+  void DeletePathToRightEnd(FSMEdge<TenElemType> *);
   void RelabelMidNodesIdx(const long);
   void RemoveNullEdges(void);
 
   // Generation process.
   void FSMGraphSort(void);
   Index FSMGraphSortAt(const long);    // At given site.
-  GQTensor *GenHeadMpo(void);
-  GQTensor *GenCentMpo(const long);
-  GQTensor *GenTailMpo(void);
+  GQTensor<TenElemType> *GenHeadMpo(void);
+  GQTensor<TenElemType> *GenCentMpo(const long);
+  GQTensor<TenElemType> *GenTailMpo(void);
 };
 
 
@@ -170,24 +202,18 @@ struct LanczosParams {
   long max_iterations;
 };
 
+template <typename TenElemType>
 struct LanczosRes {
   long iters;
   double gs_eng;
-  GQTensor *gs_vec;
+  GQTensor<TenElemType> *gs_vec;
 };
 
-LanczosRes LanczosSolver(
-    const std::vector<GQTensor *> &, GQTensor *,
+template <typename TenElemType>
+LanczosRes<TenElemType> LanczosSolver(
+    const std::vector<GQTensor<TenElemType> *> &, GQTensor<TenElemType> *,
     const LanczosParams &,
     const std::string &);
-
-#ifdef GQMPS2_MPI_PARALLEL
-LanczosRes GQMPS2_MPI_LanczosSolver(
-    const std::vector<GQTensor *> &, GQTensor *,
-    const LanczosParams &,
-    const std::string &,
-    MPI_Comm, const int);
-#endif
 
 
 // Two sites update algorithm.
@@ -214,82 +240,111 @@ struct SweepParams {
   LanczosParams LanczParams;
 };
 
+template <typename TenType>
 double TwoSiteAlgorithm(
-    std::vector<GQTensor *> &, const std::vector<GQTensor *> &,
+    std::vector<TenType *> &,
+    const std::vector<TenType *> &,
     const SweepParams &);
-
-#ifdef GQMPS2_MPI_PARALLEL
-double GQMPS2_MPI_TwoSiteAlgorithm(
-    std::vector<GQTensor *> &, const std::vector<GQTensor *> &,
-    const SweepParams &,
-    MPI_Comm, const int);
-#endif
 
 
 // MPS operations.
-void DumpMps(const std::vector<GQTensor *> &);
+template <typename TenType>
+void DumpMps(const std::vector<TenType *> &);
 
-void LoadMps(std::vector<GQTensor *> &);
+template <typename TenType>
+void LoadMps(std::vector<TenType *> &);
 
+template <typename TenType>
 void RandomInitMps(
-    std::vector<GQTensor *> &,
+    std::vector<TenType> &,
     const Index &,
     const QN &,
     const QN &,
     const long);
 
+template <typename TenType>
 void DirectStateInitMps(
-    std::vector<GQTensor *> &, const std::vector<long> &,
+    std::vector<TenType *> &, const std::vector<long> &,
     const Index &, const QN &);
 
+template <typename TenType>
 void ExtendDirectRandomInitMps(
-    std::vector<GQTensor *> &, const std::vector<std::vector<long>> &,
+    std::vector<TenType *> &, const std::vector<std::vector<long>> &,
     const Index &, const QN &, const long);
 
 
 // Observation measurements.
+template <typename TenType>
 struct MPS {
-  MPS(std::vector<GQTensor *> &tens, const long center) :
+  MPS(std::vector<TenType *> &tens, const long center) :
       tens(tens), center(center), N(tens.size()) {}
   
-  std::vector<GQTensor *> &tens; 
+  std::vector<TenType *> &tens; 
   long center;
   std::size_t N;
 };
 
+template <typename AvgType>
+struct MeasuResElem {
+  MeasuResElem(void) = default;
+  MeasuResElem(const std::vector<long> &sites, const AvgType avg) :
+    sites(sites), avg(avg) {}
+
+  std::vector<long> sites;
+  AvgType avg;
+};
+
+template <typename AvgType>
+using MeasuRes = std::vector<MeasuResElem<AvgType>>;
+
+template <typename AvgType>
+using MeasuResSet = std::vector<MeasuRes<AvgType>>;
+
+
 // Single site operator.
-void MeasureOneSiteOp(MPS &, const GQTensor &, const std::string &);
+template <typename TenElemType>
+MeasuRes<TenElemType> MeasureOneSiteOp(
+    MPS<GQTensor<TenElemType>> &,
+    const GQTensor<TenElemType> &, const std::string &);
 
-void MeasureOneSiteOp(
-    MPS &, const std::vector<GQTensor> &, const std::vector<std::string> &);
+template <typename TenElemType>
+MeasuResSet<TenElemType> MeasureOneSiteOp(
+    MPS<GQTensor<TenElemType>> &,
+    const std::vector<GQTensor<TenElemType>> &,
+    const std::vector<std::string> &);
 
-void MeasureTwoSiteOp(
-    MPS &,
-    const std::vector<GQTensor> &,
-    const GQTensor &, const GQTensor &,
+template <typename TenElemType>
+MeasuRes<TenElemType> MeasureTwoSiteOp(
+    MPS<GQTensor<TenElemType>> &,
+    const std::vector<GQTensor<TenElemType>> &,
+    const GQTensor<TenElemType> &,
+    const GQTensor<TenElemType> &,
     const std::vector<std::vector<long>> &,
     const std::string &);
 
-void MeasureMultiSiteOp(
-    MPS &,
-    const std::vector<std::vector<GQTensor>> &,
-    const std::vector<std::vector<GQTensor>> &,
-    const GQTensor &,
+template <typename TenElemType>
+MeasuRes<TenElemType> MeasureMultiSiteOp(
+    MPS<GQTensor<TenElemType>> &,
+    const std::vector<std::vector<GQTensor<TenElemType>>> &,
+    const std::vector<std::vector<GQTensor<TenElemType>>> &,
+    const GQTensor<TenElemType> &,
     const std::vector<std::vector<long>> &,
     const std::string &);
 
 
 // System I/O functions.
-inline void WriteGQTensorTOFile(const GQTensor &t, const std::string &file) {
-  std::ofstream ofs(file, std::ofstream::binary);  
+template <typename TenType>
+inline void WriteGQTensorTOFile(const TenType &t, const std::string &file) {
+  std::ofstream ofs(file, std::ofstream::binary);
   bfwrite(ofs, t);
   ofs.close();
 }
 
 
-inline void ReadGQTensorFromFile(GQTensor * &rpt, const std::string &file) {
+template <typename TenType>
+inline void ReadGQTensorFromFile(TenType * &rpt, const std::string &file) {
   std::ifstream ifs(file, std::ifstream::binary);
-  rpt = new GQTensor();
+  rpt = new TenType();
   bfread(ifs, *rpt);
   ifs.close();
 }
@@ -311,4 +366,14 @@ inline void CreatPath(const std::string &path) {
   }
 }
 } /* gqmps2 */ 
+
+
+// Implementation details
+#include "gqmps2/detail/lanczos_impl.h"
+#include "gqmps2/detail/mpogen_impl.h"
+#include "gqmps2/detail/two_site_algo_impl.h"
+#include "gqmps2/detail/mps_ops_impl.h"
+#include "gqmps2/detail/mps_measu_impl.h"
+
+
 #endif /* ifndef GQMPS2_GQMPS2_H */

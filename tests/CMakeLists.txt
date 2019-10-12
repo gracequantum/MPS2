@@ -25,79 +25,42 @@ endif()
 
 
 macro(add_unittest
-    TEST_NAME TEST_SRC CFLAGS LINK_LIBS LINK_LIB_FLAGS INPUT_ARGS MPI_TEST)
+    TEST_NAME TEST_SRC CFLAGS LINK_LIBS LINK_LIB_FLAGS INPUT_ARGS)
   add_executable(${TEST_NAME}
       ${TEST_SRC})
 
-  if(GQMPS2_MPI_PARALLEL)
-    target_include_directories(${TEST_NAME}
-      PRIVATE ${GQMPS2_HEADER_PATH}
-      PRIVATE ${GQMPS2_TENSOR_LIB_HEADER_PATH}
-      PRIVATE ${GQMPS2_JSON_LIB_HEADER_PATH}
-      PRIVATE ${MPI_CXX_INCLUDE_PATH}
-      PRIVATE ${CFLAGS})
-    target_compile_options(${TEST_NAME}
-      PRIVATE ${MPI_CXX_COMPILE_FLAGS})
-    target_link_libraries(${TEST_NAME}
-      gqmps2
-      gqten
-      GTest::GTest GTest::Main
-      ${hptt_LIBRARY}
-      ${MPI_CXX_LIBRARIES} ${MPI_CXX_LINK_FLAGS}
-      ${LINK_LIBS} "${LINK_LIB_FLAGS}")
-  else()
     target_include_directories(${TEST_NAME}
       PRIVATE ${GQMPS2_HEADER_PATH}
       PRIVATE ${GQMPS2_TENSOR_LIB_HEADER_PATH}
       PRIVATE ${GQMPS2_JSON_LIB_HEADER_PATH}
       PRIVATE ${CFLAGS})
     target_link_libraries(${TEST_NAME}
-      gqmps2
+      #gqmps2
       gqten
       GTest::GTest GTest::Main
       ${hptt_LIBRARY}
       ${LINK_LIBS} "${LINK_LIB_FLAGS}")
-endif()
 
-  if("${MPI_TEST}" STREQUAL "")
     add_test(
         NAME ${TEST_NAME}
         COMMAND "${TEST_NAME}" "${INPUT_ARGS}")
-  else()
-    set(GQTEN_GEMM_BATCH_WORKER ${CMAKE_BINARY_DIR}/external/gqten/bin/gqten_mpi_gemm_batch_worker)
-    if(APPLE)
-      add_test(${TEST_NAME}
-        mpirun --host localhost:4 -np 1 ${TEST_NAME} : --host localhost:4 -np 3 ${GQTEN_GEMM_BATCH_WORKER})
-    else()
-      add_test(${TEST_NAME}
-        mpirun -np 1 ./${TEST_NAME} : -np 3 ${GQTEN_GEMM_BATCH_WORKER})
-    endif()
-  endif()
 
   set_target_properties(${TEST_NAME} PROPERTIES FOLDER tests)
 endmacro()
 
 # Test Lanczos algorithm.
-add_unittest(test_lanczos test_lanczos.cc "" "" "${MATH_LIB_LINK_FLAGS}" "" "")
+add_unittest(test_lanczos test_lanczos.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
 
-# Test distributed Lanczos algorithm.
-if(GQMPS2_MPI_PARALLEL)
-  add_unittest(test_mpi_lanczos
-    test_mpi_lanczos.cc "" "" "${MATH_LIB_LINK_FLAGS}" "" "MPI_TEST")
-endif()
-
-# Test MPO generation.
-add_unittest(test_mpogen test_mpogen.cc "" "" "${MATH_LIB_LINK_FLAGS}" "" "")
+## Test MPO generation.
+add_unittest(test_mpogen test_mpogen.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
 
 # Test two site algorithm.
 add_unittest(test_two_site_algo
-  test_two_site_algo.cc "" "" "${MATH_LIB_LINK_FLAGS}" "" "")
+  test_two_site_algo.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
 
-# Test distributed two site algorithm.
-if(GQMPS2_MPI_PARALLEL)
-  add_unittest(test_mpi_two_site_algo
-    test_mpi_two_site_algo.cc "" "" "${MATH_LIB_LINK_FLAGS}" "" "MPI_TEST")
-endif()
+# Test MPS measurement.
+add_unittest(test_mps_measu
+  test_mps_measu.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
 
 # Test simulation case parameters parser.
 add_unittest(test_case_params_parser

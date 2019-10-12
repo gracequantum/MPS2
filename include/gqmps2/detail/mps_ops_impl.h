@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 /*
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
-* Creation Date: 2019-05-16 21:15
+* Creation Date: 2019-09-29 22:11
 * 
-* Description: GraceQ/mps2 project. MPS operations.
+* Description: GraceQ/MPS2 project. Implementation details for MPS operations.
 */
-#include "mps_ops.h"
 #include "gqmps2/gqmps2.h"
 #include "gqten/gqten.h"
 
@@ -23,8 +22,49 @@ namespace  gqmps2 {
 using  namespace gqten;
 
 
+// Forward declarations
+// For random initialize MPS operation.
+Index GenHeadRightVirtBond(const Index &, const QN &, const long);
+
+Index GenBodyRightVirtBond(
+    const Index &, const Index &, const QN &, const long);
+
+Index GenTailLeftVirtBond(const Index &, const QN &, const long);
+
+Index GenBodyLeftVirtBond(const Index &, const Index &, const QN &, const long);
+
+void DimCut(std::vector<QNSector> &, const long, const long);
+
+// For MPS centralization.
+template <typename MpsType>
+void LeftNormalizeMps(MpsType &, const long, const long);
+
+template <typename MpsType>
+void LeftNormalizeMpsTen(MpsType &, const long);
+
+template <typename MpsType>
+void RightNormalizeMps(MpsType &, const long, const long);
+
+template <typename MpsType>
+void RightNormalizeMpsTen(MpsType &, const long);
+
+
+// Helpers
+inline bool GreaterQNSectorDim(const QNSector &qnsct1, const QNSector &qnsct2) {
+  return qnsct1.dim > qnsct2.dim;
+}
+
+
+template <typename TenType>
+inline void MpsFree(std::vector<TenType *> &mps) {
+  for (auto &pmps_ten : mps) { delete pmps_ten; }
+}
+
+
+// MPS operations
 // MPS I/O.
-void DumpMps(const std::vector<GQTensor *> &mps) {
+template <typename TenType>
+void DumpMps(const std::vector<TenType *> &mps) {
   if (!IsPathExist(kMpsPath)) { CreatPath(kMpsPath); }
   auto N = mps.size();
   std::string file;
@@ -38,14 +78,15 @@ void DumpMps(const std::vector<GQTensor *> &mps) {
 }
 
 
-void LoadMps(std::vector<GQTensor *> &mps) {
+template <typename TenType>
+void LoadMps(std::vector<TenType *> &mps) {
   auto N = mps.size();
   std::string file;
   for (std::size_t i = 0; i < N; ++i) {
     file = kMpsPath + "/" +
            kMpsTenBaseName + std::to_string(i) + "." + kGQTenFileSuffix;
     std::ifstream ifs(file, std::ifstream::binary);
-    mps[i] = new GQTensor();
+    mps[i] = new TenType();
     bfread(ifs, *mps[i]);
     ifs.close();
   }
@@ -53,24 +94,26 @@ void LoadMps(std::vector<GQTensor *> &mps) {
 
 
 // MPS initialization.
+template <typename TenType>
 void RandomInitMps(
-    std::vector<GQTensor *> &mps,
+    std::vector<TenType *> &mps,
     const Index &pb,
     const QN &tot_div,
     const QN &zero_div,
     const long dmax) {
+  MpsFree(mps);
   Index lvb, rvb;
 
   // Left to center.
   rvb = GenHeadRightVirtBond(pb, tot_div, dmax);
-  mps[0] = new GQTensor({pb, rvb});
+  mps[0] = new TenType({pb, rvb});
   mps[0]->Random(tot_div);
   assert(Div(*mps[0]) == tot_div);
   auto N = mps.size();
   for (std::size_t i = 1; i < N/2; ++i) {
     lvb = InverseIndex(rvb);
     rvb = GenBodyRightVirtBond(lvb, pb, zero_div, dmax);
-    mps[i] = new GQTensor({lvb, pb, rvb});
+    mps[i] = new TenType({lvb, pb, rvb});
     mps[i]->Random(zero_div);
     assert(Div(*mps[i]) == zero_div);
   }
@@ -78,26 +121,26 @@ void RandomInitMps(
 
   // Right to center.
   lvb = GenTailLeftVirtBond(pb, zero_div, dmax);
-  mps[N-1] = new GQTensor({lvb, pb});
+  mps[N-1] = new TenType({lvb, pb});
   mps[N-1]->Random(zero_div);
   assert(Div(*mps[N-1]) == zero_div);
   for (std::size_t i = N-2; i > N/2; --i) {
     rvb = InverseIndex(lvb);
     lvb = GenBodyLeftVirtBond(rvb, pb, zero_div, dmax);
-    mps[i] = new GQTensor({lvb, pb, rvb});
+    mps[i] = new TenType({lvb, pb, rvb});
     mps[i]->Random(zero_div);
     assert(Div(*mps[i]) == zero_div);
   }
 
   rvb = InverseIndex(lvb);
   lvb = InverseIndex(cent_bond);
-  mps[N/2] = new GQTensor({lvb, pb, rvb});
+  mps[N/2] = new TenType({lvb, pb, rvb});
   mps[N/2]->Random(zero_div);
   assert(Div(*mps[N/2]) == zero_div);
 }
 
 
-Index GenHeadRightVirtBond(
+inline Index GenHeadRightVirtBond(
     const Index &pb, const QN &tot_div, const long dmax) {
   std::vector<QNSector> new_qnscts;
   for (auto &qnsct : pb.qnscts) {
@@ -119,7 +162,7 @@ Index GenHeadRightVirtBond(
 }
 
 
-Index GenBodyRightVirtBond(
+inline Index GenBodyRightVirtBond(
     const Index &lvb, const Index &pb, const QN &zero_div, const long dmax) {
   std::vector<QNSector> new_qnscts;
   for (auto &lvqnsct : lvb.qnscts) {
@@ -143,7 +186,7 @@ Index GenBodyRightVirtBond(
 }
 
 
-Index GenTailLeftVirtBond(
+inline Index GenTailLeftVirtBond(
     const Index &pb, const QN &zero_div, const long dmax) {
   std::vector<QNSector> new_qnscts;
   for (auto &qnsct : pb.qnscts) {
@@ -165,7 +208,7 @@ Index GenTailLeftVirtBond(
 }
 
 
-Index GenBodyLeftVirtBond(
+inline Index GenBodyLeftVirtBond(
     const Index &rvb, const Index &pb, const QN &zero_div, const long dmax) {
   std::vector<QNSector> new_qnscts;
   for (auto &rvqnsct : rvb.qnscts) {
@@ -189,7 +232,8 @@ Index GenBodyLeftVirtBond(
 }
 
 
-void DimCut(std::vector<QNSector> &qnscts, const long dmax, const long pdim) {
+inline void DimCut(
+    std::vector<QNSector> &qnscts, const long dmax, const long pdim) {
   std::sort(qnscts.begin(), qnscts.end(), GreaterQNSectorDim);
   auto kept_qn_cnt = 0;
   auto dim = 0;
@@ -211,11 +255,13 @@ void DimCut(std::vector<QNSector> &qnscts, const long dmax, const long pdim) {
 }
 
 
+template <typename TenType>
 void DirectStateInitMps(
-    std::vector<GQTensor *> &mps, const std::vector<long> &stat_labs,
+    std::vector<TenType *> &mps, const std::vector<long> &stat_labs,
     const Index &pb_out, const QN &zero_div) {
   auto N = mps.size();
   assert(N == stat_labs.size());
+  MpsFree(mps);
   Index lvb, rvb;
 
   // Calculate total quantum number.
@@ -227,7 +273,7 @@ void DirectStateInitMps(
   auto stat_lab = stat_labs[0];
   auto rvb_qn = div - pb_out.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn;
   rvb = Index({QNSector(rvb_qn, 1)}, OUT);
-  mps[0] = new GQTensor({pb_out, rvb});
+  mps[0] = new TenType({pb_out, rvb});
   (*mps[0])({stat_lab, 0}) = 1;
 
   for (std::size_t i = 1; i < N-1; ++i) {
@@ -237,19 +283,20 @@ void DirectStateInitMps(
              pb_out.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn +
              lvb.CoorInterOffsetAndQnsct(0).qnsct.qn;
     rvb = Index({QNSector(rvb_qn, 1)}, OUT);
-    mps[i] = new GQTensor({lvb, pb_out, rvb});
+    mps[i] = new TenType({lvb, pb_out, rvb});
     (*mps[i])({0, stat_lab, 0}) = 1;
   }
 
   lvb = InverseIndex(rvb);
-  mps[N-1] = new GQTensor({lvb, pb_out});
+  mps[N-1] = new TenType({lvb, pb_out});
   stat_lab = stat_labs[N-1];
   (*mps[N-1])({0, stat_lab}) = 1;
 }
 
 
+template <typename TenType>
 void ExtendDirectRandomInitMps(
-    std::vector<GQTensor *> &mps,
+    std::vector<TenType *> &mps,
     const std::vector<std::vector<long>> &stat_labs_set,
     const Index &pb, const QN &zero_div, const long enlarged_dim) {
   auto fusion_stats_num = stat_labs_set.size();
@@ -273,7 +320,7 @@ void ExtendDirectRandomInitMps(
   }
   rvb = Index(rvb_qnscts, OUT);
   rvb_qnscts.clear();
-  mps[0] = new GQTensor({pb, rvb});
+  mps[0] = new TenType({pb, rvb});
   mps[0]->Random(div);
 
   // Deal with MPS middle local tensors.
@@ -287,37 +334,45 @@ void ExtendDirectRandomInitMps(
       rvb_qnscts.push_back(QNSector(rvb_qn, enlarged_dim));
     }
     rvb = Index(rvb_qnscts, OUT);
-    mps[i] = new GQTensor({lvb, pb, rvb});
+    mps[i] = new TenType({lvb, pb, rvb});
     rvb_qnscts.clear();
     mps[i]->Random(zero_div);
   }
 
   // Deal with MPS tail local tensor.
   lvb = InverseIndex(rvb);
-  mps[N-1] = new GQTensor({lvb, pb});
+  mps[N-1] = new TenType({lvb, pb});
   mps[N-1]->Random(zero_div);
 
   // Centralize MPS.
-  auto temp_mps = MPS(mps, -1);
+  auto temp_mps = MPS<TenType>(mps, -1);
   RightNormalizeMps(temp_mps, temp_mps.N-1, 1);
 }
 
 
-
 // MPS centralization.
-void CentralizeMps(MPS &mps, const long target_center) {
+template <typename MpsType>
+void CentralizeMps(MpsType &mps, const long target_center) {
   auto origin_center = mps.center;
-  if (target_center > origin_center) {
-    LeftNormalizeMps(mps, origin_center, target_center-1);
+  if (origin_center < 0) {
+    auto end = mps.N-1;
+    if (target_center != 0) { LeftNormalizeMps(mps, 0, target_center-1); }
+    if (target_center != end) { RightNormalizeMps(mps, end, target_center+1); }
     mps.center = target_center;
-  } else if (target_center < origin_center) {
-    RightNormalizeMps(mps, origin_center, target_center+1);
-    mps.center = target_center;
+  } else {
+    if (target_center > origin_center) {
+      LeftNormalizeMps(mps, origin_center, target_center-1);
+      mps.center = target_center;
+    } else if (target_center < origin_center) {
+      RightNormalizeMps(mps, origin_center, target_center+1);
+      mps.center = target_center;
+    }
   }
 }
 
 
-void LeftNormalizeMps(MPS &mps, const long from, const long to) {
+template <typename MpsType>
+void LeftNormalizeMps(MpsType &mps, const long from, const long to) {
   assert(to >= from);
   for (long i = from; i <= to; ++i) {
     LeftNormalizeMpsTen(mps, i);
@@ -325,7 +380,8 @@ void LeftNormalizeMps(MPS &mps, const long from, const long to) {
 }
 
 
-void RightNormalizeMps(MPS &mps, const long from, const long to) {
+template <typename MpsType>
+void RightNormalizeMps(MpsType &mps, const long from, const long to) {
   assert(to <= from);
   for (long i = from; i >= to; --i) {
     RightNormalizeMpsTen(mps, i);
@@ -333,7 +389,8 @@ void RightNormalizeMps(MPS &mps, const long from, const long to) {
 }
 
 
-void LeftNormalizeMpsTen(MPS &mps, const long site) {
+template <typename MpsType>
+void LeftNormalizeMpsTen(MpsType &mps, const long site) {
   assert(site < mps.N-1);
   long ldims, rdims;
   if (site == 0) {
@@ -347,7 +404,7 @@ void LeftNormalizeMpsTen(MPS &mps, const long site) {
       *mps.tens[site],
       ldims, rdims,
       Div(*mps.tens[site]), Div(*mps.tens[site+1]));
-  delete mps.tens[site];  
+  delete mps.tens[site];
   mps.tens[site] = svd_res.u;
   auto temp_ten = Contract(*svd_res.s, *svd_res.v, {{1}, {0}});
   delete svd_res.s;
@@ -359,7 +416,8 @@ void LeftNormalizeMpsTen(MPS &mps, const long site) {
 }
 
 
-void RightNormalizeMpsTen(MPS &mps, const long site) {
+template <typename MpsType>
+void RightNormalizeMpsTen(MpsType &mps, const long site) {
   assert(site > 0);
   long ldims, rdims;
   if (site == mps.N-1) {

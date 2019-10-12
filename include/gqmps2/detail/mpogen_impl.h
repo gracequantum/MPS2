@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 /*
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
-* Creation Date: 2019-05-13 15:13
+* Creation Date: 2019-09-27 17:38
 * 
-* Description: GraceQ/mps2 project. Private objects used by MPO generation, implementation.
+* Description: GraceQ/MPS2 project. Implantation details for MPO generator.
 */
-#include "mpogen.h"
 #include "gqmps2/gqmps2.h"
 #include "gqten/gqten.h"
 
@@ -24,7 +23,40 @@ namespace gqmps2 {
 using namespace gqten;
 
 
-MPOGenerator::MPOGenerator(
+// Forward declarations.
+template <typename TenElemType>
+void AddOpToHeadMpoTen(
+    GQTensor<TenElemType> *, const GQTensor<TenElemType> &, const long);
+
+template <typename TenElemType>
+void AddOpToTailMpoTen(
+    GQTensor<TenElemType> *, const GQTensor<TenElemType> &, const long);
+
+template <typename TenElemType>
+void AddOpToCentMpoTen(
+    GQTensor<TenElemType> *, const GQTensor<TenElemType> &,
+    const long, const long);
+
+
+// Helpers.
+inline QN GetLvbTargetQN(const Index &index, const long coor) {
+  auto coor_off_set_and_qnsct = index.CoorInterOffsetAndQnsct(coor);
+  return coor_off_set_and_qnsct.qnsct.qn;
+}
+
+
+template <typename TenElemType>
+inline void ResortNodes(std::vector<FSMNode<TenElemType> *> &sorted_nodes) {
+  auto ref_idx = sorted_nodes.back()->mid_state_idx;
+  for (auto it = sorted_nodes.begin(); it != sorted_nodes.end()-1; ++it) {
+    if ((*it)->mid_state_idx >= ref_idx) { ++((*it)->mid_state_idx); }
+  }
+}
+
+
+// MPO generator.
+template <typename TenElemType>
+MPOGenerator<TenElemType>::MPOGenerator(
     const long N, const Index &pb, const QN &zero_div) :
     N_(N),
     pb_out_(pb),
@@ -39,16 +71,16 @@ MPOGenerator::MPOGenerator(
     fsm_graph_sorted_(false) {
   pb_in_ = InverseIndex(pb_out_);    
   // Generate identity operator.
-  auto id_op = GQTensor({pb_in_, pb_out_});
+  auto id_op = GQTensor<TenElemType>({pb_in_, pb_out_});
   for (long i = 0; i < pb_out_.dim; ++i) { id_op({i, i}) = 1; }
   id_op_ = id_op;
   // Generate ready nodes and final nodes.
   for (long i = 0; i < N_+1; ++i) {
-    auto ready_node = new FSMNode(i);
+    auto ready_node = new FSMNode<TenElemType>(i);
     ready_node->is_ready = true;
     ready_node->mid_state_idx = 0;        // For MPO generation process.
     ready_nodes_[i] = ready_node;
-    auto final_node = new FSMNode(i);
+    auto final_node = new FSMNode<TenElemType>(i);
     final_node->is_final = true;
     final_node->mid_state_idx = -1;       // For MPO generation process.
     final_nodes_[i] = final_node;
@@ -56,7 +88,7 @@ MPOGenerator::MPOGenerator(
   // Generate R -> R and F -> F identity finite state machine edges.
   for (long i = 0; i < N_; ++i) {
     if (i != N_-1) {
-      auto r2r_edge = new FSMEdge(
+      auto r2r_edge = new FSMEdge<TenElemType>(
                               id_op_,
                               ready_nodes_[i],
                               ready_nodes_[i+1],
@@ -64,7 +96,7 @@ MPOGenerator::MPOGenerator(
       edges_set_[i].push_back(r2r_edge);
     }
     if (i != 0) {
-      auto f2f_edge = new FSMEdge(
+      auto f2f_edge = new FSMEdge<TenElemType>(
                               id_op_,
                               final_nodes_[i],
                               final_nodes_[i+1],
@@ -74,16 +106,21 @@ MPOGenerator::MPOGenerator(
   }
 }
 
-void MPOGenerator::AddTerm(
-    const double coef,
-    const std::vector<OpIdx> &opidxs,
-    const GQTensor &inter_op) {
-  switch (opidxs.size()) {
+
+template <typename TenElemType>
+void MPOGenerator<TenElemType>::AddTerm(
+    const TenElemType coef,
+    const std::vector<GQTensor<TenElemType>> &ops,
+    const std::vector<long> &idxs,
+    const GQTensor<TenElemType> &inter_op) {
+  assert(ops.size() == idxs.size());
+  auto term_num = ops.size();
+  switch (term_num) {
     case 1:
-      AddOneSiteTerm(coef, opidxs[0]);
+      AddOneSiteTerm(coef, ops[0], idxs[0]);
       break;
     case 2:
-      AddTwoSiteTerm(coef, opidxs[0], opidxs[1], inter_op);
+      AddTwoSiteTerm(coef, ops[0], ops[1], idxs[0], idxs[1], inter_op);
       break;
     default:
       std::cout << "Unsupport term type." << std::endl;
@@ -93,7 +130,8 @@ void MPOGenerator::AddTerm(
 }
 
 
-std::vector<GQTensor *> MPOGenerator::Gen(void) {
+template <typename TenElemType>
+std::vector<GQTensor<TenElemType> *> MPOGenerator<TenElemType>::Gen(void) {
   if (!fsm_graph_merged_) {
     FSMGraphMerge();
     fsm_graph_merged_ = true;
@@ -108,7 +146,7 @@ std::vector<GQTensor *> MPOGenerator::Gen(void) {
     FSMGraphSort();
     fsm_graph_sorted_ = true;
   }
-  std::vector<GQTensor *> mpo(N_);
+  std::vector<GQTensor<TenElemType> *> mpo(N_);
   for (long i = 0; i < N_; ++i) {
     if (i == 0) {
       mpo[i] = GenHeadMpo();
@@ -122,41 +160,46 @@ std::vector<GQTensor *> MPOGenerator::Gen(void) {
 }
 
 
-void MPOGenerator::AddOneSiteTerm(const double coef, const OpIdx &opidx) {
-  auto new_edge = new FSMEdge(
-                          coef*opidx.op,
-                          ready_nodes_[opidx.idx],
-                          final_nodes_[opidx.idx+1],
-                          opidx.idx);
-  edges_set_[opidx.idx].push_back(new_edge);
+template <typename TenElemType>
+void MPOGenerator<TenElemType>::AddOneSiteTerm(
+    const TenElemType coef, const GQTensor<TenElemType> &op, const long idx) {
+  auto new_edge = new FSMEdge<TenElemType>(
+                          coef*op,
+                          ready_nodes_[idx],
+                          final_nodes_[idx+1],
+                          idx);
+  edges_set_[idx].push_back(new_edge);
 }
 
 
-void MPOGenerator::AddTwoSiteTerm(
-    const double coef,
-    const OpIdx &opidx1, const OpIdx &opidx2,
-    const GQTensor &inter_op) {
-  assert(opidx1.idx < opidx2.idx);
-    GQTensor itrop;   // Inter operator.
-    if (inter_op == kNullOperator) {
+template <typename TenElemType>
+void MPOGenerator<TenElemType>::AddTwoSiteTerm(
+    const TenElemType coef,
+    const GQTensor<TenElemType> &op1, const GQTensor<TenElemType> &op2,
+    const long idx1, const long idx2,
+    const GQTensor<TenElemType> &inter_op) {
+  assert(idx1 < idx2);
+    GQTensor<TenElemType> itrop;   // Inter operator.
+    if (inter_op == kNullOperator<TenElemType>) {
       itrop  = id_op_;
     } else {
       itrop = inter_op;
   }
 
-  auto last_node = ready_nodes_[opidx1.idx];
-  auto next_node = new FSMNode(opidx1.idx+1);
-  next_node->mid_state_idx = middle_nodes_set_[opidx1.idx+1].size() + 1;
-  auto new_edge = new FSMEdge(coef*opidx1.op, last_node, next_node, opidx1.idx);
+  auto last_node = ready_nodes_[idx1];
+  auto next_node = new FSMNode<TenElemType>(idx1+1);
+  next_node->mid_state_idx = middle_nodes_set_[idx1+1].size() + 1;
+  auto new_edge = new FSMEdge<TenElemType>(
+                          coef*op1, last_node, next_node, idx1);
   next_node->ledges.push_back(new_edge);
-  edges_set_[opidx1.idx].push_back(new_edge);
-  middle_nodes_set_[opidx1.idx+1].push_back(next_node);
+  edges_set_[idx1].push_back(new_edge);
+  middle_nodes_set_[idx1+1].push_back(next_node);
 
-  for (long i = opidx1.idx+1; i < opidx2.idx; ++i) {
+  for (long i = idx1+1; i < idx2; ++i) {
     last_node = next_node;
-    next_node = new FSMNode(i+1);
+    next_node = new FSMNode<TenElemType>(i+1);
     next_node->mid_state_idx = middle_nodes_set_[i+1].size() + 1;
-    new_edge = new FSMEdge(itrop, last_node, next_node, i);
+    new_edge = new FSMEdge<TenElemType>(itrop, last_node, next_node, i);
     last_node->redges.push_back(new_edge);
     next_node->ledges.push_back(new_edge);
     edges_set_[i].push_back(new_edge);
@@ -164,15 +207,17 @@ void MPOGenerator::AddTwoSiteTerm(
   }
 
   last_node = next_node;
-  next_node = final_nodes_[opidx2.idx+1];
-  new_edge = new FSMEdge(opidx2.op, last_node, next_node, opidx2.idx);
+  next_node = final_nodes_[idx2+1];
+  new_edge = new FSMEdge<TenElemType>(
+                     op2, last_node, next_node, idx2);
   last_node->redges.push_back(new_edge);
-  edges_set_[opidx2.idx].push_back(new_edge);
+  edges_set_[idx2].push_back(new_edge);
 }
 
 
 // Merge finite state machine graph.
-void MPOGenerator::FSMGraphMerge(void) {
+template <typename TenElemType>
+void MPOGenerator<TenElemType>::FSMGraphMerge(void) {
   for (long i = 1; i < N_; ++i) {
     FSMGraphMergeAt(i);
     if (relable_to_end_) {
@@ -186,8 +231,10 @@ void MPOGenerator::FSMGraphMerge(void) {
 }
 
 
-void MPOGenerator::FSMGraphMergeAt(const long nodes_set_idx) {
-  std::vector<FSMNode *> &rmiddle_nodes = middle_nodes_set_[nodes_set_idx];
+template <typename TenElemType>
+void MPOGenerator<TenElemType>::FSMGraphMergeAt(const long nodes_set_idx) {
+  std::vector<FSMNode<TenElemType> *> &rmiddle_nodes =
+                                      middle_nodes_set_[nodes_set_idx];
   auto merge_happend = false;
   for (std::size_t i = 0; i < rmiddle_nodes.size(); i++) {
     merge_happend = FSMGraphMergeNodesTo(i, rmiddle_nodes);
@@ -200,8 +247,10 @@ void MPOGenerator::FSMGraphMergeAt(const long nodes_set_idx) {
 }
 
 
-bool MPOGenerator::FSMGraphMergeNodesTo(
-    const long target_mid_node_idx, std::vector<FSMNode *> &middle_nodes) {
+template <typename TenElemType>
+bool MPOGenerator<TenElemType>::FSMGraphMergeNodesTo(
+    const long target_mid_node_idx,
+    std::vector<FSMNode<TenElemType> *> &middle_nodes) {
   auto merge_happend = false;
   for (long i = target_mid_node_idx+1; i < middle_nodes.size(); ++i) {
     merge_happend = FSMGraphMergeTwoNodes(
@@ -214,7 +263,9 @@ bool MPOGenerator::FSMGraphMergeNodesTo(
 }
 
 
-bool MPOGenerator::FSMGraphMergeTwoNodes(FSMNode *&target, FSMNode *&from) {
+template <typename TenElemType>
+bool MPOGenerator<TenElemType>::FSMGraphMergeTwoNodes(
+    FSMNode<TenElemType> *&target, FSMNode<TenElemType> *&from) {
   // Check possible merged left edges.
   std::vector<std::size_t> lposs_merge_edge_idxs;
   for (std::size_t i = 0; i < target->ledges.size(); ++i) {
@@ -282,8 +333,9 @@ bool MPOGenerator::FSMGraphMergeTwoNodes(FSMNode *&target, FSMNode *&from) {
 }
 
 
-inline bool MPOGenerator::CheckMergeableLeftEdgePair(
-    const FSMEdge *ledge1, const FSMEdge *ledge2) {
+template <typename TenElemType>
+inline bool MPOGenerator<TenElemType>::CheckMergeableLeftEdgePair(
+    const FSMEdge<TenElemType> *ledge1, const FSMEdge<TenElemType> *ledge2) {
   if (ledge1->op == ledge2->op && ledge1->last_node == ledge2->last_node) {
     return true;
   } else {
@@ -292,10 +344,11 @@ inline bool MPOGenerator::CheckMergeableLeftEdgePair(
 }
 
 
-inline bool MPOGenerator::CheckMergeableRightEdgePair(
-    const FSMEdge *redge1, const FSMEdge *redge2) {
-  const FSMEdge *pnext_edge1 = redge1;
-  const FSMEdge *pnext_edge2 = redge2;
+template <typename TenElemType>
+inline bool MPOGenerator<TenElemType>::CheckMergeableRightEdgePair(
+    const FSMEdge<TenElemType> *redge1, const FSMEdge<TenElemType> *redge2) {
+  const FSMEdge<TenElemType> *pnext_edge1 = redge1;
+  const FSMEdge<TenElemType> *pnext_edge2 = redge2;
   while (true) {
     if (pnext_edge1->op != pnext_edge2->op) {
       return false;
@@ -316,7 +369,9 @@ inline bool MPOGenerator::CheckMergeableRightEdgePair(
 }
 
 
-void MPOGenerator::DeletePathToRightEnd(FSMEdge *edge) {
+template <typename TenElemType>
+void MPOGenerator<TenElemType>::DeletePathToRightEnd(
+    FSMEdge<TenElemType> *edge) {
   auto this_edge = edge;
   while(true) {
     if (this_edge->next_node->is_final) {
@@ -349,8 +404,9 @@ void MPOGenerator::DeletePathToRightEnd(FSMEdge *edge) {
 }
 
 
-void MPOGenerator::RelabelMidNodesIdx(const long nodes_set_idx) {
-  std::vector<FSMNode *> new_middle_nodes;
+template <typename TenElemType>
+void MPOGenerator<TenElemType>::RelabelMidNodesIdx(const long nodes_set_idx) {
+  std::vector<FSMNode<TenElemType> *> new_middle_nodes;
   long new_mid_state_idx = 1;
   for (auto &pmid_node : middle_nodes_set_[nodes_set_idx]) {
     if (pmid_node != nullptr) {
@@ -363,9 +419,10 @@ void MPOGenerator::RelabelMidNodesIdx(const long nodes_set_idx) {
 }
 
 
-void MPOGenerator::RemoveNullEdges(void) {
+template <typename TenElemType>
+void MPOGenerator<TenElemType>::RemoveNullEdges(void) {
   for (auto &edges : edges_set_) {
-    std::vector<FSMEdge *> new_edges;
+    std::vector<FSMEdge<TenElemType> *> new_edges;
     for (auto &edge : edges) {
       if (edge != nullptr) { new_edges.push_back(edge); }
     }
@@ -376,18 +433,20 @@ void MPOGenerator::RemoveNullEdges(void) {
 
 // Gnerator MPO tensors.
 // Sort finite state machine nodes by quantum numbers.
-void MPOGenerator::FSMGraphSort(void) {
+template <typename TenElemType>
+void MPOGenerator<TenElemType>::FSMGraphSort(void) {
   for (long i = 0; i < N_ - 1; ++i) {
     rvbs_[i] = FSMGraphSortAt(i);
   }
 }
 
 
-Index MPOGenerator::FSMGraphSortAt(const long site_idx) {
+template <typename TenElemType>
+Index MPOGenerator<TenElemType>::FSMGraphSortAt(const long site_idx) {
   // Sort R and F states.
   ready_nodes_[site_idx+1]->mid_state_idx = 0;
   final_nodes_[site_idx+1]->mid_state_idx = 1;
-  std::vector<FSMNode *> temp_sorted_nodes;
+  std::vector<FSMNode<TenElemType> *> temp_sorted_nodes;
   temp_sorted_nodes.push_back(ready_nodes_[site_idx+1]);
   temp_sorted_nodes.push_back(final_nodes_[site_idx+1]);
   std::vector<QNSector> rvb_qnscts;
@@ -430,8 +489,9 @@ Index MPOGenerator::FSMGraphSortAt(const long site_idx) {
 }
 
 
-GQTensor *MPOGenerator::GenHeadMpo(void) {
-  auto pmpo_ten = new GQTensor({pb_in_, rvbs_[0], pb_out_});
+template <typename TenElemType>
+GQTensor<TenElemType> *MPOGenerator<TenElemType>::GenHeadMpo(void) {
+  auto pmpo_ten = new GQTensor<TenElemType>({pb_in_, rvbs_[0], pb_out_});
   for (auto &edge : edges_set_[0]) {
     AddOpToHeadMpoTen(pmpo_ten, edge->op, edge->next_node->mid_state_idx);
   }
@@ -439,9 +499,10 @@ GQTensor *MPOGenerator::GenHeadMpo(void) {
 }
 
 
-GQTensor *MPOGenerator::GenTailMpo(void) {
+template <typename TenElemType>
+GQTensor<TenElemType> *MPOGenerator<TenElemType>::GenTailMpo(void) {
   auto lvb = InverseIndex(rvbs_.back());
-  auto pmpo_ten = new GQTensor({pb_in_, lvb, pb_out_});
+  auto pmpo_ten = new GQTensor<TenElemType>({pb_in_, lvb, pb_out_});
   for (auto &edge : edges_set_[N_-1]) {
     AddOpToTailMpoTen(pmpo_ten, edge->op, edge->last_node->mid_state_idx);
   }
@@ -449,9 +510,10 @@ GQTensor *MPOGenerator::GenTailMpo(void) {
 }
 
 
-GQTensor *MPOGenerator::GenCentMpo(const long site_idx) {
+template <typename TenElemType>
+GQTensor<TenElemType> *MPOGenerator<TenElemType>::GenCentMpo(const long site_idx) {
   auto lvb = InverseIndex(rvbs_[site_idx-1]);
-  auto pmpo_ten = new GQTensor({lvb, pb_in_, pb_out_, rvbs_[site_idx]});
+  auto pmpo_ten = new GQTensor<TenElemType>({lvb, pb_in_, pb_out_, rvbs_[site_idx]});
   for (auto &edge : edges_set_[site_idx]) {
     AddOpToCentMpoTen(
         pmpo_ten, edge->op,
@@ -461,8 +523,9 @@ GQTensor *MPOGenerator::GenCentMpo(const long site_idx) {
 }
 
 
+template <typename TenElemType>
 void AddOpToHeadMpoTen(
-    GQTensor *pmpo_ten, const GQTensor &rop, const long rvb_coor) {
+    GQTensor<TenElemType> *pmpo_ten, const GQTensor<TenElemType> &rop, const long rvb_coor) {
   for (long bpb_coor = 0; bpb_coor < rop.indexes[0].dim; ++bpb_coor) {
     for (long tpb_coor = 0; tpb_coor < rop.indexes[1].dim; ++tpb_coor) {
       auto elem = rop.Elem({bpb_coor, tpb_coor});
@@ -474,8 +537,9 @@ void AddOpToHeadMpoTen(
 }
 
 
+template <typename TenElemType>
 void AddOpToTailMpoTen(
-    GQTensor *pmpo_ten, const GQTensor &rop, const long lvb_coor) {
+    GQTensor<TenElemType> *pmpo_ten, const GQTensor<TenElemType> &rop, const long lvb_coor) {
   for (long bpb_coor = 0; bpb_coor < rop.indexes[0].dim; ++bpb_coor) {
     for (long tpb_coor = 0; tpb_coor < rop.indexes[1].dim; ++tpb_coor) {
       auto elem = rop.Elem({bpb_coor, tpb_coor});
@@ -487,8 +551,9 @@ void AddOpToTailMpoTen(
 }
 
 
+template <typename TenElemType>
 void AddOpToCentMpoTen(
-    GQTensor *pmpo_ten, const GQTensor &rop,
+    GQTensor<TenElemType> *pmpo_ten, const GQTensor<TenElemType> &rop,
     const long lvb_coor, const long rvb_coor) {
   for (long bpb_coor = 0; bpb_coor < rop.indexes[0].dim; ++bpb_coor) {
     for (long tpb_coor = 0; tpb_coor < rop.indexes[1].dim; ++tpb_coor) {

@@ -33,15 +33,6 @@ endif()
 
 option(GQMPS2_BUILD_UNITTEST "Build unittests for GraceQ/mps2." OFF)
 
-option(GQMPS2_MPI_PARALLEL "Build MPI support." OFF)
-if(GQMPS2_MPI_PARALLEL)
-  find_package(MPI REQUIRED)
-  add_definitions(-DGQMPS2_MPI_PARALLEL)
-  # For dependence setting.
-  option(GQTEN_MPI_PARALLEL "Set related option in external/gqten" ON)
-  add_definitions(-DGQTEN_MPI_PARALLEL)
-endif()
-
 option(GQMPS2_BUILD_GQTEN_USE_EXTERNAL_HPTT_LIB "Use external hptt library when building dependency external/gqten." OFF)
 if(GQMPS2_BUILD_GQTEN_USE_EXTERNAL_HPTT_LIB)
   option(GQTEN_USE_EXTERNAL_HPTT_LIB "Set related option in external/gqten" ON)
@@ -49,25 +40,25 @@ if(GQMPS2_BUILD_GQTEN_USE_EXTERNAL_HPTT_LIB)
 endif()
 
 # Compilation and linking control.
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 add_definitions(-g)
 
 
 # Installation path
 set(GQMPS2_TOOL_SCRIPT_DEST "${CMAKE_INSTALL_PREFIX}/bin")
-set(GQMPS2_INCLUDE_DEST "${CMAKE_INSTALL_PREFIX}/include/gqmps2")
-set(GQMPS2_LIB_DEST "${CMAKE_INSTALL_PREFIX}/lib")
+set(GQMPS2_INCLUDE_DEST "${CMAKE_INSTALL_PREFIX}/include")
 
 
 # Build dependencies.
 add_subdirectory(external)
 
 
-# Build library.
+# Build(install) library.
 set(GQMPS2_HEADER_PATH "${PROJECT_SOURCE_DIR}/include")
-set(GQMPS2_TENSOR_LIB_HEADER_PATH "${PROJECT_SOURCE_DIR}/external/gqten/include")
-set(GQMPS2_JSON_LIB_HEADER_PATH "${PROJECT_SOURCE_DIR}/external/nlohmann_json/include")
-add_subdirectory(src lib)
+set(GQMPS2_HEADER_DIR ${GQMPS2_HEADER_PATH}/gqmps2)
+install(
+  DIRECTORY ${GQMPS2_HEADER_DIR}
+  DESTINATION ${GQMPS2_INCLUDE_DEST})
 
 
 # Build tool scripts
@@ -75,6 +66,8 @@ add_subdirectory(script)
 
 
 # Build unittests.
+set(GQMPS2_TENSOR_LIB_HEADER_PATH "${PROJECT_SOURCE_DIR}/external/gqten/include")
+set(GQMPS2_JSON_LIB_HEADER_PATH "${PROJECT_SOURCE_DIR}/external/nlohmann_json/include")
 if(GQMPS2_BUILD_UNITTEST)
   enable_testing()
   find_package(GTest REQUIRED)

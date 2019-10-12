@@ -13,3 +13,6 @@ add_subdirectory(gqten)
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 option(JSON_Install OFF)
 add_subdirectory(nlohmann_json)
+install(
+  FILES ${PROJECT_SOURCE_DIR}/external/nlohmann_json/single_include/nlohmann/json.hpp
+  DESTINATION ${GQMPS2_INCLUDE_DEST}/nlohmann)
