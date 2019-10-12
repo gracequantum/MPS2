@@ -13,13 +13,13 @@ _"Easily push your D to 10k"_
 
 ## Installation
 
-GraceQ/MPS2 library needs [GraceQ/tensor](https://github.com/gracequantum/tensor) to be its basic tensor library and [nlohmann/json](https://github.com/nlohmann/json) to parse input JSON file. So you need to install these dependencies first or use `--recurse-submodules` option to clone them as submodules.
+GraceQ/MPS2 is a header-only library. Although we do not promise that this feature will be kept forever, you do not need compile the newest version GraceQ/MPS2. In theory, you can just copy `GQMPS2_SRC_ROOT/include/gqmps2` directory to anywhere you like as the installation procedure. But in practice, GraceQ/MPS2 library needs [GraceQ/tensor](https://github.com/gracequantum/tensor) to be its basic tensor library and [nlohmann/json](https://github.com/nlohmann/json) to parse input JSON file. So you would like to use `--recurse-submodules` option in your `git` command to clone them as submodules to the source file tree.
 
 ```
 git clone --recurse-submodules https://github.com/gracequantum/mps2.git gqmps2
 ```
 
-Then you can use the [CMake](https://cmake.org/) tool to build the library.
+Then use the [CMake](https://cmake.org/) tool to build these dependencies.
 
 ```
 cd gqmps2
@@ -28,6 +28,8 @@ cmake .. -DCMAKE_INSTALL_PREFIX=<your_gqmps2_installation_root>
 make
 make install
 ```
+
+GraceQ/MPS2 and its dependencies will be installed to `<your_gqmps2_installation_root>`.
 
 
 ## Minimal tutorial
@@ -47,10 +49,16 @@ Because this library highly depends on the GraceQ/tensor, you maybe need to incl
 using namespace gqten;
 ```
 
+When you compile your program, you can use following compile flags to gain the best performance.
+
+```
+-std=c++14 -g -O3 -DNDEBUG
+```
+
 GraceQ/MPS2 needs gqten, hptt and MKL during linking process. So you should use the following flags when you link the library.
 
 ```
--lgqmps2 -lgqten -lhptt <your_mkl_linking_flags>
+-lgqten -lhptt <your_mkl_linking_flags>
 ```
 
 We highly recommend that you use [MKL Link Line Advisor](https://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/) to set `<your_mkl_linking_flags>`.
@@ -112,15 +120,17 @@ Then you can use these parameters in you program.
 ### Define operators
 Quantum operator can be represented as two ranks tensor. About how to define tensor in GraceQ/tensor library, you can refer to [GraceQ/tensor](https://github.com/gracequantum/tensor).
 ```cpp
+using TenElemType = GQTEN_Double;
+using Tensor = GQTensor<TenElemType>;
 auto pb_out = Index({
                    QNSector(QN({QNNameVal("Sz", 1)}), 1),
                    QNSector(QN({QNNameVal("Sz", -1)}), 1)}, OUT);
 auto pb_in = InverseIndex(pb_out);
 
-auto sz = GQTensor({pb_in, pb_out});
-auto sp = GQTensor({pb_in, pb_out});
-auto sm = GQTensor({pb_in, pb_out});
-auto id = GQTensor({pb_in, pb_out});
+auto sz = Tensor({pb_in, pb_out});
+auto sp = Tensor({pb_in, pb_out});
+auto sm = Tensor({pb_in, pb_out});
+auto id = Tensor({pb_in, pb_out});
 sz({0, 0}) = 0.5;
 sz({1, 1}) = -0.5;
 sp({0, 1}) = 1;
@@ -133,21 +143,21 @@ You can use `gqmps2::MPOGenerator` to generate MPO contains any one-site or two-
 
 ```cpp
 auto zero_div = QN({QNNameVal("Sz", 0)});
-auto mpo_gen = MPOGenerator(params.N, pb_out, zero_div);
+auto mpo_gen = MPOGenerator<TenElemType>(params.N, pb_out, zero_div);
 for (long i = 0; i < params.N-1; ++i) {
-  mpo_gen.AddTerm(1, {OpIdx(sz, i), OpIdx(sz, i+1)});
-  mpo_gen.AddTerm(0.5, {OpIdx(sp, i), OpIdx(sm, i+1)});
-  mpo_gen.AddTerm(0.5, {OpIdx(sm, i), OpIdx(sp, i+1)});
+  mpo_gen.AddTerm(1,   {sz, sz}, {i, i+1});
+  mpo_gen.AddTerm(0.5, {sp, sm}, {i, i+1});
+  mpo_gen.AddTerm(0.5, {sm, sp}, {i, i+1});
 }
 auto mpo = mpo_gen.Gen();
 ```
-The `OpIdx` defines the operator and the site which the operator lives on. The type of the result MPO `mpo` is `std::vector<GQTensor *>`.
+The `OpIdx` defines the operator and the site which the operator lives on. The type of the result MPO `mpo` is `std::vector<Tensor *>`.
 
 ### Define initial MPS
-You can define a base direct product state as the initial MPS. Because the U1 symmetry is kept during the iteration process, the quantum number of this initial MPS also labels the sector you are working in the whole Hilbert space. MPS is also defined as a `std::vector<GQTensor *>` for now.
+You can define a base direct product state as the initial MPS. Because the U1 symmetry is kept during the iteration process, the quantum number of this initial MPS also labels the sector you are working in the whole Hilbert space. MPS is also defined as a `std::vector<Tensor *>` for now.
 
 ```cpp
-std::vector<GQTensor *> mps(params.N);
+std::vector<Tensor *> mps(params.N);
 std::vector<long> stat_labs;
 for (int i = 0; i < params.N; ++i) { stat_labs.push_back(i % 2); }
 DirectStateInitMps(mps, stat_labs, pb_out, zero_div);
@@ -277,8 +287,9 @@ Parameters JSON file.
 }
 ```
 
-Finally do
+Finally compile and run.
 ```
+your_cpp_compiler -o gqmps2_demo gqmps2_demo.cc -std=c++14 -g -O3 -DNDEBUG -lgqten -lhptt <your_mkl_linking_flags>
 ./gqmps2_demo params.json
 ```
 
@@ -289,6 +300,7 @@ This TODO list is *not* sorted by expected completion order.
 - Release N-body terms MPO generator.
 - Finer workflow control for these MPS algorithms.
 - Abstract MPS and MPO objects to specific classes.
+- Support recent new distributed DMRG.
 - ...
 
 
@@ -307,6 +319,6 @@ Cite GraceQ/MPS2 as
 
 The author(s) highly acknowledge the following people, project(s) and organization(s) (sorted in alphabetical order):
 
-ALPS project, Cheng Peng, Chunyu Sun, D. N. Sheng, Grace Song, Hong-Chen Jiang, itensor.org, Le Zhao, Shuo Yang, Thomas P. Devereaux, Wayne Zheng, Xiaoyu Dong, Yifan Jiang, Zheng-Yu Weng
+ALPS project, Cheng Peng, Chunyu Sun, D. N. Sheng, Grace Song, Hong-Chen Jiang, itensor.org, Le Zhao, Shuai Chen, Shuo Yang, Thomas P. Devereaux, Wayne Zheng, Xiaoyu Dong, Yifan Jiang, Zheng-Yu Weng
 
-You can not meet this library without anyone of them.
+You can not meet this library without anyone of them. And the basic part of this library was developed when (one of) the author R. Sun was a visiting student at Stanford University. So R. Sun want to give special thanks to his co-advisors Hong-Chen Jiang, Prof. Thomas P. Devereaux and their postdoctors Yifan Jiang and Cheng Peng.
