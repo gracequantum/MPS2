@@ -310,7 +310,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DKitaev) {
 
 
 // Test fermion models.
-struct TestTwoSiteAlgorithmTjSystem : public testing::Test {
+struct TestTwoSiteAlgorithmTjSystem2U1Symm : public testing::Test {
   long N = 4;
   double t = 3.;
   double J = 1.;
@@ -347,29 +347,29 @@ struct TestTwoSiteAlgorithmTjSystem : public testing::Test {
     df({2, 2})  = 1;
     dsz({0, 0}) =  0.5;
     dsz({1, 1}) = -0.5;
-    dsp({0, 1}) = 1;
-    dsm({1, 0}) = 1;
-    dcup({2, 0}) = 1;
-    dcdagup({0, 2}) = 1;
-    dcdn({2, 1}) = 1;
-    dcdagdn({1, 2}) = 1;
+    dsp({1, 0}) = 1;
+    dsm({0, 1}) = 1;
+    dcup({0, 2}) = 1;
+    dcdagup({2, 0}) = 1;
+    dcdn({1, 2}) = 1;
+    dcdagdn({2, 1}) = 1;
 
     zf({0, 0})  = -1;
     zf({1, 1})  = -1;
     zf({2, 2})  = 1;
     zsz({0, 0}) =  0.5;
     zsz({1, 1}) = -0.5;
-    zsp({0, 1}) = 1;
-    zsm({1, 0}) = 1;
-    zcup({2, 0}) = 1;
-    zcdagup({0, 2}) = 1;
-    zcdn({2, 1}) = 1;
-    zcdagdn({1, 2}) = 1;
+    zsp({1, 0}) = 1;
+    zsm({0, 1}) = 1;
+    zcup({0, 2}) = 1;
+    zcdagup({2, 0}) = 1;
+    zcdn({1, 2}) = 1;
+    zcdagdn({2, 1}) = 1;
   }
 };
 
 
-TEST_F(TestTwoSiteAlgorithmTjSystem, 1DCase) {
+TEST_F(TestTwoSiteAlgorithmTjSystem2U1Symm, 1DCase) {
   auto dmpo_gen = MPOGenerator<GQTEN_Double>(N, pb_out, qn0);
   for (long i = 0; i < N-1; ++i) {
     dmpo_gen.AddTerm(-t,    {dcdagup, dcup}, {i, i+1}, df);
@@ -414,7 +414,7 @@ TEST_F(TestTwoSiteAlgorithmTjSystem, 1DCase) {
 }
 
 
-TEST_F(TestTwoSiteAlgorithmTjSystem, 2DCase) {
+TEST_F(TestTwoSiteAlgorithmTjSystem2U1Symm, 2DCase) {
   auto dmpo_gen = MPOGenerator<GQTEN_Double>(N, pb_out, qn0);
   std::vector<std::pair<long, long>> nn_pairs = {
       std::make_pair(0, 1), 
@@ -468,6 +468,128 @@ TEST_F(TestTwoSiteAlgorithmTjSystem, 2DCase) {
   RunTestTwoSiteAlgorithmCase(
       zmps, zmpo, sweep_params,
       -8.868563739680, 1.0E-10);
+}
+
+
+struct TestTwoSiteAlgorithmTjSystem1U1Symm : public testing::Test {
+  QN qn0 = QN({QNNameVal("N", 0)});
+  Index pb_out = Index({
+                     QNSector(QN({QNNameVal("N", 1)}), 2),
+                     QNSector(QN({QNNameVal("N", 0)}), 1)
+                     }, OUT);
+  Index pb_in = InverseIndex(pb_out);
+  ZGQTensor zf = ZGQTensor({pb_in, pb_out});
+  ZGQTensor zsz = ZGQTensor({pb_in, pb_out});
+  ZGQTensor zsp = ZGQTensor({pb_in, pb_out});
+  ZGQTensor zsm = ZGQTensor({pb_in, pb_out});
+  ZGQTensor zcup = ZGQTensor({pb_in, pb_out});
+  ZGQTensor zcdagup = ZGQTensor({pb_in, pb_out});
+  ZGQTensor zcdn = ZGQTensor({pb_in, pb_out});
+  ZGQTensor zcdagdn = ZGQTensor({pb_in, pb_out});
+  ZGQTensor zntot = ZGQTensor({pb_in, pb_out});
+  ZGQTensor zid = ZGQTensor({pb_in, pb_out});
+
+  void SetUp(void) {
+    zf({0, 0})  = -1;
+    zf({1, 1})  = -1;
+    zf({2, 2})  = 1;
+    zsz({0, 0}) =  0.5;
+    zsz({1, 1}) = -0.5;
+    zsp({0, 1}) = 1;
+    zsm({1, 0}) = 1;
+    zcup({2, 0}) = 1;
+    zcdagup({0, 2}) = 1;
+    zcdn({2, 1}) = 1;
+    zcdagdn({1, 2}) = 1;
+    zntot({0, 0}) = 1;
+    zntot({1, 1}) = 1;
+    zid({0,0})=1;
+    zid({1,1})=1;
+    zid({2,2})=1;
+  }
+};
+
+
+TEST_F(TestTwoSiteAlgorithmTjSystem1U1Symm, RashbaTermCase) {
+  double t = 3.0;
+  double J = 1.0;
+  double lamb = 0.03;
+  auto ilamb = GQTEN_Complex(0, lamb);
+  long Nx = 3;
+  long Ny = 2;
+  long Ntot = Nx * Ny;
+  char BCx = 'p';
+  char BCy = 'o';
+  auto mpo_gen = MPOGenerator<GQTEN_Complex>(Ntot, pb_out, qn0);
+  for (long x = 0; x < Nx; ++x) {
+    for (long y = 0; y < Ny; ++y) {
+
+      if (!((BCx == 'o') && (x == Nx-1))) {
+        auto s0 = coors2idxSquare(x, y, Nx, Ny);
+        auto s1 = coors2idxSquare((x+1)%Nx, y, Nx, Ny);
+        KeepOrder(s0, s1);
+        std::cout << s0 << " " << s1 << std::endl;
+        mpo_gen.AddTerm(-t, {zcdagup, zcup}, {s0, s1}, zf);
+        mpo_gen.AddTerm(-t, {zcdagdn, zcdn}, {s0, s1}, zf);
+        mpo_gen.AddTerm(-t, {zcup, zcdagup}, {s0, s1}, zf);
+        mpo_gen.AddTerm(-t, {zcdn, zcdagdn}, {s0, s1}, zf);
+        mpo_gen.AddTerm(J, {zsz, zsz}, {s0, s1});
+        mpo_gen.AddTerm(0.5*J, {zsp, zsm}, {s0, s1});
+        mpo_gen.AddTerm(0.5*J, {zsm, zsp}, {s0, s1});
+        mpo_gen.AddTerm(-0.25*J, {zntot, zntot}, {s0, s1});
+        // SO term
+        if (x != Nx-1) {
+          mpo_gen.AddTerm(lamb, {zcdagup, zcdn}, {s0, s1}, zf);
+          mpo_gen.AddTerm(lamb, {zcup, zcdagdn}, {s0, s1}, zf);
+          mpo_gen.AddTerm(-lamb, {zcdagdn, zcup}, {s0, s1}, zf);
+          mpo_gen.AddTerm(-lamb, {zcdn, zcdagup}, {s0, s1}, zf);
+        } else {    // At the boundary
+          mpo_gen.AddTerm(lamb, {zcdn, zcdagup}, {s0, s1}, zf);
+          mpo_gen.AddTerm(lamb, {zcdagdn, zcup}, {s0, s1}, zf);
+          mpo_gen.AddTerm(-lamb, {zcup, zcdagdn}, {s0, s1}, zf);
+          mpo_gen.AddTerm(-lamb, {zcdagup, zcdn}, {s0, s1}, zf);
+        }
+      }
+
+      if (!((BCy == 'o') && (y == Ny-1))) {
+        auto s0 = coors2idxSquare(x, y, Nx, Ny);
+        auto s2 = coors2idxSquare(x, (y+1)%Ny, Nx, Ny);
+        KeepOrder(s0, s2);
+        std::cout << s0 << " " << s2 << std::endl;
+        mpo_gen.AddTerm(-t, {zcdagup, zcup}, {s0, s2}, zf);
+        mpo_gen.AddTerm(-t, {zcdagdn, zcdn}, {s0, s2}, zf);
+        mpo_gen.AddTerm(-t, {zcup, zcdagup}, {s0, s2}, zf);
+        mpo_gen.AddTerm(-t, {zcdn, zcdagdn}, {s0, s2}, zf);
+        mpo_gen.AddTerm(J, {zsz, zsz}, {s0, s2});
+        mpo_gen.AddTerm(0.5*J, {zsp, zsm}, {s0, s2});
+        mpo_gen.AddTerm(0.5*J, {zsm, zsp}, {s0, s2});
+        mpo_gen.AddTerm(-0.25*J, {zntot, zntot}, {s0, s2});
+        if (y != Ny-1) {
+          mpo_gen.AddTerm(ilamb,  {zcdagup, zcdn}, {s0, s2}, zf);
+          mpo_gen.AddTerm(ilamb,  {zcdagdn, zcup}, {s0, s2}, zf);
+          mpo_gen.AddTerm(-ilamb, {zcup, zcdagdn}, {s0, s2}, zf);
+          mpo_gen.AddTerm(-ilamb, {zcdn, zcdagup}, {s0, s2}, zf);
+        } else {    // At the boundary
+          mpo_gen.AddTerm(ilamb, {zcup, zcdagdn}, {s0, s2}, zf);
+          mpo_gen.AddTerm(ilamb, {zcdn, zcdagup}, {s0, s2}, zf);
+          mpo_gen.AddTerm(-ilamb, {zcdagup, zcdn}, {s0, s2}, zf);
+          mpo_gen.AddTerm(-ilamb, {zcdagdn, zcup}, {s0, s2}, zf);
+        }
+      }
+    }
+  }
+  auto mpo = mpo_gen.Gen();
+  auto mps = ZTenPtrVec(Ntot);
+  DirectStateInitMps(mps, {0, 1, 0, 2, 0, 1}, pb_out, qn0);
+  auto sweep_params = SweepParams(
+                          8,
+                          30, 30, 1.0E-4,
+                          true,
+                          kTwoSiteAlgoWorkflowInitial,
+                          LanczosParams(1.0E-14, 100));
+  RunTestTwoSiteAlgorithmCase(
+      mps, mpo, sweep_params,
+      -11.018692166942165, 1.0E-10);
 }
 
 
