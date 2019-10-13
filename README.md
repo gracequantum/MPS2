@@ -224,30 +224,33 @@ struct CaseParams : public CaseParamsParserBasic {
 int main(int argc, char *argv[]) {
   CaseParams params(argv[1]);
 
+  using TenElemType = GQTEN_Double;
+  using Tensor = GQTensor<TenElemType>;
+
   auto pb_out = Index({
                      QNSector(QN({QNNameVal("Sz", 1)}), 1),
                      QNSector(QN({QNNameVal("Sz", -1)}), 1)}, OUT);
   auto pb_in = InverseIndex(pb_out);
 
-  auto sz = GQTensor({pb_in, pb_out});
-  auto sp = GQTensor({pb_in, pb_out});
-  auto sm = GQTensor({pb_in, pb_out});
-  auto id = GQTensor({pb_in, pb_out});
+  auto sz = Tensor({pb_in, pb_out});
+  auto sp = Tensor({pb_in, pb_out});
+  auto sm = Tensor({pb_in, pb_out});
+  auto id = Tensor({pb_in, pb_out});
   sz({0, 0}) = 0.5;
   sz({1, 1}) = -0.5;
   sp({0, 1}) = 1;
   sm({1, 0}) = 1;
 
   auto zero_div = QN({QNNameVal("Sz", 0)});
-  auto mpo_gen = MPOGenerator(params.N, pb_out, zero_div);
+  auto mpo_gen = MPOGenerator<TenElemType>(params.N, pb_out, zero_div);
   for (long i = 0; i < params.N-1; ++i) {
-    mpo_gen.AddTerm(1, {OpIdx(sz, i), OpIdx(sz, i+1)});
-    mpo_gen.AddTerm(0.5, {OpIdx(sp, i), OpIdx(sm, i+1)});
-    mpo_gen.AddTerm(0.5, {OpIdx(sm, i), OpIdx(sp, i+1)});
+    mpo_gen.AddTerm(1,   {sz, sz}, {i, i+1});
+    mpo_gen.AddTerm(0.5, {sp, sm}, {i, i+1});
+    mpo_gen.AddTerm(0.5, {sm, sp}, {i, i+1});
   }
   auto mpo = mpo_gen.Gen();
 
-  std::vector<GQTensor *> mps(params.N);
+  std::vector<Tensor *> mps(params.N);
   std::vector<long> stat_labs;
   for (int i = 0; i < params.N; ++i) { stat_labs.push_back(i % 2); }
   DirectStateInitMps(mps, stat_labs, pb_out, zero_div);
