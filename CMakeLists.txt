@@ -67,7 +67,6 @@ add_subdirectory(script)
 
 # Build unittests.
 set(GQMPS2_TENSOR_LIB_HEADER_PATH "${PROJECT_SOURCE_DIR}/external/gqten/include")
-set(GQMPS2_JSON_LIB_HEADER_PATH "${PROJECT_SOURCE_DIR}/external/nlohmann_json/include")
 if(GQMPS2_BUILD_UNITTEST)
   enable_testing()
   find_package(GTest REQUIRED)

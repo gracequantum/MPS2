@@ -13,7 +13,7 @@ _"Easily push your D to 10k"_
 
 ## Installation
 
-GraceQ/MPS2 is a header-only library. Although we do not promise that this feature will be kept forever, you do not need compile the newest version GraceQ/MPS2. In theory, you can just copy `GQMPS2_SRC_ROOT/include/gqmps2` directory to anywhere you like as the installation procedure. But in practice, GraceQ/MPS2 library needs [GraceQ/tensor](https://github.com/gracequantum/tensor) to be its basic tensor library and [nlohmann/json](https://github.com/nlohmann/json) to parse input JSON file. So you would like to use `--recurse-submodules` option in your `git` command to clone them as submodules to the source file tree.
+GraceQ/MPS2 is a header-only library. Although we do not promise that this feature will be kept forever, you do not need compile the newest version GraceQ/MPS2. In theory, you can just copy `GQMPS2_SRC_ROOT/include/gqmps2` directory to anywhere you like as the installation procedure. But in practice, GraceQ/MPS2 library needs [GraceQ/tensor](https://github.com/gracequantum/tensor) to be its basic tensor library. So you would like to use `--recurse-submodules` option in your `git` command to clone it as submodule to the source file tree.
 
 ```
 git clone --recurse-submodules https://github.com/gracequantum/mps2.git gqmps2
@@ -116,6 +116,8 @@ int main(int argc, char *argv[]) {
 }
 ```
 Then you can use these parameters in you program.
+
+GraceQ/MPS2 embeds [nlohmann_json](https://github.com/nlohmann/json) as its basic JSON library.
 
 ### Define operators
 Quantum operator can be represented as two ranks tensor. About how to define tensor in GraceQ/tensor library, you can refer to [GraceQ/tensor](https://github.com/gracequantum/tensor).
