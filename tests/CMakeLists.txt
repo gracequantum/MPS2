@@ -32,7 +32,6 @@ macro(add_unittest
     target_include_directories(${TEST_NAME}
       PRIVATE ${GQMPS2_HEADER_PATH}
       PRIVATE ${GQMPS2_TENSOR_LIB_HEADER_PATH}
-      PRIVATE ${GQMPS2_JSON_LIB_HEADER_PATH}
       PRIVATE ${CFLAGS})
     target_link_libraries(${TEST_NAME}
       #gqmps2
