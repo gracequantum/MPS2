@@ -151,7 +151,7 @@ for (long i = 0; i < params.N-1; ++i) {
 }
 auto mpo = mpo_gen.Gen();
 ```
-The `OpIdx` defines the operator and the site which the operator lives on. The type of the result MPO `mpo` is `std::vector<Tensor *>`.
+The type of the result MPO `mpo` is `std::vector<Tensor *>`.
 
 ### Define initial MPS
 You can define a base direct product state as the initial MPS. Because the U1 symmetry is kept during the iteration process, the quantum number of this initial MPS also labels the sector you are working in the whole Hilbert space. MPS is also defined as a `std::vector<Tensor *>` for now.
