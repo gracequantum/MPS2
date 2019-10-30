@@ -32,6 +32,15 @@ std::vector<long> InverseVec(const std::vector<long> &v) {
 }
 
 
+std::vector<CoefRepr> GenCoefReprVec(
+    const std::vector<CoefLabel> & coef_labels) {
+  std::vector<CoefRepr> coef_reprs;
+  for (auto label : coef_labels) { coef_reprs.push_back(CoefRepr(label)); }
+  return coef_reprs;
+}
+
+
+// Testing representation of coefficient.
 TEST(TestCoefRepr, Initialization) {
   CoefRepr null_coef_repr;
   EXPECT_EQ(null_coef_repr.GetCoefLabelList(), std::vector<CoefLabel>());
@@ -82,8 +91,8 @@ void RunTestCoefReprAddCase(size_t lhs_size, size_t rhs_size) {
   CoefRepr lhs_coef_repr(lhs_rand_coef_labels);
   CoefRepr rhs_coef_repr(rhs_rand_coef_labels);
   CoefRepr added_coef_repr(added_rand_coef_labels);
-  EXPECT_EQ(lhs_coef_repr + rhs_coef_repr, added_rand_coef_labels);
-  EXPECT_EQ(rhs_coef_repr + lhs_coef_repr, added_rand_coef_labels);
+  EXPECT_EQ(lhs_coef_repr + rhs_coef_repr, added_coef_repr);
+  EXPECT_EQ(rhs_coef_repr + lhs_coef_repr, added_coef_repr);
 }
 
 
@@ -101,7 +110,106 @@ TEST(TestCoefRepr, Add) {
 }
 
 
+// Testing representation of operator.
 TEST(TestOpRepr, Initialization){
   OpRepr null_op_repr;
   EXPECT_EQ(null_op_repr.GetCoefReprList(), std::vector<CoefRepr>());
+  EXPECT_EQ(null_op_repr.GetOpLabelList(), std::vector<OpLabel>());
+
+  OpLabel rand_op_label = rand();
+  OpRepr nocoef_op_repr(rand_op_label);
+  std::vector<CoefRepr> nocoef_op_coef_repr_list = {kIdCoefRepr};
+  std::vector<OpLabel> nocoef_op_op_label_list = {rand_op_label};
+  EXPECT_EQ(nocoef_op_repr.GetCoefReprList(), nocoef_op_coef_repr_list);
+  EXPECT_EQ(nocoef_op_repr.GetOpLabelList(), nocoef_op_op_label_list);
+
+  CoefRepr rand_coef_repr(rand());
+  std::vector<CoefRepr> op_coef_repr_list = {rand_coef_repr};
+  auto coef_op_op_label_list = nocoef_op_op_label_list;
+  OpRepr coef_op_repr(rand_coef_repr, rand_op_label);
+  EXPECT_EQ(coef_op_repr.GetCoefReprList(), op_coef_repr_list);
+  EXPECT_EQ(coef_op_repr.GetOpLabelList(), coef_op_op_label_list);
+
+  size_t size = 5;
+  std::vector<CoefRepr> rand_coef_reprs;
+  std::vector<OpLabel> rand_op_labels;
+  for (size_t i = 0; i < size; ++i) {
+    rand_coef_reprs.push_back(CoefRepr(rand()));
+    rand_op_labels.push_back(rand());
+  }
+  OpRepr op_repr(rand_coef_reprs, rand_op_labels);
+  EXPECT_EQ(op_repr.GetCoefReprList(), rand_coef_reprs);
+  EXPECT_EQ(op_repr.GetOpLabelList(), rand_op_labels);
+}
+
+
+void RunTestOpReprEquivalentCase(size_t size) {
+  auto rand_vec1a = RandVec(size);
+  auto rand_vec1b = RandVec(size);
+  auto rand_vec1a_inv = InverseVec(rand_vec1a);
+  auto rand_vec1b_inv = InverseVec(rand_vec1b);
+  std::vector<CoefRepr> coef_list1 = GenCoefReprVec(rand_vec1a);
+  std::vector<CoefRepr> coef_list1_inv = GenCoefReprVec(rand_vec1a_inv);
+  OpRepr op_repr1a(coef_list1, rand_vec1b);
+  OpRepr op_repr1b(coef_list1_inv, rand_vec1b_inv);
+  EXPECT_EQ(op_repr1a, op_repr1a);
+  EXPECT_EQ(op_repr1a, op_repr1b);
+  if (size != 0) {
+    auto rand_vec2a = RandVec(size);
+    auto rand_vec2b = RandVec(size);
+    std::vector<CoefRepr> coef_list2 = GenCoefReprVec(rand_vec2a);
+    OpRepr op_repr2(coef_list2, rand_vec2b);
+    EXPECT_NE(op_repr2, op_repr1a);
+  }
+}
+
+
+TEST(TestOpRepr, TestOpReprEquivalent) {
+  RunTestOpReprEquivalentCase(0);
+  RunTestOpReprEquivalentCase(1);
+  RunTestOpReprEquivalentCase(3);
+  RunTestOpReprEquivalentCase(5);
+}
+
+
+void RunTestOpReprAddCase(size_t lhs_size, size_t rhs_size) {
+  auto lhs_rand_coef_reprs = GenCoefReprVec(RandVec(lhs_size));
+  auto rhs_rand_coef_reprs = GenCoefReprVec(RandVec(rhs_size));
+  auto lhs_rand_op_labels = RandVec(lhs_size);
+  auto rhs_rand_op_labels = RandVec(rhs_size);
+  std::vector<CoefRepr> added_rand_coef_reprs;
+  added_rand_coef_reprs.reserve(lhs_size + rhs_size);
+  added_rand_coef_reprs.insert(
+      added_rand_coef_reprs.end(),
+      lhs_rand_coef_reprs.begin(), lhs_rand_coef_reprs.end());
+  added_rand_coef_reprs.insert(
+      added_rand_coef_reprs.end(),
+      rhs_rand_coef_reprs.begin(), rhs_rand_coef_reprs.end());
+  std::vector<OpLabel> added_rand_op_labels;
+  added_rand_op_labels.reserve(lhs_size + rhs_size);
+  added_rand_op_labels.insert(
+      added_rand_op_labels.end(),
+      lhs_rand_op_labels.begin(), lhs_rand_op_labels.end());
+  added_rand_op_labels.insert(
+      added_rand_op_labels.end(),
+      rhs_rand_op_labels.begin(), rhs_rand_op_labels.end());
+  OpRepr lhs_op_repr(lhs_rand_coef_reprs, lhs_rand_op_labels);
+  OpRepr rhs_op_repr(rhs_rand_coef_reprs, rhs_rand_op_labels);
+  OpRepr added_op_repr(added_rand_coef_reprs, added_rand_op_labels);
+  EXPECT_EQ(lhs_op_repr + rhs_op_repr, added_op_repr);
+  EXPECT_EQ(rhs_op_repr + lhs_op_repr, added_op_repr);
+}
+
+
+TEST(TestOpRepr, TestOpReprAdd) {
+  RunTestOpReprAddCase(0, 0);
+  RunTestOpReprAddCase(1, 0);
+  RunTestOpReprAddCase(0, 1);
+  RunTestOpReprAddCase(1, 1);
+  RunTestOpReprAddCase(2, 1);
+  RunTestOpReprAddCase(1, 2);
+  RunTestOpReprAddCase(3, 3);
+  RunTestOpReprAddCase(5, 3);
+  RunTestOpReprAddCase(3, 5);
+  RunTestOpReprAddCase(5, 5);
 }
