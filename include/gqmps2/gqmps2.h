@@ -370,7 +370,7 @@ inline void CreatPath(const std::string &path) {
 
 // Implementation details
 #include "gqmps2/detail/lanczos_impl.h"
-#include "gqmps2/detail/mpogen_impl.h"
+#include "gqmps2/detail/mpogen/mpogen_impl.h"
 #include "gqmps2/detail/two_site_algo_impl.h"
 #include "gqmps2/detail/mps_ops_impl.h"
 #include "gqmps2/detail/mps_measu_impl.h"
