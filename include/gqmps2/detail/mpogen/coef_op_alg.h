@@ -8,6 +8,7 @@
 #ifndef GQMPS2_DETAIL_MPOGEN_COEF_OP_ALG_H
 #define GQMPS2_DETAIL_MPOGEN_COEF_OP_ALG_H
 
+#include "gqmps2/detail/mpogen/sparse_mat.h"
 
 #include <vector>
 
@@ -158,6 +159,10 @@ private:
   std::vector<CoefRepr> coef_repr_list_;
   std::vector<OpLabel> op_label_list_;
 };
+
+
+// Sparse coefficient representation matrix.
+using SparCoefReprMat = SparMat<CoefRepr>;
 
 
 // Helpers.
