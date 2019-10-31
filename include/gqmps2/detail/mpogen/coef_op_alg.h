@@ -165,6 +165,31 @@ private:
 using SparCoefReprMat = SparMat<CoefRepr>;
 
 
+// Sparse operator representation matrix.
+using SparOpReprMatBase = SparMat<OpRepr>;
+
+class SparOpReprMat : public SparOpReprMatBase {
+public:
+  SparOpReprMat(void) : SparOpReprMatBase() {}
+
+  SparOpReprMat(const size_t row_num, const size_t col_num) :
+      SparOpReprMatBase(row_num, col_num) {}
+
+  SparOpReprMat(const SparOpReprMat &spar_mat) :
+      SparOpReprMatBase(spar_mat) {}
+
+  SparOpReprMat &operator=(const SparOpReprMat &spar_mat) {
+    rows = spar_mat.rows;
+    cols = spar_mat.cols;
+    data = spar_mat.data;
+    indexes = spar_mat.indexes;
+    return *this;
+  }
+
+private:
+};
+
+
 // Helpers.
 template <typename T>
 bool ElemInVec(const T &e, const std::vector<T> &v, long &pos) {

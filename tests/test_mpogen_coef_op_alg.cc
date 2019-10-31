@@ -426,3 +426,31 @@ TEST(TestSparCoefReprMat, SwapTwoRowsAndCols) {
   RunTestSparCoefReprMatSwapTwoRowsAndColsCase(5, 5);
   RunTestSparCoefReprMatSwapTwoRowsAndColsCase(100, 100);
 }
+
+
+void RunTestSparOpReprMatInitializationCase(size_t row_num, size_t col_num) {
+  SparOpReprMat spar_mat(row_num, col_num);
+  EXPECT_EQ(spar_mat.rows, row_num);
+  EXPECT_EQ(spar_mat.cols, col_num);
+  EXPECT_TRUE(spar_mat.data.empty());
+  auto size = row_num * col_num;
+  auto indexes = spar_mat.indexes;
+  EXPECT_EQ(indexes.size(), size);
+  for (size_t i = 0; i < size; ++i) { EXPECT_EQ(indexes[i], -1); }
+}
+
+
+TEST(TestSparOpReprMat, Initialization) {
+  SparOpReprMat null_op_repr_mat;
+  EXPECT_EQ(null_op_repr_mat.rows, 0);
+  EXPECT_EQ(null_op_repr_mat.cols, 0);
+  EXPECT_TRUE(null_op_repr_mat.data.empty());
+  EXPECT_TRUE(null_op_repr_mat.indexes.empty());
+
+  RunTestSparOpReprMatInitializationCase(1, 1);
+  RunTestSparOpReprMatInitializationCase(5, 1);
+  RunTestSparOpReprMatInitializationCase(1, 5);
+  RunTestSparOpReprMatInitializationCase(5, 3);
+  RunTestSparOpReprMatInitializationCase(3, 5);
+  RunTestSparOpReprMatInitializationCase(5, 5);
+}
