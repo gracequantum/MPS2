@@ -122,6 +122,7 @@ public:
     indexes = new_indexes;
   }
 
+  // Swap two rows and columns.
   void SwapTwoRows(const size_t row_idx1, const size_t row_idx2) {
     assert(row_idx1 < rows && row_idx2 < rows);
     if (row_idx1 == row_idx2) { return; }
@@ -144,6 +145,33 @@ public:
       indexes[offset1] = indexes[offset2];
       indexes[offset2] = temp;
     }
+  }
+
+  // Transpose rows and columns.
+  void TransposeRows(const std::vector<size_t> &transposed_row_idxs) {
+    assert(transposed_row_idxs.size() == rows);
+    std::vector<long> new_indexes(indexes.size());
+    for (size_t i = 0; i < rows; ++i) {
+      auto transposed_row_idx = transposed_row_idxs[i];
+      for (size_t y = 0; y < cols; ++y) {
+        new_indexes[CalcOffset_(i, y)] =
+            indexes[CalcOffset_(transposed_row_idx, y)];
+      }
+    }
+    indexes = new_indexes;
+  }
+
+  void TransposeCols(const std::vector<size_t> &transposed_col_idxs) {
+    assert(transposed_col_idxs.size() == cols);
+    std::vector<long> new_indexes(indexes.size());
+    for (size_t i = 0; i < cols; ++i) {
+      auto transposed_col_idx = transposed_col_idxs[i];
+      for (size_t x = 0; x < rows; ++x) {
+        new_indexes[CalcOffset_(x, i)] =
+            indexes[CalcOffset_(x, transposed_col_idx)];
+      }
+    }
+    indexes = new_indexes;
   }
   
   size_t rows;

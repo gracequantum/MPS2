@@ -428,6 +428,48 @@ TEST(TestSparCoefReprMat, SwapTwoRowsAndCols) {
 }
 
 
+void RunTestSparCoefReprMatTransposeRowsAndCols(
+    const std::vector<size_t> &transposed_row_idxs,
+    const std::vector<size_t> &transposed_col_idxs) {
+  auto row_num = transposed_row_idxs.size();
+  auto col_num = transposed_col_idxs.size();
+  SparCoefReprMat spar_mat(row_num, col_num);
+  int nonull_elem_num = 3;
+  for (int i = 0; i < nonull_elem_num; ++i) {
+    auto x = rand() % row_num;
+    auto y = rand() % col_num;
+    CoefRepr coef(rand());
+    spar_mat.SetElem(x, y, coef);
+  }
+
+  auto spar_mat_to_tsps_rows = spar_mat;
+  spar_mat_to_tsps_rows.TransposeRows(transposed_row_idxs);
+  for (size_t i = 0; i < row_num; ++i) {
+    EXPECT_EQ(
+        spar_mat_to_tsps_rows.GetRow(i),
+        spar_mat.GetRow(transposed_row_idxs[i]));
+  }
+
+  auto spar_mat_to_tsps_cols = spar_mat;
+  spar_mat_to_tsps_cols.TransposeCols(transposed_col_idxs);
+  for (size_t i = 0; i < col_num; ++i) {
+    EXPECT_EQ(
+        spar_mat_to_tsps_cols.GetCol(i),
+        spar_mat.GetCol(transposed_col_idxs[i]));
+  }
+}
+
+
+TEST(TestSparCoefReprMat, TransposeRowsAndCols) {
+  RunTestSparCoefReprMatTransposeRowsAndCols({0, 1}, {0, 1});
+  RunTestSparCoefReprMatTransposeRowsAndCols({1, 0}, {0, 1});
+  RunTestSparCoefReprMatTransposeRowsAndCols({0, 1}, {1, 0});
+  RunTestSparCoefReprMatTransposeRowsAndCols({1, 0}, {1, 0});
+  RunTestSparCoefReprMatTransposeRowsAndCols({2, 1, 0}, {4, 3, 1, 0, 2});
+  RunTestSparCoefReprMatTransposeRowsAndCols({4, 3, 1, 0, 2}, {1, 0, 2});
+}
+
+
 void RunTestSparOpReprMatInitializationCase(size_t row_num, size_t col_num) {
   SparOpReprMat spar_mat(row_num, col_num);
   EXPECT_EQ(spar_mat.rows, row_num);
