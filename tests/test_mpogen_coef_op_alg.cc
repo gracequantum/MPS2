@@ -599,3 +599,28 @@ TEST(TestSparOpReprMat, TestSparOpReprMatSortRowsAndCols) {
   RunTestSparOpReprMatSortRowsAndColsCase(5, 5);
   RunTestSparOpReprMatSortRowsAndColsCase(20, 20);
 }
+
+
+TEST(TestSparOpReprMat, TestSparOpReprMatCalcRowAndColCoefs) {
+  auto coef1 = RandCoefRepr();
+  auto coef2 = RandCoefRepr();
+  auto coef3 = RandCoefRepr();
+  SparOpReprMat spar_mat(5, 5);
+  spar_mat.SetElem(0, 4, OpRepr(1));
+  spar_mat.SetElem(1, 1, OpRepr({coef1, coef1}, {2, 3}));
+  spar_mat.SetElem(1, 3, OpRepr(coef2, 4));
+  spar_mat.SetElem(3, 1, OpRepr(coef1, 5));
+  spar_mat.SetElem(3, 3, OpRepr(coef1, 6));
+  spar_mat.SetElem(4, 2, OpRepr(coef3, 7));
+
+  EXPECT_EQ(spar_mat.CalcRowCoef(0), kIdCoefRepr);
+  EXPECT_EQ(spar_mat.CalcRowCoef(1), kIdCoefRepr);
+  EXPECT_EQ(spar_mat.CalcRowCoef(2), kNullCoefRepr);
+  EXPECT_EQ(spar_mat.CalcRowCoef(3), coef1);
+  EXPECT_EQ(spar_mat.CalcRowCoef(4), coef3);
+  EXPECT_EQ(spar_mat.CalcColCoef(0), kNullCoefRepr);
+  EXPECT_EQ(spar_mat.CalcColCoef(1), coef1);
+  EXPECT_EQ(spar_mat.CalcColCoef(2), coef3);
+  EXPECT_EQ(spar_mat.CalcColCoef(3), kIdCoefRepr);
+  EXPECT_EQ(spar_mat.CalcColCoef(4), kIdCoefRepr);
+}

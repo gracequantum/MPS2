@@ -95,6 +95,8 @@ const OpLabel kIdOpLabel = 0;         // Coefficient label for identity id.
 
 // Representation of operator.
 class OpRepr {
+friend CoefRepr GetOpReprCoef(const OpRepr &);
+
 public:
   OpRepr(void) : coef_repr_list_(), op_label_list_() {}
 
@@ -166,6 +168,25 @@ const OpRepr kNullOpRepr = OpRepr();          // Operator representation for nul
 const OpRepr kIdOpRepr = OpRepr(kIdOpLabel);  // Operator representation for identity operator.
 
 
+CoefRepr GetOpReprCoef(const OpRepr &op_repr) {
+  auto term_num = op_repr.coef_repr_list_.size();
+  if (term_num == 0) {
+    return kNullCoefRepr;
+  } else if (term_num == 1) {
+    return op_repr.coef_repr_list_[0];
+  } else {
+    auto coef =  op_repr.coef_repr_list_[0];
+    for (size_t i = 1; i < term_num; ++i) {
+      auto coef1 = op_repr.coef_repr_list_[i];
+      if (coef1 != coef) {
+        return kIdCoefRepr;
+      }
+    }
+    return coef;
+  }
+}
+
+
 // Sparse coefficient representation matrix.
 using SparCoefReprMat = SparMat<CoefRepr>;
 
@@ -211,6 +232,46 @@ public:
     }
     TransposeCols(sorted_col_idxs);
     return sorted_col_idxs;
+  }
+
+  CoefRepr CalcRowCoef(const size_t row_idx) {
+    std::vector<CoefRepr> nonull_op_repr_coefs;
+    for (size_t y = 0; y < cols; ++y) {
+      if (indexes[CalcOffset(row_idx, y)] != -1) {
+        nonull_op_repr_coefs.push_back(GetOpReprCoef((*this)(row_idx, y)));
+      }
+    }
+    if (nonull_op_repr_coefs.size() == 0) {
+      return kNullCoefRepr;
+    } else {
+      auto coef = nonull_op_repr_coefs[0];
+      for (auto &coef1 : nonull_op_repr_coefs) {
+        if (coef1 != coef) {
+          return kIdCoefRepr;
+        }
+      }
+      return coef;
+    }
+  }
+
+  CoefRepr CalcColCoef(const size_t col_idx) {
+    std::vector<CoefRepr> nonull_op_repr_coefs;
+    for (size_t x = 0; x < rows; ++x) {
+      if (indexes[CalcOffset(x, col_idx)] != -1) {
+        nonull_op_repr_coefs.push_back(GetOpReprCoef((*this)(x, col_idx)));
+      }
+    }
+    if (nonull_op_repr_coefs.size() == 0) {
+      return kNullCoefRepr;
+    } else {
+      auto coef = nonull_op_repr_coefs[0];
+      for (auto &coef1 : nonull_op_repr_coefs) {
+        if (coef1 != coef) {
+          return kIdCoefRepr;
+        }
+      }
+      return coef;
+    }
   }
 
 private:
