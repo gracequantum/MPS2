@@ -13,6 +13,9 @@
 
 
 // Helpers.
+const size_t kMaxTermNum = 5;
+
+
 std::vector<long> RandVec(size_t size) {
   std::vector<long> rand_vec;
   for (size_t i = 0; i < size; ++i) {
@@ -37,6 +40,65 @@ std::vector<CoefRepr> GenCoefReprVec(
   std::vector<CoefRepr> coef_reprs;
   for (auto label : coef_labels) { coef_reprs.push_back(CoefRepr(label)); }
   return coef_reprs;
+}
+
+
+CoefRepr RandCoefRepr(void) {
+  size_t term_num = rand() % kMaxTermNum + 1;
+  std::vector<CoefLabel> coef_labels;
+  for (size_t i = 0; i < term_num; ++i) {
+    coef_labels.push_back(rand());
+  }
+  return CoefRepr(coef_labels);
+}
+
+
+void RandSetSparCoefReprMatElem(SparCoefReprMat &coef_repr_mat) {
+  auto x = rand() % coef_repr_mat.rows;
+  auto y = rand() % coef_repr_mat.cols;
+  coef_repr_mat.SetElem(x, y, RandCoefRepr());
+}
+
+
+void RandFillSparCoefReprMat(
+    SparCoefReprMat &coef_repr_mat, const size_t filling) {
+  auto rows = coef_repr_mat.rows;
+  auto cols = coef_repr_mat.cols;
+  size_t nonull_elem_num = (rows * cols) / filling;
+  if (nonull_elem_num == 0) { nonull_elem_num = 1; }
+  for (size_t i = 0; i < nonull_elem_num; ++i) {
+    RandSetSparCoefReprMatElem(coef_repr_mat);
+  }
+}
+
+
+OpRepr RandOpRepr(void) {
+  size_t term_num = rand() % kMaxTermNum + 1;
+  std::vector<CoefRepr> coef_reprs;
+  std::vector<OpLabel> op_labels;
+  for (size_t i = 0; i < term_num; ++i) {
+    coef_reprs.push_back(RandCoefRepr());
+    op_labels.push_back(rand());
+  }
+  return OpRepr(coef_reprs, op_labels);
+}
+
+
+void RandSetSparOpReprMatElem(SparOpReprMat &op_repr_mat) {
+  auto x = rand() % op_repr_mat.rows;
+  auto y = rand() % op_repr_mat.cols;
+  op_repr_mat.SetElem(x, y, RandOpRepr());
+}
+
+
+void RandFillSparOpReprMat(SparOpReprMat &op_repr_mat, const size_t filling) {
+  auto rows = op_repr_mat.rows;
+  auto cols = op_repr_mat.cols;
+  size_t nonull_elem_num = (rows * cols) / filling;
+  if (nonull_elem_num == 0) { nonull_elem_num = 1; }
+  for (size_t i = 0; i < nonull_elem_num; ++i) {
+    RandSetSparOpReprMatElem(op_repr_mat);
+  }
 }
 
 
@@ -261,19 +323,19 @@ void RunTestSparCoefReprMatElemGetterAndSetterCase(
   if (size > 0) {
     auto x1 = rand() % row_num;
     auto y1 = rand() % col_num;
-    CoefRepr coef1(rand());
+    auto coef1 = RandCoefRepr();
     spar_mat.SetElem(x1, y1, coef1);
     EXPECT_EQ(spar_mat(x1, y1), coef1);
-    CoefRepr coef2(rand());
+    auto coef2 = RandCoefRepr();
     spar_mat.SetElem(x1, y1, coef2);
     EXPECT_EQ(spar_mat(x1, y1), coef2);
     if (size > 1) {
       auto x2 = rand() % row_num;
       auto y2 = rand() % col_num;
-      CoefRepr coef3(rand());
+      auto coef3 = RandCoefRepr();
       spar_mat.SetElem(x2, y2, coef3);
       EXPECT_EQ(spar_mat(x2, y2), coef3);
-      CoefRepr coef4(rand());
+      auto coef4 = RandCoefRepr();
       spar_mat.SetElem(x2, y2, coef4);
       EXPECT_EQ(spar_mat(x2, y2), coef4);
     }
@@ -289,7 +351,7 @@ TEST(TestSparCoefReprMat, ElemGetterAndSetter) {
   RunTestSparCoefReprMatElemGetterAndSetterCase(5, 3);
   RunTestSparCoefReprMatElemGetterAndSetterCase(3, 5);
   RunTestSparCoefReprMatElemGetterAndSetterCase(5, 5);
-  RunTestSparCoefReprMatElemGetterAndSetterCase(100, 100);
+  RunTestSparCoefReprMatElemGetterAndSetterCase(20, 20);
 }
 
 
@@ -347,8 +409,7 @@ void RunTestSparCoefReprMatRemoveRowAndColCase(
   SparCoefReprMat spar_mat(row_num, col_num);
   auto x = rand() % row_num;
   auto y = rand() % col_num;
-  CoefRepr coef(rand());
-  spar_mat.SetElem(x, y, coef);
+  spar_mat.SetElem(x, y, RandCoefRepr());
 
   auto spar_mat_to_rmv_row = spar_mat;
   spar_mat_to_rmv_row.RemoveRow(x);
@@ -396,8 +457,7 @@ void RunTestSparCoefReprMatSwapTwoRowsAndColsCase(
   SparCoefReprMat spar_mat(row_num, col_num);
   auto x = rand() % row_num;
   auto y = rand() % col_num;
-  CoefRepr coef(rand());
-  spar_mat.SetElem(x, y, coef);
+  spar_mat.SetElem(x, y, RandCoefRepr());
 
   auto row_idx2 = rand() % row_num;
   auto row1 = spar_mat.GetRow(x);
@@ -424,7 +484,7 @@ TEST(TestSparCoefReprMat, SwapTwoRowsAndCols) {
   RunTestSparCoefReprMatSwapTwoRowsAndColsCase(3, 5);
   RunTestSparCoefReprMatSwapTwoRowsAndColsCase(5, 3);
   RunTestSparCoefReprMatSwapTwoRowsAndColsCase(5, 5);
-  RunTestSparCoefReprMatSwapTwoRowsAndColsCase(100, 100);
+  RunTestSparCoefReprMatSwapTwoRowsAndColsCase(20, 20);
 }
 
 
@@ -434,13 +494,7 @@ void RunTestSparCoefReprMatTransposeRowsAndCols(
   auto row_num = transposed_row_idxs.size();
   auto col_num = transposed_col_idxs.size();
   SparCoefReprMat spar_mat(row_num, col_num);
-  int nonull_elem_num = 3;
-  for (int i = 0; i < nonull_elem_num; ++i) {
-    auto x = rand() % row_num;
-    auto y = rand() % col_num;
-    CoefRepr coef(rand());
-    spar_mat.SetElem(x, y, coef);
-  }
+  RandFillSparCoefReprMat(spar_mat, 3);
 
   auto spar_mat_to_tsps_rows = spar_mat;
   spar_mat_to_tsps_rows.TransposeRows(transposed_row_idxs);
@@ -495,4 +549,53 @@ TEST(TestSparOpReprMat, Initialization) {
   RunTestSparOpReprMatInitializationCase(5, 3);
   RunTestSparOpReprMatInitializationCase(3, 5);
   RunTestSparOpReprMatInitializationCase(5, 5);
+}
+
+
+void RunTestSparOpReprMatSortRowsAndColsCase(size_t row_num, size_t col_num) {
+  SparOpReprMat spar_mat(row_num, col_num);
+  RandFillSparOpReprMat(spar_mat, 3);
+
+  spar_mat.SortRows();
+  std::vector<size_t> row_nonull_elem_nums(row_num, 0);
+  for (size_t x = 0; x < row_num; ++x) {
+    auto row = spar_mat.GetRow(x);
+    for (auto &elem : row) {
+      if (elem != kNullOpRepr) {
+        row_nonull_elem_nums[x]++;
+      }
+    }
+  }
+  if (row_num != 1) {
+    for (size_t x = 1; x < row_num; ++x) {
+      EXPECT_TRUE(row_nonull_elem_nums[x-1] <= row_nonull_elem_nums[x]);
+    }
+  }
+
+  spar_mat.SortCols();
+  std::vector<size_t> col_nonull_elem_nums(col_num, 0);
+  for (size_t y = 0; y < col_num; ++y) {
+    auto col = spar_mat.GetCol(y);
+    for (auto &elem : col) {
+      if (elem != kNullOpRepr) {
+        col_nonull_elem_nums[y]++;
+      }
+    }
+  }
+  if (col_num != 1) {
+    for (size_t y = 1; y < col_num; ++y) {
+      EXPECT_TRUE(col_nonull_elem_nums[y-1] <= col_nonull_elem_nums[y]);
+    }
+  }
+}
+
+
+TEST(TestSparOpReprMat, TestSparOpReprMatSortRowsAndCols) {
+  RunTestSparOpReprMatSortRowsAndColsCase(1, 1);
+  RunTestSparOpReprMatSortRowsAndColsCase(1, 5);
+  RunTestSparOpReprMatSortRowsAndColsCase(5, 1);
+  RunTestSparOpReprMatSortRowsAndColsCase(3, 5);
+  RunTestSparOpReprMatSortRowsAndColsCase(5, 3);
+  RunTestSparOpReprMatSortRowsAndColsCase(5, 5);
+  RunTestSparOpReprMatSortRowsAndColsCase(20, 20);
 }

@@ -35,7 +35,7 @@ public:
 
   // Element getter and setter.
   const ElemType &operator()(const size_t x, const size_t y) const {
-    auto offset = CalcOffset_(x, y); 
+    auto offset = CalcOffset(x, y);
     if (indexes[offset] == -1) {
       return nullelem; 
     } else {
@@ -45,7 +45,7 @@ public:
 
   void SetElem(const size_t x, const size_t y, const ElemType &elem) {
     if (elem == nullelem) { return; }
-    auto offset = CalcOffset_(x, y);
+    auto offset = CalcOffset(x, y);
     if (indexes[offset] == -1) {
       data.push_back(elem);
       long idx = data.size() - 1;
@@ -89,9 +89,9 @@ public:
     for (size_t x = 0; x < rows; ++x) {
       for (size_t y = 0; y < cols; ++y) {
         if (x < row_idx) {
-          new_indexes[CalcOffset_(x, y)] = indexes[CalcOffset_(x, y)];
+          new_indexes[CalcOffset(x, y)] = indexes[CalcOffset(x, y)];
         } else if (x > row_idx) {
-          new_indexes[CalcOffset_(x-1, y)] = indexes[CalcOffset_(x, y)];
+          new_indexes[CalcOffset(x-1, y)] = indexes[CalcOffset(x, y)];
         }
       }
     }
@@ -111,10 +111,10 @@ public:
     for (size_t x = 0; x < rows; ++x) {
       for (size_t y = 0; y < cols; ++y) {
         if (y < col_idx) {
-          new_indexes[CalcOffset_(x, y, new_cols)] = indexes[CalcOffset_(x, y)];
+          new_indexes[CalcOffset_(x, y, new_cols)] = indexes[CalcOffset(x, y)];
         } else if (y > col_idx) {
           new_indexes[CalcOffset_(x, y-1, new_cols)] =
-              indexes[CalcOffset_(x, y)];
+              indexes[CalcOffset(x, y)];
         }
       }
     }
@@ -127,8 +127,8 @@ public:
     assert(row_idx1 < rows && row_idx2 < rows);
     if (row_idx1 == row_idx2) { return; }
     for (size_t y = 0; y < cols; ++y) {
-      auto offset1 = CalcOffset_(row_idx1, y);
-      auto offset2 = CalcOffset_(row_idx2, y);
+      auto offset1 = CalcOffset(row_idx1, y);
+      auto offset2 = CalcOffset(row_idx2, y);
       auto temp = indexes[offset1];
       indexes[offset1] = indexes[offset2];
       indexes[offset2] = temp;
@@ -139,8 +139,8 @@ public:
     assert(col_idx1 < cols && col_idx2 < cols);
     if (col_idx1 == col_idx2) { return; }
     for (size_t x = 0; x < rows; ++x) {
-      auto offset1 = CalcOffset_(x, col_idx1);
-      auto offset2 = CalcOffset_(x, col_idx2);
+      auto offset1 = CalcOffset(x, col_idx1);
+      auto offset2 = CalcOffset(x, col_idx2);
       auto temp = indexes[offset1];
       indexes[offset1] = indexes[offset2];
       indexes[offset2] = temp;
@@ -154,8 +154,8 @@ public:
     for (size_t i = 0; i < rows; ++i) {
       auto transposed_row_idx = transposed_row_idxs[i];
       for (size_t y = 0; y < cols; ++y) {
-        new_indexes[CalcOffset_(i, y)] =
-            indexes[CalcOffset_(transposed_row_idx, y)];
+        new_indexes[CalcOffset(i, y)] =
+            indexes[CalcOffset(transposed_row_idx, y)];
       }
     }
     indexes = new_indexes;
@@ -167,23 +167,23 @@ public:
     for (size_t i = 0; i < cols; ++i) {
       auto transposed_col_idx = transposed_col_idxs[i];
       for (size_t x = 0; x < rows; ++x) {
-        new_indexes[CalcOffset_(x, i)] =
-            indexes[CalcOffset_(x, transposed_col_idx)];
+        new_indexes[CalcOffset(x, i)] =
+            indexes[CalcOffset(x, transposed_col_idx)];
       }
     }
     indexes = new_indexes;
   }
   
+  size_t CalcOffset(const size_t x, const size_t y) const {
+    return x*cols + y;
+  }
+
   size_t rows;
   size_t cols;
   std::vector<ElemType> data;
   std::vector<long> indexes;
 
 private:
-  size_t CalcOffset_(const size_t x, const size_t y) const {
-    return x*cols + y; 
-  }
-
   size_t CalcOffset_(
       const size_t x, const size_t y, const size_t new_cols) const {
     return x*new_cols + y; 

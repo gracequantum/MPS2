@@ -11,6 +11,7 @@
 #include "gqmps2/detail/mpogen/sparse_mat.h"
 
 #include <vector>
+#include <algorithm>
 
 
 // Forward declarations.
@@ -82,7 +83,8 @@ private:
 };
 
 
-const CoefRepr kIdCoefRepr = CoefRepr(kIdCoefLabel);  // coefficient representation for identity coefficient 1.
+const CoefRepr kNullCoefRepr = CoefRepr();            // Coefficient representation for null coefficient.
+const CoefRepr kIdCoefRepr = CoefRepr(kIdCoefLabel);  // Coefficient representation for identity coefficient 1.
 
 
 // Label of operator.
@@ -160,6 +162,9 @@ private:
   std::vector<OpLabel> op_label_list_;
 };
 
+const OpRepr kNullOpRepr = OpRepr();          // Operator representation for null operator.
+const OpRepr kIdOpRepr = OpRepr(kIdOpLabel);  // Operator representation for identity operator.
+
 
 // Sparse coefficient representation matrix.
 using SparCoefReprMat = SparMat<CoefRepr>;
@@ -186,7 +191,54 @@ public:
     return *this;
   }
 
+  std::vector<size_t> SortRows(void) {
+    auto mapping = GenSortRowsMapping_();
+    std::sort(mapping.begin(), mapping.end());
+    std::vector<size_t> sorted_row_idxs(rows);
+    for (size_t i = 0; i < rows; ++i) {
+      sorted_row_idxs[i] = mapping[i].second;
+    }
+    TransposeRows(sorted_row_idxs);
+    return sorted_row_idxs;
+  }
+
+  std::vector<size_t> SortCols(void) {
+    auto mapping = GenSortColsMapping_();
+    std::sort(mapping.begin(), mapping.end());
+    std::vector<size_t> sorted_col_idxs(cols);
+    for (size_t i = 0; i < cols; ++i) {
+      sorted_col_idxs[i] = mapping[i].second;
+    }
+    TransposeCols(sorted_col_idxs);
+    return sorted_col_idxs;
+  }
+
 private:
+  using SortMapping = std::vector<std::pair<size_t, size_t>>;   // # of no null : row_idx
+
+  SortMapping GenSortRowsMapping_(void) const {
+    SortMapping mapping;
+    for (size_t x = 0; x < rows; ++x) {
+      size_t nonull_elem_num = 0;
+      for (size_t y = 0; y < cols; ++y) {
+        if (indexes[CalcOffset(x, y)] != -1) { nonull_elem_num++; }
+      }
+      mapping.push_back(std::make_pair(nonull_elem_num, x));
+    }
+    return mapping;
+  }
+
+  SortMapping GenSortColsMapping_(void) const {
+    SortMapping mapping;
+    for (size_t y = 0; y < cols; ++y) {
+      size_t nonull_elem_num = 0;
+      for (size_t x = 0; x < rows; ++x) {
+        if (indexes[CalcOffset(x, y)] != -1) { nonull_elem_num++; }
+      }
+      mapping.push_back(std::make_pair(nonull_elem_num, y));
+    }
+    return mapping;
+  }
 };
 
 
