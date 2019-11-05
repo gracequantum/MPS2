@@ -624,3 +624,171 @@ TEST(TestSparOpReprMat, TestSparOpReprMatCalcRowAndColCoefs) {
   EXPECT_EQ(spar_mat.CalcColCoef(3), kIdCoefRepr);
   EXPECT_EQ(spar_mat.CalcColCoef(4), kIdCoefRepr);
 }
+
+
+void RunTestSparOpReprMatRowLinCmbCase1(void) {
+  SparOpReprMat spar_mat(1, 1);
+  auto cmb = spar_mat.CalcRowLinCmb(0);
+  EXPECT_EQ(cmb, CoefReprVec({}));
+
+  auto op_repr1 = RandOpRepr();
+  spar_mat.SetElem(0, 0, op_repr1);
+  cmb = spar_mat.CalcRowLinCmb(0);
+  EXPECT_EQ(cmb, CoefReprVec({}));
+}
+
+
+void RunTestSparOpReprMatRowLinCmbCase2(void) {
+  SparOpReprMat spar_mat(2, 2);
+  auto cmb = spar_mat.CalcRowLinCmb(0);
+  EXPECT_EQ(cmb, CoefReprVec({}));
+  cmb = spar_mat.CalcRowLinCmb(1);
+  EXPECT_EQ(cmb, CoefReprVec({kNullCoefRepr}));
+
+  auto op_repr1 = OpRepr(1);
+  spar_mat.SetElem(0, 0, op_repr1);
+  cmb = spar_mat.CalcRowLinCmb(1);
+  EXPECT_EQ(cmb, CoefReprVec({kNullCoefRepr}));
+  spar_mat.SetElem(1, 0, op_repr1);
+  cmb = spar_mat.CalcRowLinCmb(1);
+  EXPECT_EQ(cmb, CoefReprVec({kIdCoefRepr}));
+
+  auto op_repr2 = OpRepr(1, 1);
+  spar_mat.SetElem(1, 0, op_repr2);
+  cmb = spar_mat.CalcRowLinCmb(1);
+  EXPECT_EQ(cmb, CoefReprVec({CoefRepr(1)}));
+
+  auto op_repr3 = OpRepr(2);
+  spar_mat.SetElem(0, 1, op_repr3);
+  cmb = spar_mat.CalcRowLinCmb(1);
+  EXPECT_EQ(cmb, CoefReprVec({kNullCoefRepr}));
+
+  auto op_repr4 = OpRepr(1, 2);
+  spar_mat.SetElem(1, 1, op_repr4);
+  cmb = spar_mat.CalcRowLinCmb(1);
+  EXPECT_EQ(cmb, CoefReprVec({CoefRepr(1)}));
+
+  auto op_repr5 = OpRepr(2, 2);
+  spar_mat.SetElem(1, 1, op_repr5);
+  cmb = spar_mat.CalcRowLinCmb(1);
+  EXPECT_EQ(cmb, CoefReprVec({kNullCoefRepr}));
+}
+
+
+void RunTestSparOpReprMatRowLinCmbCase3(void) {
+  SparOpReprMat spar_mat(3, 2);
+  auto cmb = spar_mat.CalcRowLinCmb(2);
+  EXPECT_EQ(cmb, CoefReprVec({kNullCoefRepr, kNullCoefRepr}));
+
+  auto op_repr1 = OpRepr(1);
+  auto op_repr2 = OpRepr(2);
+  spar_mat.SetElem(0, 0, op_repr1);
+  spar_mat.SetElem(1, 1, op_repr2);
+  cmb = spar_mat.CalcRowLinCmb(2);
+  EXPECT_EQ(cmb, CoefReprVec({kNullCoefRepr, kNullCoefRepr}));
+
+  spar_mat.SetElem(2, 0, op_repr1);
+  cmb = spar_mat.CalcRowLinCmb(2);
+  EXPECT_EQ(cmb, CoefReprVec({kIdCoefRepr, kNullCoefRepr}));
+
+  spar_mat.SetElem(2, 1, op_repr2);
+  cmb = spar_mat.CalcRowLinCmb(2);
+  EXPECT_EQ(cmb, CoefReprVec({kIdCoefRepr, kIdCoefRepr}));
+
+  spar_mat.SetElem(2, 0, OpRepr(1, 1));
+  cmb = spar_mat.CalcRowLinCmb(2);
+  EXPECT_EQ(cmb, CoefReprVec({CoefRepr(1), kIdCoefRepr}));
+
+  spar_mat.SetElem(2, 1, OpRepr(2, 2));
+  cmb = spar_mat.CalcRowLinCmb(2);
+  EXPECT_EQ(cmb, CoefReprVec({CoefRepr(1), CoefRepr(2)}));
+}
+
+
+void RunTestSparOpReprMatColLinCmbCase1(void) {
+  SparOpReprMat spar_mat(1, 1);
+  auto cmb = spar_mat.CalcColLinCmb(0);
+  EXPECT_EQ(cmb, CoefReprVec({}));
+
+  auto op_repr1 = RandOpRepr();
+  spar_mat.SetElem(0, 0, op_repr1);
+  cmb = spar_mat.CalcColLinCmb(0);
+  EXPECT_EQ(cmb, CoefReprVec({}));
+}
+
+
+void RunTestSparOpReprMatColLinCmbCase2(void) {
+  SparOpReprMat spar_mat(2, 2);
+  auto cmb = spar_mat.CalcColLinCmb(0);
+  EXPECT_EQ(cmb, CoefReprVec({}));
+  cmb = spar_mat.CalcColLinCmb(1);
+  EXPECT_EQ(cmb, CoefReprVec({kNullCoefRepr}));
+
+  auto op_repr1 = OpRepr(1);
+  spar_mat.SetElem(0, 0, op_repr1);
+  cmb = spar_mat.CalcColLinCmb(1);
+  EXPECT_EQ(cmb, CoefReprVec({kNullCoefRepr}));
+  spar_mat.SetElem(0, 1, op_repr1);
+  cmb = spar_mat.CalcColLinCmb(1);
+  EXPECT_EQ(cmb, CoefReprVec({kIdCoefRepr}));
+
+  auto op_repr2 = OpRepr(1, 1);
+  spar_mat.SetElem(0, 1, op_repr2);
+  cmb = spar_mat.CalcColLinCmb(1);
+  EXPECT_EQ(cmb, CoefReprVec({CoefRepr(1)}));
+
+  auto op_repr3 = OpRepr(2);
+  spar_mat.SetElem(1, 0, op_repr3);
+  cmb = spar_mat.CalcColLinCmb(1);
+  EXPECT_EQ(cmb, CoefReprVec({kNullCoefRepr}));
+
+  auto op_repr4 = OpRepr(1, 2);
+  spar_mat.SetElem(1, 1, op_repr4);
+  cmb = spar_mat.CalcColLinCmb(1);
+  EXPECT_EQ(cmb, CoefReprVec({CoefRepr(1)}));
+
+  auto op_repr5 = OpRepr(2, 2);
+  spar_mat.SetElem(1, 1, op_repr5);
+  cmb = spar_mat.CalcColLinCmb(1);
+  EXPECT_EQ(cmb, CoefReprVec({kNullCoefRepr}));
+}
+
+
+void RunTestSparOpReprMatColLinCmbCase3(void) {
+  SparOpReprMat spar_mat(2, 3);
+  auto cmb = spar_mat.CalcColLinCmb(2);
+  EXPECT_EQ(cmb, CoefReprVec({kNullCoefRepr, kNullCoefRepr}));
+
+  auto op_repr1 = OpRepr(1);
+  auto op_repr2 = OpRepr(2);
+  spar_mat.SetElem(0, 0, op_repr1);
+  spar_mat.SetElem(1, 1, op_repr2);
+  cmb = spar_mat.CalcColLinCmb(2);
+  EXPECT_EQ(cmb, CoefReprVec({kNullCoefRepr, kNullCoefRepr}));
+
+  spar_mat.SetElem(0, 2, op_repr1);
+  cmb = spar_mat.CalcColLinCmb(2);
+  EXPECT_EQ(cmb, CoefReprVec({kIdCoefRepr, kNullCoefRepr}));
+
+  spar_mat.SetElem(1, 2, op_repr2);
+  cmb = spar_mat.CalcColLinCmb(2);
+  EXPECT_EQ(cmb, CoefReprVec({kIdCoefRepr, kIdCoefRepr}));
+
+  spar_mat.SetElem(0, 2, OpRepr(1, 1));
+  cmb = spar_mat.CalcColLinCmb(2);
+  EXPECT_EQ(cmb, CoefReprVec({CoefRepr(1), kIdCoefRepr}));
+
+  spar_mat.SetElem(1, 2, OpRepr(2, 2));
+  cmb = spar_mat.CalcColLinCmb(2);
+  EXPECT_EQ(cmb, CoefReprVec({CoefRepr(1), CoefRepr(2)}));
+}
+
+
+TEST(TestSparOpReprMat, TestSparOpReprMatRowAndColLinCmb) {
+  RunTestSparOpReprMatRowLinCmbCase1();
+  RunTestSparOpReprMatRowLinCmbCase2();
+  RunTestSparOpReprMatRowLinCmbCase3();
+  RunTestSparOpReprMatColLinCmbCase1();
+  RunTestSparOpReprMatColLinCmbCase2();
+  RunTestSparOpReprMatColLinCmbCase3();
+}

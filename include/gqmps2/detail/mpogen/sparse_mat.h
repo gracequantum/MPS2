@@ -56,7 +56,7 @@ public:
   }
 
   // Get row and column.
-  std::vector<ElemType> GetRow(const size_t row_idx) {
+  std::vector<ElemType> GetRow(const size_t row_idx) const {
     assert(row_idx < rows); 
     std::vector<ElemType> row;
     row.reserve(cols);
@@ -66,7 +66,7 @@ public:
     return row;
   }
   
-  std::vector<ElemType> GetCol(const size_t col_idx) {
+  std::vector<ElemType> GetCol(const size_t col_idx) const {
     assert(col_idx < cols); 
     std::vector<ElemType> col;
     col.reserve(rows);

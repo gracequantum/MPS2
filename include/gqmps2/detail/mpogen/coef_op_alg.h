@@ -86,6 +86,8 @@ private:
 const CoefRepr kNullCoefRepr = CoefRepr();            // Coefficient representation for null coefficient.
 const CoefRepr kIdCoefRepr = CoefRepr(kIdCoefLabel);  // Coefficient representation for identity coefficient 1.
 
+using CoefReprVec = std::vector<CoefRepr>;
+
 
 // Label of operator.
 using OpLabel = long;
@@ -95,7 +97,7 @@ const OpLabel kIdOpLabel = 0;         // Coefficient label for identity id.
 
 // Representation of operator.
 class OpRepr {
-friend CoefRepr GetOpReprCoef(const OpRepr &);
+friend std::pair<CoefRepr, OpRepr> SeparateCoefAndBase(const OpRepr &);
 
 public:
   OpRepr(void) : coef_repr_list_(), op_label_list_() {}
@@ -116,6 +118,11 @@ public:
           coef_repr_list_(coef_reprs), op_label_list_(op_labels) {
     assert(coef_repr_list_.size() == op_label_list_.size());
   }
+
+  OpRepr(
+      const std::vector<OpLabel> &op_labels) :
+          OpRepr(std::vector<CoefRepr>(op_labels.size(), kIdCoefRepr),
+                 op_labels) {}
 
   std::vector<CoefRepr> GetCoefReprList(void) const {
     return coef_repr_list_; 
@@ -168,22 +175,28 @@ const OpRepr kNullOpRepr = OpRepr();          // Operator representation for nul
 const OpRepr kIdOpRepr = OpRepr(kIdOpLabel);  // Operator representation for identity operator.
 
 
-CoefRepr GetOpReprCoef(const OpRepr &op_repr) {
+std::pair<CoefRepr, OpRepr> SeparateCoefAndBase(const OpRepr &op_repr) {
   auto term_num = op_repr.coef_repr_list_.size();
   if (term_num == 0) {
-    return kNullCoefRepr;
+    return std::make_pair(kNullCoefRepr, kNullOpRepr);
   } else if (term_num == 1) {
-    return op_repr.coef_repr_list_[0];
+    return std::make_pair(op_repr.coef_repr_list_[0],
+                          OpRepr(op_repr.op_label_list_[0]));
   } else {
     auto coef =  op_repr.coef_repr_list_[0];
     for (size_t i = 1; i < term_num; ++i) {
       auto coef1 = op_repr.coef_repr_list_[i];
       if (coef1 != coef) {
-        return kIdCoefRepr;
+        return std::make_pair(kIdCoefRepr, OpRepr(op_repr));
       }
     }
-    return coef;
+    return std::make_pair(coef, OpRepr(op_repr.op_label_list_));
   }
+}
+
+
+CoefRepr GetOpReprCoef(const OpRepr &op_repr) {
+  return SeparateCoefAndBase(op_repr).first;
 }
 
 
@@ -274,6 +287,24 @@ public:
     }
   }
 
+  CoefReprVec CalcRowLinCmb(const size_t row_idx) const {
+    auto row = GetRow(row_idx);
+    CoefReprVec cmb_coefs;
+    for (size_t x = 0; x < row_idx; ++x) {
+      cmb_coefs.push_back(CalcRowOverlap_(row, x));
+    }
+    return cmb_coefs;
+  }
+
+  CoefReprVec CalcColLinCmb(const size_t col_idx) const {
+    auto col = GetCol(col_idx);
+    CoefReprVec cmb_coefs;
+    for (size_t y = 0; y < col_idx; ++y) {
+      cmb_coefs.push_back(CalcColOverlap_(col, y));
+    }
+    return cmb_coefs;
+  }
+
 private:
   using SortMapping = std::vector<std::pair<size_t, size_t>>;   // # of no null : row_idx
 
@@ -299,6 +330,62 @@ private:
       mapping.push_back(std::make_pair(nonull_elem_num, y));
     }
     return mapping;
+  }
+
+  CoefRepr CalcRowOverlap_(
+      const std::vector<OpRepr> &row, const size_t tgt_row_idx) const {
+    CoefReprVec poss_overlaps;
+    for (size_t y = 0; y < cols; ++y) {
+      if (indexes[CalcOffset(tgt_row_idx, y)] != -1) {
+        auto tgt_op = row[y];
+        auto base_op = (*this)(tgt_row_idx, y);
+        if (tgt_op == base_op) {
+          poss_overlaps.push_back(kIdCoefRepr);
+        } else {
+          auto tgt_coef_and_base_op = SeparateCoefAndBase(tgt_op);
+          if (tgt_coef_and_base_op.second == base_op) {
+            poss_overlaps.push_back(tgt_coef_and_base_op.first);
+          } else {
+            return kNullCoefRepr;
+          }
+        }
+      }
+    }
+    if (poss_overlaps.empty()) { return kNullCoefRepr; }
+    for (auto &poss_overlap : poss_overlaps) {
+      if (poss_overlap != poss_overlaps[0]) {
+        return kNullCoefRepr;
+      }
+    }
+    return poss_overlaps[0];
+  }
+
+  CoefRepr CalcColOverlap_(
+      const std::vector<OpRepr> &col, const size_t tgt_col_idx) const {
+    CoefReprVec poss_overlaps;
+    for (size_t x = 0; x < rows; ++x) {
+      if (indexes[CalcOffset(x, tgt_col_idx)] != -1) {
+        auto tgt_op = col[x];
+        auto base_op = (*this)(x, tgt_col_idx);
+        if (tgt_op == base_op) {
+          poss_overlaps.push_back(kIdCoefRepr);
+        } else {
+          auto tgt_coef_and_base_op = SeparateCoefAndBase(tgt_op);
+          if (tgt_coef_and_base_op.second == base_op) {
+            poss_overlaps.push_back(tgt_coef_and_base_op.first);
+          } else {
+            return kNullCoefRepr;
+          }
+        }
+      }
+    }
+    if (poss_overlaps.empty()) { return kNullCoefRepr; }
+    for (auto &poss_overlap : poss_overlaps) {
+      if (poss_overlap != poss_overlaps[0]) {
+        return kNullCoefRepr;
+      }
+    }
+    return poss_overlaps[0];
   }
 };
 
