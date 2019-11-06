@@ -12,6 +12,13 @@
 
 #include <vector>
 #include <algorithm>
+#include <iostream>
+
+#include <assert.h>
+
+#ifdef Release
+  #define NDEBUG
+#endif
 
 
 // Forward declarations.
@@ -30,6 +37,7 @@ const CoefLabel kIdCoefLabel = 0;     // Coefficient label for identity 1.
 
 // Representation of coefficient.
 class CoefRepr {
+
 public:
   CoefRepr(void) : coef_label_list_() {}
 
@@ -98,6 +106,7 @@ const OpLabel kIdOpLabel = 0;         // Coefficient label for identity id.
 // Representation of operator.
 class OpRepr {
 friend std::pair<CoefRepr, OpRepr> SeparateCoefAndBase(const OpRepr &);
+friend OpRepr CoefReprOpReprIncompleteMulti(const CoefRepr &, const OpRepr &);
 
 public:
   OpRepr(void) : coef_repr_list_(), op_label_list_() {}
@@ -114,15 +123,23 @@ public:
 
   OpRepr(
       const std::vector<CoefRepr> &coef_reprs,
-      const std::vector<OpLabel> &op_labels) :
-          coef_repr_list_(coef_reprs), op_label_list_(op_labels) {
+      const std::vector<OpLabel> &op_labels) {
+    for (size_t i = 0; i < op_labels.size(); ++i) {
+      auto poss_it = std::find(op_label_list_.cbegin(), op_label_list_.cend(),
+                               op_labels[i]);
+      if (poss_it == op_label_list_.cend()) {
+        coef_repr_list_.push_back(coef_reprs[i]);
+        op_label_list_.push_back(op_labels[i]);
+      } else {
+        size_t idx = poss_it - op_label_list_.cbegin();
+        coef_repr_list_[idx] = coef_repr_list_[idx] + coef_reprs[i];
+      }
+    }
     assert(coef_repr_list_.size() == op_label_list_.size());
   }
 
-  OpRepr(
-      const std::vector<OpLabel> &op_labels) :
-          OpRepr(std::vector<CoefRepr>(op_labels.size(), kIdCoefRepr),
-                 op_labels) {}
+  OpRepr(const std::vector<OpLabel> &op_labels) :
+      OpRepr(CoefReprVec(op_labels.size(), kIdCoefRepr), op_labels) {}
 
   std::vector<CoefRepr> GetCoefReprList(void) const {
     return coef_repr_list_; 
@@ -161,9 +178,21 @@ public:
   }
 
   OpRepr operator+(const OpRepr &rhs) const {
-    return OpRepr(
-        ConcatenateTwoVec(coef_repr_list_, rhs.coef_repr_list_),
-        ConcatenateTwoVec(op_label_list_, rhs.op_label_list_)); 
+    auto coef_repr_list = coef_repr_list_;
+    auto op_label_list = op_label_list_;
+    auto rhs_size = rhs.coef_repr_list_.size();
+    for (size_t i = 0; i < rhs_size; ++i) {
+      auto poss_it = std::find(op_label_list.cbegin(), op_label_list.cend(),
+                               rhs.op_label_list_[i]);
+      if (poss_it == op_label_list.cend()) {
+        coef_repr_list.push_back(rhs.coef_repr_list_[i]);
+        op_label_list.push_back(rhs.op_label_list_[i]);
+      } else {
+        size_t idx = poss_it - op_label_list.cbegin();
+        coef_repr_list[idx] = coef_repr_list[idx] + rhs.coef_repr_list_[i];
+      }
+    }
+    return OpRepr(coef_repr_list, op_label_list);
   }
 
 private:
@@ -388,6 +417,54 @@ private:
     return poss_overlaps[0];
   }
 };
+
+
+// Incomplete multiplication for SparMat.
+OpRepr CoefReprOpReprIncompleteMulti(const CoefRepr &coef, const OpRepr &op) {
+  if (op == kNullOpRepr) { return kNullOpRepr; }
+  if (coef == kIdCoefRepr) { return op; }
+  for (auto &c : op.coef_repr_list_) {
+    if (c != kIdCoefRepr) {
+      std::cout << "CoefReprOpReprIncompleteMulti fail!" << std::endl;
+      exit(1);
+    }
+  }
+  CoefReprVec new_coefs(op.coef_repr_list_.size(), coef);
+  return OpRepr(new_coefs, op.op_label_list_);
+}
+
+
+void SparCoefReprMatSparOpReprMatIncompleteMultiKernel(
+    const SparCoefReprMat &coef_mat, const SparOpReprMat &op_mat,
+    const size_t coef_mat_row_idx, const size_t op_mat_col_idx,
+    SparOpReprMat &res) {
+  OpRepr res_elem;
+  for (size_t i = 0; i < coef_mat.cols; ++i) {
+    if (coef_mat.indexes[coef_mat.CalcOffset(coef_mat_row_idx, i)] != -1 &&
+        op_mat.indexes[op_mat.CalcOffset(i, op_mat_col_idx)] != -1) {
+      res_elem = res_elem + CoefReprOpReprIncompleteMulti(
+                                coef_mat(coef_mat_row_idx, i),
+                                op_mat(i, op_mat_col_idx));
+    }
+  }
+  if (res_elem != kNullOpRepr) {
+    res.SetElem(coef_mat_row_idx, op_mat_col_idx, res_elem);
+  }
+}
+
+
+SparOpReprMat SparCoefReprMatSparOpReprMatIncompleteMulti(
+    const SparCoefReprMat &coef_mat, const SparOpReprMat &op_mat) {
+  assert(coef_mat.cols == op_mat.rows);
+  SparOpReprMat res(coef_mat.rows, op_mat.cols);
+  for (size_t x = 0; x < coef_mat.rows; ++x) {
+    for (size_t y = 0; y < op_mat.cols; ++y) {
+      SparCoefReprMatSparOpReprMatIncompleteMultiKernel(
+          coef_mat, op_mat, x, y, res);
+    }
+  }
+  return res;
+}
 
 
 // Helpers.

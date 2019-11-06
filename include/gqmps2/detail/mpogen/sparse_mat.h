@@ -9,6 +9,7 @@
 #define GQMPS2_DETAIL_MPOGEN_SPARSE_MAT_H
 
 
+#include <iostream>
 #include <vector>
 
 
@@ -74,6 +75,27 @@ public:
       col.push_back((*this)(x, col_idx));
     }
     return col;
+  }
+
+  // overload operator==
+  bool operator==(const SparMat<ElemType> &rhs) const {
+    if (rows != rhs.rows) {
+      std::cout << "No same rows!" << std::endl;
+      return false;
+    }
+    if (cols != rhs.cols) {
+      std::cout << "No same cols!" << std::endl;
+      return false;
+    }
+    for (size_t x = 0; x < rows; ++x) {
+      for (size_t y = 0; y < cols; ++y) {
+        if ((*this)(x, y) != rhs(x, y)) {
+          std::cout << "No same elem at (" << x << "," << y << ")" << std::endl;
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   // Remove row and column.
