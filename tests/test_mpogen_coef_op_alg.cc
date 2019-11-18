@@ -970,3 +970,99 @@ TEST(TestSparOpReprMat, TestSparCoefReprMatSparOpReprMatIncompleteMulti) {
   RunTestSparCoefReprMatSparOpReprMatIncompleteMultiCase3();
   RunTestSparCoefReprMatSparOpReprMatIncompleteMultiCase4();
 }
+
+
+void RunTestSparOpReprMatSparCoefReprMatIncompleteMultiCase1(void) {
+  SparCoefReprMat coef_mat;
+  SparOpReprMat op_mat;
+  auto res = SparOpReprMatSparCoefReprMatIncompleteMulti(op_mat, coef_mat);
+  EXPECT_EQ(res, SparOpReprMat());
+}
+
+
+void RunTestSparOpReprMatSparCoefReprMatIncompleteMultiCase2(void) {
+  SparCoefReprMat coef_mat(1, 1);
+  SparOpReprMat op_mat(1, 1);
+  auto res = SparOpReprMatSparCoefReprMatIncompleteMulti(op_mat, coef_mat);
+  EXPECT_EQ(res, SparOpReprMat(1, 1));
+
+  CoefRepr coef1(1);
+  OpRepr op1(1);
+  OpRepr op2(1, 1);
+  coef_mat.SetElem(0, 0, coef1);
+  op_mat.SetElem(0, 0, op1);
+  SparOpReprMat bchmk(1, 1);
+  bchmk.SetElem(0, 0, op2);
+  res = SparOpReprMatSparCoefReprMatIncompleteMulti(op_mat, coef_mat);
+  EXPECT_EQ(res, bchmk);
+}
+
+
+void RunTestSparOpReprMatSparCoefReprMatIncompleteMultiCase3(void) {
+  CoefRepr j(1);
+  CoefRepr jp(2);
+  OpLabel s(1);
+
+  SparOpReprMat op_mat(4, 4);
+  SparCoefReprMat coef_mat(4, 2);
+  SparOpReprMat bchmk(4, 2);
+  op_mat.SetElem(0, 2, OpRepr(s));
+  op_mat.SetElem(1, 0, kIdOpRepr);
+  op_mat.SetElem(1, 3, OpRepr(j, s));
+  op_mat.SetElem(2, 1, kIdOpRepr);
+  op_mat.SetElem(2, 3, OpRepr(jp, s));
+  op_mat.SetElem(3, 3, OpRepr(j, kIdOpLabel));
+  coef_mat.SetElem(0, 0, jp);
+  coef_mat.SetElem(1, 0, j);
+  coef_mat.SetElem(2, 0, j);
+  coef_mat.SetElem(3, 1, kIdCoefRepr);
+  bchmk.SetElem(0, 0, OpRepr(j, s));
+  bchmk.SetElem(1, 0, OpRepr(jp, kIdOpLabel));
+  bchmk.SetElem(1, 1, OpRepr(j, s));
+  bchmk.SetElem(2, 0, OpRepr(j, kIdOpLabel));
+  bchmk.SetElem(2, 1, OpRepr(jp, s));
+  bchmk.SetElem(3, 1, OpRepr(j, kIdOpLabel));
+  auto res = SparOpReprMatSparCoefReprMatIncompleteMulti(op_mat, coef_mat);
+  EXPECT_EQ(res, bchmk);
+}
+
+
+void RunTestSparOpReprMatSparCoefReprMatIncompleteMultiCase4(void) {
+  CoefRepr j(1);
+  CoefRepr k(2);
+  OpLabel sx(1);
+  OpLabel sy(2);
+  OpLabel sz(3);
+
+  SparOpReprMat op_mat(4, 5);
+  SparCoefReprMat coef_mat(5, 4);
+  SparOpReprMat bchmk(4, 4);
+  op_mat.SetElem(0, 0, OpRepr(sx));
+  op_mat.SetElem(0, 1, OpRepr(sy));
+  op_mat.SetElem(0, 2, OpRepr(sz));
+  op_mat.SetElem(1, 3, OpRepr(sx));
+  op_mat.SetElem(1, 4, OpRepr(sx));
+  op_mat.SetElem(2, 4, OpRepr(sy));
+  op_mat.SetElem(3, 4, OpRepr(sz));
+  coef_mat.SetElem(0, 0, j);
+  coef_mat.SetElem(1, 1, j);
+  coef_mat.SetElem(2, 2, j+k);
+  coef_mat.SetElem(3, 3, k);
+  coef_mat.SetElem(4, 3, j);
+  bchmk.SetElem(0, 0, OpRepr(j, sx));
+  bchmk.SetElem(0, 1, OpRepr(j, sy));
+  bchmk.SetElem(0, 2, OpRepr(j+k, sz));
+  bchmk.SetElem(1, 3, OpRepr(k+j, sx));
+  bchmk.SetElem(2, 3, OpRepr(j, sy));
+  bchmk.SetElem(3, 3, OpRepr(j, sz));
+  auto res = SparOpReprMatSparCoefReprMatIncompleteMulti(op_mat, coef_mat);
+  EXPECT_EQ(res, bchmk);
+}
+
+
+TEST(TestSparOpReprMat, TestSparOpReprMatSparCoefReprMatIncompleteMulti) {
+  RunTestSparOpReprMatSparCoefReprMatIncompleteMultiCase1();
+  RunTestSparOpReprMatSparCoefReprMatIncompleteMultiCase2();
+  RunTestSparOpReprMatSparCoefReprMatIncompleteMultiCase3();
+  RunTestSparOpReprMatSparCoefReprMatIncompleteMultiCase4();
+}

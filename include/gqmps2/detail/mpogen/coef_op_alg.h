@@ -453,6 +453,25 @@ void SparCoefReprMatSparOpReprMatIncompleteMultiKernel(
 }
 
 
+void SparOpReprMatSparCoefReprMatIncompleteMultiKernel(
+    const SparOpReprMat &op_mat, const SparCoefReprMat &coef_mat,
+    const size_t op_mat_row_idx, const size_t coef_mat_col_idx,
+    SparOpReprMat &res) {
+  OpRepr res_elem;
+  for (size_t i = 0; i < op_mat.cols; ++i) {
+    if (op_mat.indexes[op_mat.CalcOffset(op_mat_row_idx, i)] != -1 &&
+        coef_mat.indexes[coef_mat.CalcOffset(i, coef_mat_col_idx)] != -1) {
+      res_elem = res_elem + CoefReprOpReprIncompleteMulti(
+                                coef_mat(i, coef_mat_col_idx),
+                                op_mat(op_mat_row_idx, i));
+    }
+  }
+  if (res_elem != kNullOpRepr) {
+    res.SetElem(op_mat_row_idx, coef_mat_col_idx, res_elem);
+  }
+}
+
+
 SparOpReprMat SparCoefReprMatSparOpReprMatIncompleteMulti(
     const SparCoefReprMat &coef_mat, const SparOpReprMat &op_mat) {
   assert(coef_mat.cols == op_mat.rows);
@@ -461,6 +480,20 @@ SparOpReprMat SparCoefReprMatSparOpReprMatIncompleteMulti(
     for (size_t y = 0; y < op_mat.cols; ++y) {
       SparCoefReprMatSparOpReprMatIncompleteMultiKernel(
           coef_mat, op_mat, x, y, res);
+    }
+  }
+  return res;
+}
+
+
+SparOpReprMat SparOpReprMatSparCoefReprMatIncompleteMulti(
+    const SparOpReprMat &op_mat, const SparCoefReprMat &coef_mat) {
+  assert(op_mat.cols == coef_mat.rows);
+  SparOpReprMat res(op_mat.rows, coef_mat.cols);
+  for (size_t x = 0; x < op_mat.rows; ++x) {
+    for (size_t y = 0; y < coef_mat.cols; ++y) {
+      SparOpReprMatSparCoefReprMatIncompleteMultiKernel(
+          op_mat, coef_mat, x, y, res);
     }
   }
   return res;
