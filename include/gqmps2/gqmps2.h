@@ -87,106 +87,106 @@ private:
 
 
 // MPO generator.
-template <typename>
-struct FSMEdge;
+//template <typename>
+//struct FSMEdge;
 
 
-template <typename TenElemType>
-struct FSMNode {
-  FSMNode(const long loc) :
-    is_ready(false), is_final(false), mid_state_idx(0), loc(loc) {}
-  FSMNode(void) : FSMNode(-1) {}
+//template <typename TenElemType>
+//struct FSMNode {
+  //FSMNode(const long loc) :
+    //is_ready(false), is_final(false), mid_state_idx(0), loc(loc) {}
+  //FSMNode(void) : FSMNode(-1) {}
 
-  bool is_ready;
-  bool is_final;
-  long mid_state_idx;
-  long loc;
-  std::vector<FSMEdge<TenElemType> *> ledges;
-  std::vector<FSMEdge<TenElemType> *> redges;
-};
-
-
-template <typename TenElemType>
-struct FSMEdge {
-  FSMEdge(
-      const GQTensor<TenElemType> &op,
-      FSMNode<TenElemType> *l_node, FSMNode<TenElemType> *n_node,
-      const long loc) :
-      op(op), last_node(l_node), next_node(n_node), loc(loc) {}
-  FSMEdge(void) : FSMEdge(GQTensor<TenElemType>(), nullptr, nullptr, -1) {}
-
-  const GQTensor<TenElemType> op;
-  FSMNode<TenElemType> *last_node;
-  FSMNode<TenElemType> *next_node;
-  long loc;
-};
+  //bool is_ready;
+  //bool is_final;
+  //long mid_state_idx;
+  //long loc;
+  //std::vector<FSMEdge<TenElemType> *> ledges;
+  //std::vector<FSMEdge<TenElemType> *> redges;
+//};
 
 
-template <typename TenElemType>
-class MPOGenerator {
-//[> TODO: Merge terms only with different coefficients. <]
-public:
-  MPOGenerator(const long, const Index &, const QN &);
+//template <typename TenElemType>
+//struct FSMEdge {
+  //FSMEdge(
+      //const GQTensor<TenElemType> &op,
+      //FSMNode<TenElemType> *l_node, FSMNode<TenElemType> *n_node,
+      //const long loc) :
+      //op(op), last_node(l_node), next_node(n_node), loc(loc) {}
+  //FSMEdge(void) : FSMEdge(GQTensor<TenElemType>(), nullptr, nullptr, -1) {}
 
-  void AddTerm(
-      const TenElemType,
-      const std::vector<GQTensor<TenElemType>> &,
-      const std::vector<long> &,
-      const GQTensor<TenElemType> &inter_op=kNullOperator<TenElemType>);
-  std::vector<GQTensor<TenElemType> *> Gen(void);
+  //const GQTensor<TenElemType> op;
+  //FSMNode<TenElemType> *last_node;
+  //FSMNode<TenElemType> *next_node;
+  //long loc;
+//};
 
-private:
-  long N_;
-  Index pb_out_;
-  Index pb_in_;
-  GQTensor<TenElemType> id_op_;
-  std::vector<FSMNode<TenElemType> *> ready_nodes_;
-  std::vector<FSMNode<TenElemType> *> final_nodes_;
-  std::vector<std::vector<FSMNode<TenElemType> *>> middle_nodes_set_;
-  std::vector<std::vector<FSMEdge<TenElemType> *>> edges_set_;
-  // For nodes merge.
-  bool fsm_graph_merged_;
-  bool relable_to_end_;
-  // For generation process.
-  QN zero_div_;
-  std::vector<Index> rvbs_;
-  bool fsm_graph_sorted_;
+
+//template <typename TenElemType>
+//class MPOGenerator {
+////[> TODO: Merge terms only with different coefficients. <]
+//public:
+  //MPOGenerator(const long, const Index &, const QN &);
+
+  //void AddTerm(
+      //const TenElemType,
+      //const std::vector<GQTensor<TenElemType>> &,
+      //const std::vector<long> &,
+      //const GQTensor<TenElemType> &inter_op=kNullOperator<TenElemType>);
+  //std::vector<GQTensor<TenElemType> *> Gen(void);
+
+//private:
+  //long N_;
+  //Index pb_out_;
+  //Index pb_in_;
+  //GQTensor<TenElemType> id_op_;
+  //std::vector<FSMNode<TenElemType> *> ready_nodes_;
+  //std::vector<FSMNode<TenElemType> *> final_nodes_;
+  //std::vector<std::vector<FSMNode<TenElemType> *>> middle_nodes_set_;
+  //std::vector<std::vector<FSMEdge<TenElemType> *>> edges_set_;
+  //// For nodes merge.
+  //bool fsm_graph_merged_;
+  //bool relable_to_end_;
+  //// For generation process.
+  //QN zero_div_;
+  //std::vector<Index> rvbs_;
+  //bool fsm_graph_sorted_;
   
-  // Add terms.
-  void AddOneSiteTerm(
-      const TenElemType,
-      const GQTensor<TenElemType> &,
-      const long);
-  void AddTwoSiteTerm(
-      const TenElemType,
-      const GQTensor<TenElemType> &, const GQTensor<TenElemType> &,
-      const long, const long,
-      const GQTensor<TenElemType> &);
+  //// Add terms.
+  //void AddOneSiteTerm(
+      //const TenElemType,
+      //const GQTensor<TenElemType> &,
+      //const long);
+  //void AddTwoSiteTerm(
+      //const TenElemType,
+      //const GQTensor<TenElemType> &, const GQTensor<TenElemType> &,
+      //const long, const long,
+      //const GQTensor<TenElemType> &);
 
-  // Merge finite state machine graph.
-  void FSMGraphMerge(void);
-  void FSMGraphMergeAt(const long);   // At given middle nodes list.
-  bool FSMGraphMergeNodesTo(const long, std::vector<FSMNode<TenElemType> *> &);
-  bool FSMGraphMergeTwoNodes(FSMNode<TenElemType> *&, FSMNode<TenElemType> *&);
+  //// Merge finite state machine graph.
+  //void FSMGraphMerge(void);
+  //void FSMGraphMergeAt(const long);   // At given middle nodes list.
+  //bool FSMGraphMergeNodesTo(const long, std::vector<FSMNode<TenElemType> *> &);
+  //bool FSMGraphMergeTwoNodes(FSMNode<TenElemType> *&, FSMNode<TenElemType> *&);
 
-  bool CheckMergeableLeftEdgePair(
-      const FSMEdge<TenElemType> *,
-      const FSMEdge<TenElemType> *);
-  bool CheckMergeableRightEdgePair(
-      const FSMEdge<TenElemType> *,
-      const FSMEdge<TenElemType> *);
+  //bool CheckMergeableLeftEdgePair(
+      //const FSMEdge<TenElemType> *,
+      //const FSMEdge<TenElemType> *);
+  //bool CheckMergeableRightEdgePair(
+      //const FSMEdge<TenElemType> *,
+      //const FSMEdge<TenElemType> *);
 
-  void DeletePathToRightEnd(FSMEdge<TenElemType> *);
-  void RelabelMidNodesIdx(const long);
-  void RemoveNullEdges(void);
+  //void DeletePathToRightEnd(FSMEdge<TenElemType> *);
+  //void RelabelMidNodesIdx(const long);
+  //void RemoveNullEdges(void);
 
-  // Generation process.
-  void FSMGraphSort(void);
-  Index FSMGraphSortAt(const long);    // At given site.
-  GQTensor<TenElemType> *GenHeadMpo(void);
-  GQTensor<TenElemType> *GenCentMpo(const long);
-  GQTensor<TenElemType> *GenTailMpo(void);
-};
+  //// Generation process.
+  //void FSMGraphSort(void);
+  //Index FSMGraphSortAt(const long);    // At given site.
+  //GQTensor<TenElemType> *GenHeadMpo(void);
+  //GQTensor<TenElemType> *GenCentMpo(const long);
+  //GQTensor<TenElemType> *GenTailMpo(void);
+//};
 
 
 // Lanczos Ground state search algorithm.
@@ -370,7 +370,7 @@ inline void CreatPath(const std::string &path) {
 
 // Implementation details
 #include "gqmps2/detail/lanczos_impl.h"
-#include "gqmps2/detail/mpogen/mpogen_impl.h"
+//#include "gqmps2/detail/mpogen/mpogen_impl.h"
 #include "gqmps2/detail/two_site_algo_impl.h"
 #include "gqmps2/detail/mps_ops_impl.h"
 #include "gqmps2/detail/mps_measu_impl.h"
