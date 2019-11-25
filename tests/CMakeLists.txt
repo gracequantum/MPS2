@@ -51,6 +51,7 @@ add_unittest(test_lanczos test_lanczos.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
 
 ## Test MPO generation.
 add_unittest(test_mpogen_coef_op_alg test_mpogen_coef_op_alg.cc "" "" "" "")
+add_unittest(test_mpogen_fsm test_mpogen_fsm.cc "" "" "" "")
 #add_unittest(test_mpogen test_mpogen.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
 
 # Test two site algorithm.

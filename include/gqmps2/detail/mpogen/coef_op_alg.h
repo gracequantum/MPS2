@@ -203,6 +203,8 @@ private:
 const OpRepr kNullOpRepr = OpRepr();          // Operator representation for null operator.
 const OpRepr kIdOpRepr = OpRepr(kIdOpLabel);  // Operator representation for identity operator.
 
+using OpReprVec = std::vector<OpRepr>;
+
 
 std::pair<CoefRepr, OpRepr> SeparateCoefAndBase(const OpRepr &op_repr) {
   auto term_num = op_repr.coef_repr_list_.size();
