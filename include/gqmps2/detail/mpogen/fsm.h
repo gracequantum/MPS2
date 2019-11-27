@@ -25,6 +25,8 @@ struct FSMNode {
   long fsm_stat_idx;
 };
 
+using FSMNodeVec = std::vector<FSMNode>;
+
 
 bool operator==(const FSMNode &lhs, const FSMNode &rhs) {
   return (lhs.fsm_site_idx == rhs.fsm_site_idx) &&
@@ -37,9 +39,6 @@ bool operator!=(const FSMNode &lhs, const FSMNode &rhs) {
 }
 
 
-using FSMNodeVec = std::vector<FSMNode>;
-
-
 struct FSMPath {
   FSMPath(const size_t phys_site_num, const size_t fsm_site_num) :
       fsm_nodes(fsm_site_num), op_reprs(phys_site_num) {
@@ -49,6 +48,8 @@ struct FSMPath {
   OpReprVec op_reprs;
 };
 
+using FSMPathVec = std::vector<FSMPath>;
+
 
 class FSM {
 public:
@@ -56,7 +57,8 @@ public:
       phys_site_num_(phys_site_num),
       fsm_site_num_(phys_site_num+1),
       mid_stat_nums_(phys_site_num+1, 0),
-      has_readys_(phys_site_num+1, false) {
+      has_readys_(phys_site_num+1, false),
+      has_finals_(phys_site_num+1, false) {
     assert(fsm_site_num_ == phys_site_num_ + 1); 
   }
   
@@ -68,19 +70,29 @@ public:
 
   void AddPath(const size_t, const size_t, const OpReprVec &);
 
-  std::vector<FSMPath> GetFSMPaths(void) const { return fsm_paths_; }
+  FSMPathVec GetFSMPaths(void) const { return fsm_paths_; }
 
-  std::vector<SparOpReprMat> GenMatRepr(void) const;
+  SparOpReprMatVec GenMatRepr(void) const;
 
-  std::vector<SparOpReprMat> GenCompressedMatRepr(void) const;
+  SparOpReprMatVec GenCompressedMatRepr(void) const;
 
 
 private:
+  std::vector<size_t> CalcFSMSiteDims_(void) const;
+
+  std::vector<long> CalcFinalStatDimIdxs_(const std::vector<size_t> &) const;
+
+  void CastFSMPathToMatRepr_(
+      const FSMPath &,
+      const std::vector<long> &,
+      SparOpReprMatVec &) const;
+
   size_t phys_site_num_;
   size_t fsm_site_num_;
   std::vector<size_t> mid_stat_nums_;
   std::vector<bool> has_readys_;
-  std::vector<FSMPath> fsm_paths_;
+  std::vector<bool> has_finals_;
+  FSMPathVec fsm_paths_;
 };
 
 
@@ -119,6 +131,7 @@ void FSM::AddPath(
     } else if (i >= tail_ntrvl_site_idx) {
       fsm_path.fsm_nodes[tgt_fsm_site_idx].fsm_site_idx = tgt_fsm_site_idx;
       fsm_path.fsm_nodes[tgt_fsm_site_idx].fsm_stat_idx = kFSMFinalStatIdx;
+      has_finals_[tgt_fsm_site_idx] = true;
     } else {
       fsm_path.fsm_nodes[tgt_fsm_site_idx].fsm_site_idx = tgt_fsm_site_idx;
       mid_stat_nums_[tgt_fsm_site_idx]++;
@@ -127,5 +140,83 @@ void FSM::AddPath(
     }
   }
   fsm_paths_.push_back(fsm_path);
+}
+
+
+SparOpReprMatVec FSM::GenMatRepr(void) const {
+  auto fsm_site_dims = CalcFSMSiteDims_();
+  auto final_stat_dim_idxs = CalcFinalStatDimIdxs_(fsm_site_dims);
+  SparOpReprMatVec fsm_mat_repr;
+  for (size_t i = 0; i < phys_site_num_; ++i) {
+    auto mat_rows = fsm_site_dims[i];
+    auto mat_cols = fsm_site_dims[i+1];
+    fsm_mat_repr.push_back(SparOpReprMat(mat_rows, mat_cols));
+  }
+  for (auto &fsm_path : fsm_paths_) {
+    CastFSMPathToMatRepr_(fsm_path, final_stat_dim_idxs, fsm_mat_repr);
+  }
+  return fsm_mat_repr;
+}
+
+
+std::vector<size_t> FSM::CalcFSMSiteDims_(void) const {
+  std::vector<size_t> fsm_site_dims(fsm_site_num_, 0);
+  for (size_t i = 0; i < fsm_site_num_; ++i) {
+    auto fsm_site_dim = mid_stat_nums_[i];
+    if (has_readys_[i]) { fsm_site_dim++; }
+    if (has_finals_[i]) { fsm_site_dim++; }
+    fsm_site_dims[i] = fsm_site_dim;
+  }
+  return fsm_site_dims;
+}
+
+
+std::vector<long> FSM::CalcFinalStatDimIdxs_(
+    const std::vector<size_t> &fsm_site_dims) const {
+  std::vector<long> final_stat_dim_idxs(fsm_site_num_, -1);
+  for (size_t i = 0; i < fsm_site_num_; ++i) {
+    if (has_finals_[i]) {
+      if (has_readys_[i]) {
+        final_stat_dim_idxs[i] = fsm_site_dims[i] - 1;
+      } else {
+        final_stat_dim_idxs[i] = 0;
+      }
+    }
+  }
+  return final_stat_dim_idxs;
+}
+
+
+void FSM::CastFSMPathToMatRepr_(
+    const FSMPath &fsm_path,
+    const std::vector<long> &final_stat_dim_idxs,
+    SparOpReprMatVec &fsm_mat_repr) const {
+  for (size_t i = 0; i < phys_site_num_; ++i) {
+    auto tgt_row_fsm_node = fsm_path.fsm_nodes[i];
+    auto tgt_col_fsm_node = fsm_path.fsm_nodes[i+1];
+    auto tgt_op = fsm_path.op_reprs[i];
+
+    size_t tgt_row_idx, tgt_col_idx;
+    if (tgt_row_fsm_node.fsm_stat_idx == kFSMFinalStatIdx) {
+      tgt_row_idx = final_stat_dim_idxs[i];
+    } else if ((!has_readys_[i]) && (!has_finals_[i])) {
+      tgt_row_idx = tgt_row_fsm_node.fsm_stat_idx - 1;
+    } else {
+      tgt_row_idx = tgt_row_fsm_node.fsm_stat_idx;
+    }
+    if (tgt_col_fsm_node.fsm_stat_idx == kFSMFinalStatIdx) {
+      tgt_col_idx = final_stat_dim_idxs[i+1];
+    } else if ((!has_readys_[i+1]) && (!has_finals_[i+1])) {
+      tgt_col_idx = tgt_col_fsm_node.fsm_stat_idx - 1;
+    } else {
+      tgt_col_idx = tgt_col_fsm_node.fsm_stat_idx;
+    }
+
+    if (fsm_mat_repr[i](tgt_row_idx, tgt_col_idx) == kNullOpRepr) {
+      fsm_mat_repr[i].SetElem(tgt_row_idx, tgt_col_idx, tgt_op);
+    } else {
+      assert(fsm_mat_repr[i](tgt_row_idx, tgt_col_idx) == tgt_op);
+    }
+  }
 }
 #endif /* ifndef GQMPS2_DETAIL_MPOGEN_FSM */

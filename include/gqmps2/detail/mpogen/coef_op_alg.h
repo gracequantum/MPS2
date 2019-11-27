@@ -420,6 +420,8 @@ private:
   }
 };
 
+using SparOpReprMatVec = std::vector<SparOpReprMat>;
+
 
 // Incomplete multiplication for SparMat.
 OpRepr CoefReprOpReprIncompleteMulti(const CoefRepr &coef, const OpRepr &op) {

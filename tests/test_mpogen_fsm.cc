@@ -155,44 +155,44 @@ void RunTestAddPathCase4(void) {
 void RunTestAddPathCase5(void) {
   auto s = OpRepr(1);
   FSM fsm(5);
- fsm.AddPath(0, 4, {s, kIdOpRepr, kIdOpRepr, kIdOpRepr, s}); 
- fsm.AddPath(1, 4, {s, s, kIdOpRepr, s});
- fsm.AddPath(1, 3, {s, s, s});
- FSMNode n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11, n12, n13;
- n1.fsm_site_idx = 0;
- n1.fsm_stat_idx = 0;
- n2.fsm_site_idx = 1;
- n2.fsm_stat_idx = 1;
- n3.fsm_site_idx = 2;
- n3.fsm_stat_idx = 1;
- n4.fsm_site_idx = 3;
- n4.fsm_stat_idx = 1;
- n5.fsm_site_idx = 4;
- n5.fsm_stat_idx = 1;
- n6.fsm_site_idx = 5;
- n6.fsm_stat_idx = -1;
- n7.fsm_site_idx = 1;
- n7.fsm_stat_idx = 0;
- n8.fsm_site_idx = 2;
- n8.fsm_stat_idx = 2;
- n9.fsm_site_idx = 3;
- n9.fsm_stat_idx = 2;
- n10.fsm_site_idx = 4;
- n10.fsm_stat_idx = 2;
- n11.fsm_site_idx = 2;
- n11.fsm_stat_idx = 3;
- n12.fsm_site_idx = 3;
- n12.fsm_stat_idx = 3;
- n13.fsm_site_idx = 4;
- n13.fsm_stat_idx = -1;
+  fsm.AddPath(0, 4, {s, kIdOpRepr, kIdOpRepr, kIdOpRepr, s}); 
+  fsm.AddPath(1, 4, {s, s, kIdOpRepr, s});
+  fsm.AddPath(1, 3, {s, s, s});
+  FSMNode n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11, n12, n13;
+  n1.fsm_site_idx = 0;
+  n1.fsm_stat_idx = 0;
+  n2.fsm_site_idx = 1;
+  n2.fsm_stat_idx = 1;
+  n3.fsm_site_idx = 2;
+  n3.fsm_stat_idx = 1;
+  n4.fsm_site_idx = 3;
+  n4.fsm_stat_idx = 1;
+  n5.fsm_site_idx = 4;
+  n5.fsm_stat_idx = 1;
+  n6.fsm_site_idx = 5;
+  n6.fsm_stat_idx = -1;
+  n7.fsm_site_idx = 1;
+  n7.fsm_stat_idx = 0;
+  n8.fsm_site_idx = 2;
+  n8.fsm_stat_idx = 2;
+  n9.fsm_site_idx = 3;
+  n9.fsm_stat_idx = 2;
+  n10.fsm_site_idx = 4;
+  n10.fsm_stat_idx = 2;
+  n11.fsm_site_idx = 2;
+  n11.fsm_stat_idx = 3;
+  n12.fsm_site_idx = 3;
+  n12.fsm_stat_idx = 3;
+  n13.fsm_site_idx = 4;
+  n13.fsm_stat_idx = -1;
 
- auto paths = fsm.GetFSMPaths();
- EXPECT_EQ(paths[0].op_reprs, OpReprVec({s, kIdOpRepr, kIdOpRepr, kIdOpRepr, s}));
- EXPECT_EQ(paths[0].fsm_nodes, FSMNodeVec({n1, n2, n3, n4, n5, n6}));
- EXPECT_EQ(paths[1].op_reprs, OpReprVec({kIdOpRepr, s, s, kIdOpRepr, s}));
- EXPECT_EQ(paths[1].fsm_nodes, FSMNodeVec({n1, n7, n8, n9, n10, n6}));
- EXPECT_EQ(paths[2].op_reprs, OpReprVec({kIdOpRepr, s, s, s, kIdOpRepr}));
- EXPECT_EQ(paths[2].fsm_nodes, FSMNodeVec({n1, n7, n11, n12, n13, n6}));
+  auto paths = fsm.GetFSMPaths();
+  EXPECT_EQ(paths[0].op_reprs, OpReprVec({s, kIdOpRepr, kIdOpRepr, kIdOpRepr, s}));
+  EXPECT_EQ(paths[0].fsm_nodes, FSMNodeVec({n1, n2, n3, n4, n5, n6}));
+  EXPECT_EQ(paths[1].op_reprs, OpReprVec({kIdOpRepr, s, s, kIdOpRepr, s}));
+  EXPECT_EQ(paths[1].fsm_nodes, FSMNodeVec({n1, n7, n8, n9, n10, n6}));
+  EXPECT_EQ(paths[2].op_reprs, OpReprVec({kIdOpRepr, s, s, s, kIdOpRepr}));
+  EXPECT_EQ(paths[2].fsm_nodes, FSMNodeVec({n1, n7, n11, n12, n13, n6}));
 }
 
 
@@ -202,4 +202,133 @@ TEST(TestFSM, TestAddPath) {
   RunTestAddPathCase3();
   RunTestAddPathCase4();
   RunTestAddPathCase5();
+}
+
+
+void RunTestGenMatReprCase1(void) {
+  FSM fsm1(1);
+  fsm1.AddPath(0, 0, {kIdOpRepr});
+  auto fsm_mat_repr = fsm1.GenMatRepr();
+  EXPECT_EQ(fsm_mat_repr.size(), 1);
+  SparOpReprMat bchmk_mat00(1, 1);
+  bchmk_mat00.SetElem(0, 0, kIdOpRepr);
+  EXPECT_EQ(fsm_mat_repr[0], bchmk_mat00);
+
+  FSM fsm2(1);
+  auto s = OpRepr(1);
+  fsm2.AddPath(0, 0, {s});
+  fsm_mat_repr = fsm2.GenMatRepr();
+  EXPECT_EQ(fsm_mat_repr.size(), 1);
+  SparOpReprMat bchmk_mat10(1, 1);
+  bchmk_mat10.SetElem(0, 0, s);
+  EXPECT_EQ(fsm_mat_repr[0], bchmk_mat10);
+}
+
+
+void RunTestGenMatReprCase2(void) {
+  auto s = OpRepr(1);
+  FSM fsm(2);
+  fsm.AddPath(0, 0, {s});
+  fsm.AddPath(1, 1, {s});
+  SparOpReprMat bchmk_mat0(1, 2);
+  bchmk_mat0.SetElem(0, 0, kIdOpRepr);
+  bchmk_mat0.SetElem(0, 1, s);
+  SparOpReprMat bchmk_mat1(2, 1);
+  bchmk_mat1.SetElem(0, 0, s);
+  bchmk_mat1.SetElem(1, 0, kIdOpRepr);
+
+  auto fsm_mat_repr = fsm.GenMatRepr();
+  EXPECT_EQ(fsm_mat_repr[0], bchmk_mat0);
+  EXPECT_EQ(fsm_mat_repr[1], bchmk_mat1);
+}
+
+
+void RunTestGenMatReprCase3(void) {
+  auto s = OpRepr(1);
+  FSM fsm(2);
+  fsm.AddPath(0, 1, {s, s});
+  fsm.AddPath(0, 1, {s, s});
+  SparOpReprMat bchmk_mat0(1, 2);
+  bchmk_mat0.SetElem(0, 0, s);
+  bchmk_mat0.SetElem(0, 1, s);
+  SparOpReprMat bchmk_mat1(2, 1);
+  bchmk_mat1.SetElem(0, 0, s);
+  bchmk_mat1.SetElem(1, 0, s);
+
+  auto fsm_mat_repr = fsm.GenMatRepr();
+  EXPECT_EQ(fsm_mat_repr[0], bchmk_mat0);
+  EXPECT_EQ(fsm_mat_repr[1], bchmk_mat1);
+}
+
+
+void RunTestGenMatReprCase4(void) {
+  auto s = OpRepr(1);
+  FSM fsm(4);
+  fsm.AddPath(0, 1, {s, s});
+  fsm.AddPath(1, 2, {s, s});
+  fsm.AddPath(2, 3, {s, s});
+  SparOpReprMat bchmk_mat0(1, 2);
+  bchmk_mat0.SetElem(0, 0, kIdOpRepr);
+  bchmk_mat0.SetElem(0, 1, s);
+  SparOpReprMat bchmk_mat1(2, 3);
+  bchmk_mat1.SetElem(0, 0, kIdOpRepr);
+  bchmk_mat1.SetElem(0, 1, s);
+  bchmk_mat1.SetElem(1, 2, s);
+  SparOpReprMat bchmk_mat2(3, 2);
+  bchmk_mat2.SetElem(0, 1, s);
+  bchmk_mat2.SetElem(1, 0, s);
+  bchmk_mat2.SetElem(2, 0, kIdOpRepr);
+  SparOpReprMat bchmk_mat3(2, 1);
+  bchmk_mat3.SetElem(0, 0, kIdOpRepr);
+  bchmk_mat3.SetElem(1, 0, s);
+
+  auto fsm_mat_repr = fsm.GenMatRepr();
+  EXPECT_EQ(fsm_mat_repr[0], bchmk_mat0);
+  EXPECT_EQ(fsm_mat_repr[1], bchmk_mat1);
+  EXPECT_EQ(fsm_mat_repr[2], bchmk_mat2);
+  EXPECT_EQ(fsm_mat_repr[3], bchmk_mat3);
+}
+
+
+void RunTestGenMatReprCase5(void) {
+  auto s = OpRepr(1);
+  FSM fsm(5);
+  fsm.AddPath(0, 4, {s, kIdOpRepr, kIdOpRepr, kIdOpRepr, s}); 
+  fsm.AddPath(1, 4, {s, s, kIdOpRepr, s});
+  fsm.AddPath(1, 3, {s, s, s});
+  SparOpReprMat bchmk_mat0(1, 2);
+  bchmk_mat0.SetElem(0, 0, kIdOpRepr);
+  bchmk_mat0.SetElem(0, 1, s);
+  SparOpReprMat bchmk_mat1(2, 3);
+  bchmk_mat1.SetElem(0, 1, s);
+  bchmk_mat1.SetElem(0, 2, s);
+  bchmk_mat1.SetElem(1, 0, kIdOpRepr);
+  SparOpReprMat bchmk_mat2(3, 3);
+  bchmk_mat2.SetElem(0, 0, kIdOpRepr);
+  bchmk_mat2.SetElem(1, 1, s);
+  bchmk_mat2.SetElem(2, 2, s);
+  SparOpReprMat bchmk_mat3(3, 3);
+  bchmk_mat3.SetElem(0, 1, kIdOpRepr);
+  bchmk_mat3.SetElem(1, 2, kIdOpRepr);
+  bchmk_mat3.SetElem(2, 0, s);
+  SparOpReprMat bchmk_mat4(3, 1);
+  bchmk_mat4.SetElem(0, 0, kIdOpRepr);
+  bchmk_mat4.SetElem(1, 0, s);
+  bchmk_mat4.SetElem(2, 0, s);
+
+  auto fsm_mat_repr = fsm.GenMatRepr();
+  EXPECT_EQ(fsm_mat_repr[0], bchmk_mat0);
+  EXPECT_EQ(fsm_mat_repr[1], bchmk_mat1);
+  EXPECT_EQ(fsm_mat_repr[2], bchmk_mat2);
+  EXPECT_EQ(fsm_mat_repr[3], bchmk_mat3);
+  EXPECT_EQ(fsm_mat_repr[4], bchmk_mat4);
+}
+
+
+TEST(TestFSM, TestGenMatRepr) {
+  RunTestGenMatReprCase1();
+  RunTestGenMatReprCase2();
+  RunTestGenMatReprCase3();
+  RunTestGenMatReprCase4();
+  RunTestGenMatReprCase5();
 }
