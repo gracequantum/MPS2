@@ -1066,3 +1066,216 @@ TEST(TestSparOpReprMat, TestSparOpReprMatSparCoefReprMatIncompleteMulti) {
   RunTestSparOpReprMatSparCoefReprMatIncompleteMultiCase3();
   RunTestSparOpReprMatSparCoefReprMatIncompleteMultiCase4();
 }
+
+
+void RunTestSparOpReprMatRowCompresserCase1(void) {
+  SparOpReprMat m1(1, 1);
+  SparOpReprMat m2(1, 1);
+  SparOpReprMatRowCompresser(m1, m2);
+  SparOpReprMat bchmk_m1(1, 1);
+  SparOpReprMat bchmk_m2(1, 1);
+  EXPECT_EQ(m1, bchmk_m1);
+  EXPECT_EQ(m2, bchmk_m2);
+
+  m1.SetElem(0, 0, OpRepr(1));
+  m2.SetElem(0, 0, OpRepr(2));
+  bchmk_m1 = m1;
+  bchmk_m2 = m2;
+  SparOpReprMatRowCompresser(m1, m2);
+  EXPECT_EQ(m1, bchmk_m1);
+  EXPECT_EQ(m2, bchmk_m2);
+}
+
+
+void RunTestSparOpReprMatRowCompresserCase2(void) {
+  OpRepr a(1), b(2), c(3), d(4);
+  SparOpReprMat m1(2, 1);
+  SparOpReprMat m2(1, 2);
+  m1.SetElem(0, 0, c);
+  m1.SetElem(1, 0, d);
+  m2.SetElem(0, 0, a);
+  m2.SetElem(0, 1, b);
+  auto bchmk_m1 = m1;
+  auto bchmk_m2 = m2;
+  SparOpReprMatRowCompresser(m1, m2);
+  EXPECT_EQ(m1, bchmk_m1);
+  EXPECT_EQ(m2, bchmk_m2);
+}
+
+
+void RunTestSparOpReprMatRowCompresserCase3(void) {
+  OpRepr a(1), b(2);
+  SparOpReprMat m1(2, 1);
+  SparOpReprMat m2(1, 2);
+  m1.SetElem(0, 0, kIdOpRepr);
+  m1.SetElem(1, 0, kIdOpRepr);
+  m2.SetElem(0, 0, a);
+  m2.SetElem(0, 1, b);
+  SparOpReprMat bchmk_m1(1, 1);
+  SparOpReprMat bchmk_m2(1, 1);
+  bchmk_m1.SetElem(0, 0, kIdOpRepr);
+  bchmk_m2.SetElem(0, 0, a + b);
+  SparOpReprMatRowCompresser(m1, m2);
+  EXPECT_EQ(m1, bchmk_m1);
+  EXPECT_EQ(m2, bchmk_m2);
+}
+
+
+void RunTestSparOpReprMatRowCompresserCase4(void) {
+  OpRepr a(1), b(2), c(3);
+  SparOpReprMat m1(2, 1);
+  SparOpReprMat m2(1, 2);
+  m1.SetElem(0, 0, c);
+  m1.SetElem(1, 0, c);
+  m2.SetElem(0, 0, a);
+  m2.SetElem(0, 1, b);
+  SparOpReprMat bchmk_m1(1, 1);
+  SparOpReprMat bchmk_m2(1, 1);
+  bchmk_m1.SetElem(0, 0, c);
+  bchmk_m2.SetElem(0, 0, a + b);
+  SparOpReprMatRowCompresser(m1, m2);
+  EXPECT_EQ(m1, bchmk_m1);
+  EXPECT_EQ(m2, bchmk_m2);
+}
+
+
+void RunTestSparOpReprMatRowCompresserCase5(void) {
+  OpRepr a(1), b(2), c(3), d(4), e(5);
+  SparOpReprMat m1(3, 1);
+  SparOpReprMat m2(1, 3);
+  m1.SetElem(0, 0, d);
+  m1.SetElem(1, 0, d);
+  m1.SetElem(2, 0, e);
+  m2.SetElem(0, 0, a);
+  m2.SetElem(0, 1, b);
+  m2.SetElem(0, 2, c);
+  SparOpReprMat bchmk_m1(2, 1);
+  SparOpReprMat bchmk_m2(1, 2);
+  bchmk_m1.SetElem(0, 0, d);
+  bchmk_m1.SetElem(1, 0, e);
+  bchmk_m2.SetElem(0, 0, a+b);
+  bchmk_m2.SetElem(0, 1, c);
+  SparOpReprMatRowCompresser(m1, m2);
+  EXPECT_EQ(m1, bchmk_m1);
+  EXPECT_EQ(m2, bchmk_m2);
+}
+
+
+void RunTestSparOpReprMatRowCompresserCase6(void) {
+  OpRepr a(1), b(2), c(3), d(4), e(5);
+  SparOpReprMat m1(3, 1);
+  SparOpReprMat m2(1, 3);
+  m1.SetElem(0, 0, d);
+  m1.SetElem(1, 0, e);
+  m1.SetElem(2, 0, e);
+  m2.SetElem(0, 0, a);
+  m2.SetElem(0, 1, b);
+  m2.SetElem(0, 2, c);
+  SparOpReprMat bchmk_m1(2, 1);
+  SparOpReprMat bchmk_m2(1, 2);
+  bchmk_m1.SetElem(0, 0, d);
+  bchmk_m1.SetElem(1, 0, e);
+  bchmk_m2.SetElem(0, 0, a);
+  bchmk_m2.SetElem(0, 1, b+c);
+  SparOpReprMatRowCompresser(m1, m2);
+  EXPECT_EQ(m1, bchmk_m1);
+  EXPECT_EQ(m2, bchmk_m2);
+}
+
+
+void RunTestSparOpReprMatRowCompresserCase7(void) {
+  OpRepr a(1), b(2), c(3), d(4), e(5);
+  SparOpReprMat m1(3, 1), m2(1, 3);
+  m1.SetElem(0, 0, d);
+  m1.SetElem(1, 0, e);
+  m1.SetElem(2, 0, d);
+  m2.SetElem(0, 0, a);
+  m2.SetElem(0, 1, b);
+  m2.SetElem(0, 2, c);
+  SparOpReprMat bchmk_m1(2, 1), bchmk_m2(1, 2);
+  bchmk_m1.SetElem(0, 0, d);
+  bchmk_m1.SetElem(1, 0, e);
+  bchmk_m2.SetElem(0, 0, a+c);
+  bchmk_m2.SetElem(0, 1, b);
+  SparOpReprMatRowCompresser(m1, m2);
+  EXPECT_EQ(m1, bchmk_m1);
+  EXPECT_EQ(m2, bchmk_m2);
+}
+
+
+void RunTestSparOpReprMatRowCompresserCase8(void) {
+  OpRepr a(1), b(2), c(3), d(4), e(5);
+  SparOpReprMat m1(3, 2), m2(1, 3);
+  m1.SetElem(0, 0, d);
+  m1.SetElem(1, 1, e);
+  m1.SetElem(2, 0, d); 
+  m1.SetElem(2, 1, e); 
+  m2.SetElem(0, 0, a);
+  m2.SetElem(0, 1, b);
+  m2.SetElem(0, 2, c);
+  SparOpReprMat bchmk_m1(2, 2), bchmk_m2(1, 2);
+  bchmk_m1.SetElem(0, 0, d);
+  bchmk_m1.SetElem(1, 1, e);
+  bchmk_m2.SetElem(0, 0, a+c);
+  bchmk_m2.SetElem(0, 1, b+c);
+  SparOpReprMatRowCompresser(m1, m2);
+  EXPECT_EQ(m1, bchmk_m1);
+  EXPECT_EQ(m2, bchmk_m2);
+}
+
+
+void RunTestSparOpReprMatRowCompresserCase9(void) {
+  OpRepr a(1), b(2), c(3), d(4), e(5);
+  SparOpReprMat m1(3, 2), m2(1, 3);
+  m1.SetElem(0, 0, d); 
+  m1.SetElem(0, 1, e); 
+  m1.SetElem(1, 0, d);
+  m1.SetElem(2, 1, e);
+  m2.SetElem(0, 0, a);
+  m2.SetElem(0, 1, b);
+  m2.SetElem(0, 2, c);
+  SparOpReprMat bchmk_m1(2, 2), bchmk_m2(1, 2);
+  bchmk_m1.SetElem(0, 0, d);
+  bchmk_m1.SetElem(1, 1, e);
+  bchmk_m2.SetElem(0, 0, a+b);
+  bchmk_m2.SetElem(0, 1, a+c);
+  SparOpReprMatRowCompresser(m1, m2);
+  EXPECT_EQ(m1, bchmk_m1);
+  EXPECT_EQ(m2, bchmk_m2);
+}
+
+
+void RunTestSparOpReprMatRowCompresserCase10(void) {
+  OpRepr a(1), b(2), c(3), d(4), e(5), alpha_d(1, 4), beta_e(2, 5);
+  SparOpReprMat m1(3, 2), m2(1, 3);
+  m1.SetElem(0, 0, alpha_d); 
+  m1.SetElem(0, 1, beta_e); 
+  m1.SetElem(1, 0, d);
+  m1.SetElem(2, 1, e);
+  m2.SetElem(0, 0, a);
+  m2.SetElem(0, 1, b);
+  m2.SetElem(0, 2, c);
+  SparOpReprMat bchmk_m1(2, 2), bchmk_m2(1, 2);
+  OpRepr alpha_a(1, 1), beta_a(2, 1);
+  bchmk_m1.SetElem(0, 0, d);
+  bchmk_m1.SetElem(1, 1, e);
+  bchmk_m2.SetElem(0, 0, alpha_a+b);
+  bchmk_m2.SetElem(0, 1, beta_a+c);
+  SparOpReprMatRowCompresser(m1, m2);
+  EXPECT_EQ(m1, bchmk_m1);
+  EXPECT_EQ(m2, bchmk_m2);
+}
+
+
+TEST(TestSparOpReprMat, TestSparOpReprMatRowCompresser) {
+  RunTestSparOpReprMatRowCompresserCase1();
+  RunTestSparOpReprMatRowCompresserCase2();
+  RunTestSparOpReprMatRowCompresserCase3();
+  RunTestSparOpReprMatRowCompresserCase4();
+  RunTestSparOpReprMatRowCompresserCase5();
+  RunTestSparOpReprMatRowCompresserCase6();
+  RunTestSparOpReprMatRowCompresserCase7();
+  RunTestSparOpReprMatRowCompresserCase8();
+  RunTestSparOpReprMatRowCompresserCase9();
+  RunTestSparOpReprMatRowCompresserCase10();
+}

@@ -504,6 +504,50 @@ SparOpReprMat SparOpReprMatSparCoefReprMatIncompleteMulti(
 }
 
 
+void SparOpReprMatRowDelinearize(
+    SparOpReprMat &target, SparOpReprMat &follower) {
+  auto row_num = target.rows;
+  size_t i;
+  for (i = 1; i < row_num; ++i) {
+    auto cmb = target.CalcRowLinCmb(i);
+    if (cmb != CoefReprVec(i, kNullCoefRepr)) {
+      // Remove the row.
+      target.RemoveRow(i);
+      // Construct transform matrix.
+      SparCoefReprMat trans_mat(row_num, row_num-1);
+      for (size_t j = 0; j < i; ++j) {
+        trans_mat.SetElem(j, j, kIdCoefRepr);
+      }
+      for (size_t j = 0; j < i; ++j) {
+        trans_mat.SetElem(i, j, cmb[j]);
+      }
+      for (size_t j = i+1; j < row_num; ++j) {
+        trans_mat.SetElem(j, j-1, kIdCoefRepr);
+      }
+      // Calculate new follower.
+      follower = SparOpReprMatSparCoefReprMatIncompleteMulti(
+                     follower, trans_mat);
+      break;
+    }
+  }
+  if (i < row_num) {
+    SparOpReprMatRowDelinearize(target, follower);
+  }
+}
+
+
+void SparOpReprMatRowCompresser(
+    SparOpReprMat &target, SparOpReprMat &follower) {
+  assert(target.rows == follower.cols);
+  if (target.rows == 1) { return; }
+  // Sort rows of target and transpose cols of follower.
+  auto sorted_row_idxs = target.SortRows();
+  follower.TransposeCols(sorted_row_idxs);
+  // Delinearize rows of target.
+  SparOpReprMatRowDelinearize(target, follower);
+}
+
+
 // Helpers.
 template <typename T>
 bool ElemInVec(const T &e, const std::vector<T> &v, long &pos) {
