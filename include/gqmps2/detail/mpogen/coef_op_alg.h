@@ -318,6 +318,24 @@ public:
     }
   }
 
+  void RemoveRowCoef(const size_t row_idx) {
+    for (size_t y = 0; y < cols; ++y) {
+      if (indexes[CalcOffset(row_idx, y)] != -1) {
+        auto elem = (*this)(row_idx, y);
+        this->SetElem(row_idx, y, SeparateCoefAndBase(elem).second);
+      }
+    }
+  }
+
+  void RemoveColCoef(const size_t col_idx) {
+    for (size_t x = 0; x < rows; ++x) {
+      if (indexes[CalcOffset(x, col_idx)] != -1) {
+        auto elem = (*this)(x, col_idx);
+        this->SetElem(x, col_idx, SeparateCoefAndBase(elem).second);
+      }
+    }
+  }
+
   CoefReprVec CalcRowLinCmb(const size_t row_idx) const {
     auto row = GetRow(row_idx);
     CoefReprVec cmb_coefs;
@@ -504,6 +522,7 @@ SparOpReprMat SparOpReprMatSparCoefReprMatIncompleteMulti(
 }
 
 
+// Row and column delinearization.
 void SparOpReprMatRowDelinearize(
     SparOpReprMat &target, SparOpReprMat &follower) {
   auto row_num = target.rows;
@@ -536,15 +555,80 @@ void SparOpReprMatRowDelinearize(
 }
 
 
+void SparOpReprMatColDelinearize(
+    SparOpReprMat &target, SparOpReprMat &follower) {
+  auto col_num = target.cols;
+  size_t i;
+  for (i = 1; i < col_num; ++i) {
+    auto cmb = target.CalcColLinCmb(i);
+    if (cmb != CoefReprVec(i, kNullCoefRepr)) {
+      // Remove the col.
+      target.RemoveCol(i);
+      // Construct transform matrix.
+      SparCoefReprMat trans_mat(col_num-1, col_num);
+      for (size_t j = 0; j < i; ++j) {
+        trans_mat.SetElem(j, j, kIdCoefRepr);
+      }
+      for (size_t j = 0; j < i; ++j) {
+        trans_mat.SetElem(j, i, cmb[j]);
+      }
+      for (size_t j = i+1; j < col_num; ++j) {
+        trans_mat.SetElem(j-1, j, kIdCoefRepr);
+      }
+      // Calculate new follower.
+      follower = SparCoefReprMatSparOpReprMatIncompleteMulti(
+                     trans_mat, follower);
+      break;
+    }
+  }
+  if (i < col_num) {
+    SparOpReprMatColDelinearize(target, follower);
+  }
+}
+
+
+// Row and column compresser.
 void SparOpReprMatRowCompresser(
     SparOpReprMat &target, SparOpReprMat &follower) {
   assert(target.rows == follower.cols);
-  if (target.rows == 1) { return; }
+  auto row_num = target.rows;
+  if (row_num == 1) { return; }
   // Sort rows of target and transpose cols of follower.
   auto sorted_row_idxs = target.SortRows();
   follower.TransposeCols(sorted_row_idxs);
+  // Separate row coefficients of target.
+  bool need_separate_row_coef = false;
+  SparCoefReprMat row_coef_trans_mat(row_num, row_num);
+  for (size_t row_idx = 0; row_idx < row_num; ++row_idx) {
+    auto row_coef = target.CalcRowCoef(row_idx);
+    if (row_coef != kNullCoefRepr) {
+      row_coef_trans_mat.SetElem(row_idx, row_idx, row_coef);
+    } else {
+      row_coef_trans_mat.SetElem(row_idx, row_idx, kIdCoefRepr);
+    }
+    if ((row_coef != kNullCoefRepr) && (row_coef != kIdCoefRepr)) {
+      need_separate_row_coef = true;
+      target.RemoveRowCoef(row_idx);
+    }
+  }
+  if (need_separate_row_coef) {
+    follower = SparOpReprMatSparCoefReprMatIncompleteMulti(
+                   follower, row_coef_trans_mat);
+  }
   // Delinearize rows of target.
   SparOpReprMatRowDelinearize(target, follower);
+}
+
+
+void SparOpReprMatColCompresser(
+    SparOpReprMat &target, SparOpReprMat &follower) {
+  assert(target.cols == follower.rows);
+  if (target.cols == 1) { return; }
+  // Sort cols of target and transpose rows of follower.
+  auto sorted_col_idxs = target.SortCols();
+  follower.TransposeRows(sorted_col_idxs);
+  // Delinearize cols of target.
+  SparOpReprMatColDelinearize(target, follower);
 }
 
 
