@@ -623,10 +623,30 @@ void SparOpReprMatRowCompresser(
 void SparOpReprMatColCompresser(
     SparOpReprMat &target, SparOpReprMat &follower) {
   assert(target.cols == follower.rows);
-  if (target.cols == 1) { return; }
+  auto col_num = target.cols;
+  if (col_num == 1) { return; }
   // Sort cols of target and transpose rows of follower.
   auto sorted_col_idxs = target.SortCols();
   follower.TransposeRows(sorted_col_idxs);
+  // Separate col coefficients of target.
+  bool need_separate_col_coef = false;
+  SparCoefReprMat col_coef_trans_mat(col_num, col_num);
+  for (size_t col_idx = 0; col_idx < col_num; ++col_idx) {
+    auto col_coef = target.CalcColCoef(col_idx);
+    if (col_coef != kNullCoefRepr) {
+      col_coef_trans_mat.SetElem(col_idx, col_idx, col_coef);
+    } else {
+      col_coef_trans_mat.SetElem(col_idx, col_idx, kIdCoefRepr);
+    }
+    if ((col_coef != kNullCoefRepr) && (col_coef != kIdCoefRepr)) {
+      need_separate_col_coef = true;
+      target.RemoveColCoef(col_idx);
+    }
+  }
+  if (need_separate_col_coef) {
+    follower = SparCoefReprMatSparOpReprMatIncompleteMulti(
+                   col_coef_trans_mat, follower);
+  }
   // Delinearize cols of target.
   SparOpReprMatColDelinearize(target, follower);
 }
