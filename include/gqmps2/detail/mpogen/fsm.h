@@ -219,4 +219,16 @@ void FSM::CastFSMPathToMatRepr_(
     }
   }
 }
+
+
+SparOpReprMatVec FSM::GenCompressedMatRepr(void) const {
+  auto comp_mat_repr = GenMatRepr();
+  for (size_t i = 0; i < phys_site_num_-1; ++i) {
+    SparOpReprMatColCompresser(comp_mat_repr[i], comp_mat_repr[i+1]);
+  }
+  for (size_t i = phys_site_num_-1; i > 0; --i) {
+    SparOpReprMatRowCompresser(comp_mat_repr[i], comp_mat_repr[i-1]);
+  }
+  return comp_mat_repr;
+}
 #endif /* ifndef GQMPS2_DETAIL_MPOGEN_FSM */
