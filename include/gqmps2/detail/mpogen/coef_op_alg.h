@@ -104,9 +104,15 @@ const OpLabel kIdOpLabel = 0;         // Coefficient label for identity id.
 
 
 // Representation of operator.
+class SparOpReprMat;    // Forward declaration.
+
 class OpRepr {
 friend std::pair<CoefRepr, OpRepr> SeparateCoefAndBase(const OpRepr &);
 friend OpRepr CoefReprOpReprIncompleteMulti(const CoefRepr &, const OpRepr &);
+friend std::vector<OpRepr> CalcSparOpReprMatRowLinCmb(
+    const SparOpReprMat &, const CoefReprVec &);
+friend std::vector<OpRepr> CalcSparOpReprMatColLinCmb(
+    const SparOpReprMat &, const CoefReprVec &);
 
 public:
   OpRepr(void) : coef_repr_list_(), op_label_list_() {}
@@ -523,13 +529,80 @@ SparOpReprMat SparOpReprMatSparCoefReprMatIncompleteMulti(
 
 
 // Row and column delinearization.
+/* TODO: So bad implementation, need refactor. */
+OpReprVec CalcSparOpReprMatRowLinCmb(
+    const SparOpReprMat &m, const CoefReprVec &cmb) {
+  auto work_row_num = cmb.size();
+  assert(work_row_num > 0);
+  auto res = OpReprVec(m.cols, kNullOpRepr);
+  for (size_t i = 0; i < work_row_num; ++i) {
+    auto cmb_coef = cmb[i];
+    auto row = m.GetRow(i);
+    if (cmb_coef == kIdCoefRepr) {
+      for (size_t j = 0; j < m.cols; ++j) {
+        res[j] = res[j] + row[j];
+      }
+    } else if (cmb_coef == kNullCoefRepr) {
+      // Do nothing.
+    } else {
+      for (size_t j = 0; j < m.cols; ++j) {
+        auto elem = row[j];
+        for (auto &coef_repr : elem.coef_repr_list_) {
+          if (coef_repr == kIdCoefRepr) {
+            coef_repr = cmb_coef;
+          } else {
+            std::cout << "Unsupported operation!" << std::endl;
+            exit(1);
+          }
+        }
+        res[j] = res[j] + elem;
+      }
+    }
+  }
+  return res;
+}
+
+
+OpReprVec CalcSparOpReprMatColLinCmb(
+    const SparOpReprMat &m, const CoefReprVec &cmb) {
+  auto work_col_num = cmb.size();
+  assert(work_col_num > 0);
+  auto res = OpReprVec(m.rows, kNullOpRepr);
+  for (size_t i = 0; i < work_col_num; ++i) {
+    auto cmb_coef = cmb[i];
+    auto col = m.GetCol(i);
+    if (cmb_coef == kIdCoefRepr) {
+      for (size_t j = 0; j < m.rows; ++j) {
+        res[j] = res[j] + col[j];
+      }
+    } else if (cmb_coef == kNullCoefRepr) {
+      // Do nothing.
+    } else {
+      for (size_t j = 0; j < m.rows; ++j) {
+        auto elem = col[j];
+        for (auto &coef_repr : elem.coef_repr_list_) {
+          if (coef_repr == kIdCoefRepr) {
+            coef_repr = cmb_coef;
+          } else {
+            std::cout << "Unsupported operation!" << std::endl;
+            exit(1);
+          }
+        }
+        res[j] = res[j] + elem;
+      }
+    }
+  }
+  return res;
+}
+
+
 void SparOpReprMatRowDelinearize(
     SparOpReprMat &target, SparOpReprMat &follower) {
   auto row_num = target.rows;
   size_t i;
   for (i = 1; i < row_num; ++i) {
     auto cmb = target.CalcRowLinCmb(i);
-    if (cmb != CoefReprVec(i, kNullCoefRepr)) {
+    if (CalcSparOpReprMatRowLinCmb(target, cmb) == target.GetRow(i)) {
       // Remove the row.
       target.RemoveRow(i);
       // Construct transform matrix.
@@ -561,7 +634,7 @@ void SparOpReprMatColDelinearize(
   size_t i;
   for (i = 1; i < col_num; ++i) {
     auto cmb = target.CalcColLinCmb(i);
-    if (cmb != CoefReprVec(i, kNullCoefRepr)) {
+    if (CalcSparOpReprMatColLinCmb(target, cmb) == target.GetCol(i)) {
       // Remove the col.
       target.RemoveCol(i);
       // Construct transform matrix.
