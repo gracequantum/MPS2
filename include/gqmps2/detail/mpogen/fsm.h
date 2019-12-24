@@ -231,4 +231,33 @@ SparOpReprMatVec FSM::GenCompressedMatRepr(void) const {
   }
   return comp_mat_repr;
 }
+
+
+template <typename ConvObjT>
+class LabelConvertor {
+public:
+  LabelConvertor(void) = default;
+
+  LabelConvertor(const ConvObjT &id) : conv_obj_hub_({id}) {}
+
+  LabelConvertor<ConvObjT> &operator=(const LabelConvertor<ConvObjT> &rhs) {
+    conv_obj_hub_ = rhs.conv_obj_hub_;
+    return *this;
+  }
+
+  size_t Convert(const ConvObjT &conv_obj) {
+    auto poss_it = std::find(
+                       conv_obj_hub_.cbegin(), conv_obj_hub_.cend(), conv_obj);
+    if (poss_it == conv_obj_hub_.cend()) {
+      conv_obj_hub_.push_back(conv_obj);
+      size_t label = conv_obj_hub_.size() - 1;
+      return label;
+    } else {
+      size_t label = poss_it - conv_obj_hub_.cbegin();
+      return label;
+    }
+  }
+private:
+  std::vector<ConvObjT> conv_obj_hub_;
+};
 #endif /* ifndef GQMPS2_DETAIL_MPOGEN_FSM */

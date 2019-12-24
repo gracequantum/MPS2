@@ -1572,17 +1572,3 @@ TEST(TestSparOpReprMat, TestSparOpReprMatColCompresser) {
   RunTestSparOpReprMatColCompresserCase10();
   RunTestSparOpReprMatColCompresserCase11();
 }
-
-
-TEST(TestLabelConvertor, TestConversion) {
-  auto real_coef_label_convertor = LabelConvertor<double>(1.0);
-  EXPECT_EQ(real_coef_label_convertor.Convert(1), 0);
-  EXPECT_EQ(real_coef_label_convertor.Convert(1.0), 0);
-  EXPECT_EQ(real_coef_label_convertor.Convert(1.), 0);
-  EXPECT_EQ(real_coef_label_convertor.Convert(1.000), 0);
-
-  EXPECT_EQ(real_coef_label_convertor.Convert(2.0), 1);
-  EXPECT_EQ(real_coef_label_convertor.Convert(2.0), 1);
-
-  EXPECT_EQ(real_coef_label_convertor.Convert(1.), 0);
-}
