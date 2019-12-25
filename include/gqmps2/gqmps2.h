@@ -10,6 +10,7 @@
 
 
 #include "gqten/gqten.h"
+#include "gqmps2/detail/mpogen/fsm.h"
 
 #include <string>
 #include <vector>
@@ -87,6 +88,34 @@ private:
 
 
 // MPO generator.
+template <typename TenElemType>
+class MPOGenerator {
+public:
+  MPOGenerator(const long, const Index &, const QN &);
+
+  using GQTensorT = GQTensor<TenElemType>;
+
+  using GQTensorVec = std::vector<GQTensorT>;
+
+  void AddTerm(
+      const TenElemType,
+      const GQTensorVec &,
+      const std::vector<long> &,
+      const GQTensorVec &);
+
+  FSM GetFSM(void) { return fsm_; }
+
+private:
+  long N_;
+  Index pb_out_;
+  QN zero_div_;
+  GQTensorT id_op_;
+  FSM fsm_;
+  LabelConvertor<TenElemType> coef_label_convertor_;
+  LabelConvertor<GQTensorT> op_label_convertor_;
+
+  GQTensorT GenIdOpTen_(const Index &);
+};
 //template <typename>
 //struct FSMEdge;
 
@@ -370,7 +399,7 @@ inline void CreatPath(const std::string &path) {
 
 // Implementation details
 #include "gqmps2/detail/lanczos_impl.h"
-//#include "gqmps2/detail/mpogen/mpogen_impl.h"
+#include "gqmps2/detail/mpogen/mpogen_impl.h"
 #include "gqmps2/detail/two_site_algo_impl.h"
 #include "gqmps2/detail/mps_ops_impl.h"
 #include "gqmps2/detail/mps_measu_impl.h"
