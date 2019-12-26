@@ -86,6 +86,15 @@ public:
     return CoefRepr(ConcatenateTwoVec(coef_label_list_, rhs.coef_label_list_));
   }
 
+  template <typename CoefT>
+  CoefT Realize(const std::vector<CoefT> &label_coef_mapping) {
+    CoefT coef = 0;
+    for (auto coef_label : coef_label_list_) {
+      coef += label_coef_mapping[coef_label];
+    }
+    return coef;
+  }
+
 private:
   std::vector<CoefLabel> coef_label_list_;
 };
@@ -199,6 +208,29 @@ public:
       }
     }
     return OpRepr(coef_repr_list, op_label_list);
+  }
+
+  template<typename CoefT, typename OpT>
+  OpT Realize(
+      const std::vector<CoefT> &label_coef_mapping,
+      const std::vector<OpT> &label_op_mapping) {
+    auto base_op_num = op_label_list_.size();
+    assert(base_op_num == coef_repr_list_.size());
+    OpT op;
+    if (base_op_num == 0) {
+      return OpT();
+    } else if (base_op_num == 1) {
+      return coef_repr_list_[0].Realize(label_coef_mapping) *
+             label_op_mapping[op_label_list_[0]];
+    } else {
+      op = coef_repr_list_[0].Realize(label_coef_mapping) *
+           label_op_mapping[op_label_list_[0]];
+      for (size_t i = 1; i < base_op_num; ++i) {
+        op += coef_repr_list_[i].Realize(label_coef_mapping) *
+              label_op_mapping[op_label_list_[i]];
+      }
+    }
+    return op;
   }
 
 private:

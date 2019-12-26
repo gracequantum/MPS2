@@ -245,6 +245,8 @@ public:
     return *this;
   }
 
+  using ConvObjVec = std::vector<ConvObjT>;
+
   size_t Convert(const ConvObjT &conv_obj) {
     auto poss_it = std::find(
                        conv_obj_hub_.cbegin(), conv_obj_hub_.cend(), conv_obj);
@@ -257,7 +259,9 @@ public:
       return label;
     }
   }
+
+  ConvObjVec GetLabelObjMapping(void) { return conv_obj_hub_; }
 private:
-  std::vector<ConvObjT> conv_obj_hub_;
+  ConvObjVec conv_obj_hub_;
 };
 #endif /* ifndef GQMPS2_DETAIL_MPOGEN_FSM */

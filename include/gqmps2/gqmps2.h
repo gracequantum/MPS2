@@ -11,6 +11,7 @@
 
 #include "gqten/gqten.h"
 #include "gqmps2/detail/mpogen/fsm.h"
+#include "gqmps2/detail/mpogen/coef_op_alg.h"
 
 #include <string>
 #include <vector>
@@ -93,9 +94,10 @@ class MPOGenerator {
 public:
   MPOGenerator(const long, const Index &, const QN &);
 
+  using TenElemVec = std::vector<TenElemType>;
   using GQTensorT = GQTensor<TenElemType>;
-
   using GQTensorVec = std::vector<GQTensorT>;
+  using PGQTensorVec = std::vector<GQTensorT *>;
 
   void AddTerm(
       const TenElemType,
@@ -105,8 +107,11 @@ public:
 
   FSM GetFSM(void) { return fsm_; }
 
+  PGQTensorVec Gen(void);
+
 private:
   long N_;
+  Index pb_in_;
   Index pb_out_;
   QN zero_div_;
   GQTensorT id_op_;
@@ -115,6 +120,29 @@ private:
   LabelConvertor<GQTensorT> op_label_convertor_;
 
   GQTensorT GenIdOpTen_(const Index &);
+
+  std::vector<size_t> SortSparOpReprMatColsByQN_(
+      SparOpReprMat &, Index &, const GQTensorVec &);
+
+  QN CalcTgtRvbQN_(
+    const size_t, const size_t, const OpRepr &,
+    const GQTensorVec &, const Index &);
+
+  GQTensorT *HeadMpoTenRepr2MpoTen_(
+      const SparOpReprMat &,
+      const Index &,
+      const TenElemVec &, const GQTensorVec &);
+
+  GQTensorT *TailMpoTenRepr2MpoTen_(
+      const SparOpReprMat &,
+      const Index &,
+      const TenElemVec &, const GQTensorVec &);
+
+  GQTensorT *CentMpoTenRepr2MpoTen_(
+      const SparOpReprMat &,
+      const Index &,
+      const Index &,
+      const TenElemVec &, const GQTensorVec &);
 };
 //template <typename>
 //struct FSMEdge;
