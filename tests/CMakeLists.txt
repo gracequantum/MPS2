@@ -55,8 +55,8 @@ add_unittest(test_mpogen_fsm test_mpogen_fsm.cc "" "" "" "")
 add_unittest(test_mpogen test_mpogen.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
 
 # Test two site algorithm.
-#add_unittest(test_two_site_algo
-  #test_two_site_algo.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
+add_unittest(test_two_site_algo
+  test_two_site_algo.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
 
 # Test MPS measurement.
 add_unittest(test_mps_measu
