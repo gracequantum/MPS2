@@ -107,6 +107,21 @@ void MPOGenerator<TenElemType>::AddTerm(
   fsm_.AddPath(ntrvl_op_idx_head, ntrvl_op_idx_tail, ntrvl_op_reprs);
 }
 
+template <typename TenElemType>
+void MPOGenerator<TenElemType>::AddTerm(
+    const TenElemType coef,
+    const GQTensorVec &phys_ops,
+    const std::vector<long> &idxs,
+    const GQTensorT &inst_op) {
+  GQTensorT instop = inst_op;
+  if (instop == kNullOperator<TenElemType>) { instop = id_op_; }
+  auto phys_ops_num = phys_ops.size();
+  assert(phys_ops_num > 0);
+  GQTensorVec inst_ops(phys_ops_num-1, instop);
+
+  AddTerm(coef, phys_ops, idxs, inst_ops);
+}
+
 
 template <typename TenElemType>
 typename MPOGenerator<TenElemType>::PGQTensorVec

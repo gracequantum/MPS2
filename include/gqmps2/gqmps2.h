@@ -105,6 +105,12 @@ public:
       const std::vector<long> &,
       const GQTensorVec &);
 
+  void AddTerm(
+      const TenElemType,
+      const GQTensorVec &,
+      const std::vector<long> &,
+      const GQTensorT &inst_op=kNullOperator<TenElemType>);
+
   FSM GetFSM(void) { return fsm_; }
 
   PGQTensorVec Gen(void);
