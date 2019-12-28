@@ -214,8 +214,11 @@ void FSM::CastFSMPathToMatRepr_(
 
     if (fsm_mat_repr[i](tgt_row_idx, tgt_col_idx) == kNullOpRepr) {
       fsm_mat_repr[i].SetElem(tgt_row_idx, tgt_col_idx, tgt_op);
+    } else if (fsm_mat_repr[i](tgt_row_idx, tgt_col_idx) != tgt_op) {
+      auto new_op = fsm_mat_repr[i](tgt_row_idx, tgt_col_idx) + tgt_op;
+      fsm_mat_repr[i].SetElem(tgt_row_idx, tgt_col_idx, new_op);
     } else {
-      assert(fsm_mat_repr[i](tgt_row_idx, tgt_col_idx) == tgt_op);
+      // Do nothing
     }
   }
 }

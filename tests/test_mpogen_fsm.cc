@@ -222,6 +222,15 @@ void RunTestGenMatReprCase1(void) {
   SparOpReprMat bchmk_mat10(1, 1);
   bchmk_mat10.SetElem(0, 0, s);
   EXPECT_EQ(fsm_mat_repr[0], bchmk_mat10);
+
+  FSM fsm3(1);
+  auto t = OpRepr(2);
+  fsm3.AddPath(0, 0, {s});
+  fsm3.AddPath(0, 0, {t});
+  fsm_mat_repr = fsm3.GenMatRepr();
+  SparOpReprMat bchmk_m2(1, 1);
+  bchmk_m2.SetElem(0, 0, s+t);
+  EXPECT_EQ(fsm_mat_repr[0], bchmk_m2);
 }
 
 
