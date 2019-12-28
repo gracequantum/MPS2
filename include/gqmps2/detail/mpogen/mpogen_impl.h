@@ -129,9 +129,14 @@ MPOGenerator<TenElemType>::Gen(void) {
   auto fsm_comp_mat_repr = fsm_.GenCompressedMatRepr();
   auto label_coef_mapping = coef_label_convertor_.GetLabelObjMapping();
   auto label_op_mapping = op_label_convertor_.GetLabelObjMapping();
+  
+  // Print MPO tensors virtual bond dimension.
+  for (auto &mpo_ten_repr : fsm_comp_mat_repr) {
+    std::cout << std::setw(3) << mpo_ten_repr.cols << std::endl;
+  }
 
   PGQTensorVec mpo(N_);
-  Index trans_vb;
+  Index trans_vb({QNSector(zero_div_, 1)}, OUT);
   std::vector<size_t> transposed_idxs;
   for (long i = 0; i < N_; ++i) {
     if (i == 0) {
@@ -268,7 +273,7 @@ MPOGenerator<TenElemType>::CentMpoTenRepr2MpoTen_(
       auto elem = op_repr_mat(x, y);
       if (elem != kNullOpRepr) {
         auto op = elem.Realize(label_coef_mapping, label_op_mapping);
-        AddOpToCentMpoTen(pmpo_ten, op, x);
+        AddOpToCentMpoTen(pmpo_ten, op, x, y);
       }
     }
   }
