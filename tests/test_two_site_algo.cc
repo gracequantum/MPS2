@@ -38,6 +38,13 @@ inline void KeepOrder(long &x, long &y) {
 }
 
 
+inline long coors2idx(
+    const long x, const long y, const long Nx, const long Ny) {
+	return x * Ny + y;
+}
+
+
+
 inline long coors2idxSquare(
     const long x, const long y, const long Nx, const long Ny) {
   return x * Ny + y;
@@ -251,7 +258,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DHeisenberg) {
 }
 
 
-TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DKitaev) {
+TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DKitaevSimpleCase) {
   long Nx = 4;
   long Ny = 2;
   long N1 = Nx*Ny;
@@ -306,6 +313,117 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DKitaev) {
   RunTestTwoSiteAlgorithmCase(
       zmps_8sites, zmpo, sweep_params,
       -1.0, 1.0E-12);
+}
+
+
+TEST(TestTwoSiteAlgorithmNoSymmetrySpinSystem, 2DKitaevComplexCase) {
+	using TenElemType = GQTEN_Complex;
+	using Tensor = GQTensor<TenElemType>;
+	//-------------Set quantum numbers-----------------
+	auto zero_div = QN({QNNameVal("N",0)});
+	auto idx_out = Index({QNSector(QN({QNNameVal("N",1)}), 2)}, OUT);
+	auto idx_in = InverseIndex(idx_out);
+	//--------------Single site operators-----------------
+	// define the structure of operators
+	auto sz = Tensor({ idx_in, idx_out });
+	auto sx = Tensor({ idx_in, idx_out });
+	auto sy = Tensor({ idx_in, idx_out });
+	auto id = Tensor({ idx_in, idx_out });
+	// define the contents of operators
+  sz({0, 0}) = GQTEN_Complex(0.5, 0);
+  sz({1, 1}) = GQTEN_Complex(-0.5, 0);
+  sx({0, 1}) = GQTEN_Complex(0.5, 0);
+  sx({1, 0}) = GQTEN_Complex(0.5, 0);
+	sy({0, 1}) = GQTEN_Complex(0, -0.5);
+	sy({1, 0}) = GQTEN_Complex(0, 0.5);
+  id({0, 0}) = GQTEN_Complex(1, 0);
+  id({1, 1}) = GQTEN_Complex(1, 0);
+	//---------------Generate the MPO-----------------
+	double J = -1.0;
+	double K = 1.0;
+	double Gm = 0.1;
+	double h = 0.1;
+  long Nx = 3, Ny = 4;
+  long N = Nx*Ny;
+	auto mpo_gen = MPOGenerator<TenElemType>(N, idx_out, zero_div);
+	// H =   J * \Sigma_{<ij>} S_i*S_j
+	//       K * \Sigma_{<ij>,c-link} Sc_i*Sc_j
+	//		 Gm * \Sigma_{<ij>,c-link} Sa_i*Sb_j + Sb_i*Sa_j
+	//     - h * \Sigma_i{S^z}
+	for (long x = 0; x < Nx; ++x) {
+		for (long y = 0; y < Ny; ++y) {
+			// use the configuration '/|\' to traverse the square lattice
+			// single site operator
+			auto site0_num = coors2idx(x, y, Nx, Ny);
+			mpo_gen.AddTerm(-h, {sz}, {site0_num});
+			mpo_gen.AddTerm(-h, {sx}, {site0_num});
+			mpo_gen.AddTerm(-h, {sy}, {site0_num});
+			// the '/' part: x-link
+			// note that x and y start from 0
+			if (y % 2 == 0) {
+				auto site0_num = coors2idx(x, y, Nx, Ny);
+				auto site1_num = coors2idx(x, y + 1, Nx, Ny);
+				std::cout << site0_num << " " << site1_num << std::endl;
+				mpo_gen.AddTerm(J,  {sz, sz}, {site0_num, site1_num});
+				mpo_gen.AddTerm(J,  {sx, sx}, {site0_num, site1_num});
+				mpo_gen.AddTerm(J,  {sy, sy}, {site0_num, site1_num});
+        mpo_gen.AddTerm(K,  {sx, sx}, {site0_num, site1_num});
+        mpo_gen.AddTerm(Gm, {sz, sy}, {site0_num, site1_num});
+        mpo_gen.AddTerm(Gm, {sy, sz}, {site0_num, site1_num});
+			}
+			// the '|' part: z-link
+			if (y % 2 == 1) {
+				auto site0_num = coors2idx(x, y, Nx, Ny);
+				auto site1_num = coors2idx(x, (y + 1) % Ny, Nx, Ny);
+				KeepOrder(site0_num, site1_num);
+				std::cout << site0_num << " " << site1_num << std::endl;
+				mpo_gen.AddTerm(J,  {sz, sz}, {site0_num, site1_num});
+				mpo_gen.AddTerm(J,  {sx, sx}, {site0_num, site1_num});
+				mpo_gen.AddTerm(J,  {sy, sy}, {site0_num, site1_num});
+        mpo_gen.AddTerm(K,  {sz, sz}, {site0_num, site1_num});
+        mpo_gen.AddTerm(Gm, {sx, sy}, {site0_num, site1_num});
+        mpo_gen.AddTerm(Gm, {sy, sx}, {site0_num, site1_num});
+			}
+			// the '\' part: y-link
+			// if (y % 2 == 1) {																	// torus
+			if ((y % 2 == 1)&&(x != Nx - 1)) {
+				auto site0_num = coors2idx(x, y, Nx, Ny);
+				auto site1_num = coors2idx(x + 1, y - 1, Nx, Ny);						// cylinder
+				KeepOrder(site0_num, site1_num);
+				std::cout << site0_num << " " << site1_num << std::endl;
+				mpo_gen.AddTerm(J,  {sz, sz}, {site0_num, site1_num});
+				mpo_gen.AddTerm(J,  {sx, sx}, {site0_num, site1_num});
+				mpo_gen.AddTerm(J,  {sy, sy}, {site0_num, site1_num});
+        mpo_gen.AddTerm(K,  {sy, sy}, {site0_num, site1_num});
+        mpo_gen.AddTerm(Gm, {sz, sx}, {site0_num, site1_num});
+        mpo_gen.AddTerm(Gm, {sx, sz}, {site0_num, site1_num});
+			}
+		}
+  }
+	auto mpo = mpo_gen.Gen();
+
+	std::vector<Tensor*> mps(N);
+  std::vector<long> stat_labs(N);
+  auto was_up = false;
+  for (long i = 0; i < N; ++i) {
+    if (was_up) {
+      stat_labs[i] = 1;
+      was_up = false;
+    }
+    else if (!was_up) {
+      stat_labs[i] = 0;
+      was_up = true;
+    }
+  }
+  DirectStateInitMps(mps, stat_labs, idx_out, zero_div);
+
+  auto sweep_params = SweepParams(
+                          4,
+                          128, 128, 1.0E-4,
+                          true,
+                          kTwoSiteAlgoWorkflowInitial,
+                          LanczosParams(1.0E-10));
+  RunTestTwoSiteAlgorithmCase(mps, mpo, sweep_params, -4.57509167674, 1.0E-10);
 }
 
 
