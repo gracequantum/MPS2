@@ -355,9 +355,9 @@ TEST(TestTwoSiteAlgorithmNoSymmetrySpinSystem, 2DKitaevComplexCase) {
 			// use the configuration '/|\' to traverse the square lattice
 			// single site operator
 			auto site0_num = coors2idx(x, y, Nx, Ny);
-			mpo_gen.AddTerm(-h, {sz}, {site0_num});
-			mpo_gen.AddTerm(-h, {sx}, {site0_num});
-			mpo_gen.AddTerm(-h, {sy}, {site0_num});
+			mpo_gen.AddTerm(-h, sz, site0_num);
+			mpo_gen.AddTerm(-h, sx, site0_num);
+			mpo_gen.AddTerm(-h, sy, site0_num);
 			// the '/' part: x-link
 			// note that x and y start from 0
 			if (y % 2 == 0) {
@@ -808,7 +808,7 @@ TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
   for (long i = 0; i < Nx; ++i) {
     for (long j = 0; j < Ny; ++j) {
       auto s0 = coors2idxSquare(i, j, Nx, Ny);
-      dmpo_gen.AddTerm(U, {dnupdn}, {s0});
+      dmpo_gen.AddTerm(U, dnupdn, s0);
 
       if (i != Nx-1) {
         auto s1 = coors2idxSquare(i+1, j, Nx, Ny);
@@ -872,7 +872,7 @@ TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
   for (long i = 0; i < Nx; ++i) {
     for (long j = 0; j < Ny; ++j) {
       auto s0 = coors2idxSquare(i, j, Nx, Ny);
-      zmpo_gen.AddTerm(U, {znupdn}, {s0});
+      zmpo_gen.AddTerm(U, znupdn, s0);
 
       if (i != Nx-1) {
         auto s1 = coors2idxSquare(i+1, j, Nx, Ny);

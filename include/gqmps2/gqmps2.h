@@ -111,6 +111,11 @@ public:
       const std::vector<long> &,
       const GQTensorT &inst_op=kNullOperator<TenElemType>);
 
+  void AddTerm(
+      const TenElemType,
+      const GQTensorT &,
+      const long);
+
   FSM GetFSM(void) { return fsm_; }
 
   PGQTensorVec Gen(void);

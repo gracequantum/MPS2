@@ -54,15 +54,23 @@ TEST_F(TestMpoGenerator, TestInitialization) {
 
 
 TEST_F(TestMpoGenerator, TestAddTermCase1) {
-  DMPOGenerator mpo_generator(2, phys_idx_out, qn0);
-  mpo_generator.AddTerm(1., {dsz}, {0});
-  auto fsm = mpo_generator.GetFSM();
   SparOpReprMat bchmk_m0(1, 1), bchmk_m1(1, 1);
   bchmk_m0.SetElem(0, 0, OpRepr(1));
   bchmk_m1.SetElem(0, 0, kIdOpRepr);
-  auto fsm_comp_mat_repr = fsm.GenCompressedMatRepr();
-  EXPECT_EQ(fsm_comp_mat_repr[0], bchmk_m0);
-  EXPECT_EQ(fsm_comp_mat_repr[1], bchmk_m1);
+
+  DMPOGenerator mpo_generator1(2, phys_idx_out, qn0);
+  mpo_generator1.AddTerm(1., {dsz}, {0});
+  auto fsm1 = mpo_generator1.GetFSM();
+  auto fsm_comp_mat_repr1 = fsm1.GenCompressedMatRepr();
+  EXPECT_EQ(fsm_comp_mat_repr1[0], bchmk_m0);
+  EXPECT_EQ(fsm_comp_mat_repr1[1], bchmk_m1);
+
+  DMPOGenerator mpo_generator2(2, phys_idx_out, qn0);
+  mpo_generator2.AddTerm(1., dsz, 0);
+  auto fsm2 = mpo_generator2.GetFSM();
+  auto fsm_comp_mat_repr2 = fsm2.GenCompressedMatRepr();
+  EXPECT_EQ(fsm_comp_mat_repr2[0], bchmk_m0);
+  EXPECT_EQ(fsm_comp_mat_repr2[1], bchmk_m1);
 }
 
 

@@ -123,6 +123,19 @@ void MPOGenerator<TenElemType>::AddTerm(
 
 
 template <typename TenElemType>
+void MPOGenerator<TenElemType>::AddTerm(
+    const TenElemType coef,
+    const GQTensorT &phys_op,
+    const long idx) {
+  AddTerm(
+      coef,
+      GQTensorVec({phys_op}),
+      std::vector<long>({idx}),
+      GQTensorVec({}));
+}
+
+
+template <typename TenElemType>
 typename MPOGenerator<TenElemType>::PGQTensorVec
 MPOGenerator<TenElemType>::Gen(void) {
   auto fsm_comp_mat_repr = fsm_.GenCompressedMatRepr();
