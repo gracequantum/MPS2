@@ -7,9 +7,18 @@ _"Easily push your D to 10k"_
 ## Design Goals
 
 - High-performance MPS algorithms implementation based on the power of [GraceQ/tensor](https://github.com/gracequantum/tensor).
-- Performing MPS optimization on kinds of HPC hardware architectures based on the GraceQ/tensor project.
+- Performing MPS optimization on kinds of HPC hardware architectures.
 - Flexible API design to cope with complex research tasks. We do not offer something like t-J model, but you can easily define it.
 
+
+## Features
+
+- Exact matrix product operator (MPO) generation for a Hamiltonian with any n-body term.
+
+
+## What's new
+
+In the newest 0.1.2 version, you can generate a MPO which has any type of n-body term using `MPOGenerator::AddTerm` API.
 
 ## Installation
 
@@ -141,7 +150,32 @@ sm({1, 0}) = 1;
 Where the physical bond `pb_out` will also be used latter.
 
 ### Generate matrix product operator(MPO)
-You can use `gqmps2::MPOGenerator` to generate MPO contains any one-site or two-site terms. The following example tells you how to generate the Hamiltonian of the Heisenberg model.
+You can use `gqmps2::MPOGenerator` to generate MPO contains any one-site, two-site and multi-site terms. First, you initialize a `MPOGenerator`.
+```cpp
+auto mpo_gen = MPOGenerator<TenElemType>(phys_site_num, phys_bond_index, related_zero_div_qn);
+```
+
+Then you can generator a n-body term using `AddTerm`.
+```cpp
+mpo_gen.AddTerm(
+    coef,
+    {phys_op1, phys_op2, ...}, {site_idx1, site_idx2, ...},
+    {inst_op1, ...});
+```
+where the number of insertion operators is equal or one less than the physical operators.
+
+If you want to generate two-body term whose insertion operator is `inst_op`, you can use a simplified API.
+```cpp
+mpo_gen.AddTerm(coef, {phys_op1, phys_op2}, {site_idx1, site_idx2}, inst_op);
+```
+You can omit the `inst_op`, if it is an identity operator.
+
+If you want to generate one-body term, you can use a more simplified API.
+```cpp
+mpo_gen.AddTerm(coef, phys_op, site_idx);
+```
+
+The following example tells you how to generate the Hamiltonian of the Heisenberg model.
 
 ```cpp
 auto zero_div = QN({QNNameVal("Sz", 0)});
@@ -302,10 +336,11 @@ your_cpp_compiler -o gqmps2_demo gqmps2_demo.cc -std=c++14 -g -O3 -DNDEBUG -lgqt
 
 This TODO list is *not* sorted by expected completion order.
 
-- Release N-body terms MPO generator.
+- Support MPS/MPO on the inhomogenous local base set.
 - Finer workflow control for these MPS algorithms.
 - Abstract MPS and MPO objects to specific classes.
-- Support recent new distributed DMRG.
+- Support algorithms to simulate dynamic properties.
+- Perform MPS calcualtion on distributed memory HPC cluster.
 - ...
 
 
@@ -324,6 +359,6 @@ Cite GraceQ/MPS2 as
 
 The author(s) highly acknowledge the following people, project(s) and organization(s) (sorted in alphabetical order):
 
-ALPS project, Cheng Peng, Chunyu Sun, D. N. Sheng, Grace Song, Hong-Chen Jiang, itensor.org, Le Zhao, Shuai Chen, Shuo Yang, Thomas P. Devereaux, Wayne Zheng, Xiaoyu Dong, Yifan Jiang, Zheng-Yu Weng
+ALPS project, Cheng Peng, Chunyu Sun, D. N. Sheng, Grace Song, Hong-Chen Jiang, itensor.org, Jisi Xu, Le Zhao, Shuai Chen, Shuo Yang, Thomas P. Devereaux, Wayne Zheng, Xiaoyu Dong, Yifan Jiang, Zheng-Yu Weng
 
 You can not meet this library without anyone of them. And the basic part of this library was developed when (one of) the author R. Sun was a visiting student at Stanford University. So R. Sun want to give special thanks to his co-advisors Hong-Chen Jiang, Prof. Thomas P. Devereaux and their postdoctors Yifan Jiang and Cheng Peng.
