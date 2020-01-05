@@ -71,6 +71,14 @@ TEST_F(TestMpoGenerator, TestAddTermCase1) {
   auto fsm_comp_mat_repr2 = fsm2.GenCompressedMatRepr();
   EXPECT_EQ(fsm_comp_mat_repr2[0], bchmk_m0);
   EXPECT_EQ(fsm_comp_mat_repr2[1], bchmk_m1);
+
+  DMPOGenerator mpo_generator3(2, phys_idx_out, qn0);
+  mpo_generator3.AddTerm(1., dsz, 0);
+  mpo_generator3.AddTerm(0.0, dsz, 0);
+  auto fsm3 = mpo_generator3.GetFSM();
+  auto fsm_comp_mat_repr3 = fsm3.GenCompressedMatRepr();
+  EXPECT_EQ(fsm_comp_mat_repr3[0], bchmk_m0);
+  EXPECT_EQ(fsm_comp_mat_repr3[1], bchmk_m1);
 }
 
 
