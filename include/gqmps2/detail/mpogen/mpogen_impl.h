@@ -74,6 +74,7 @@ void MPOGenerator<TenElemType>::AddTerm(
   for (auto idx : idxs) { assert(idx < N_); }
   assert((inst_ops.size() == phys_ops.size()-1) ||
          (inst_ops.size() == phys_ops.size()));
+  if (coef == TenElemType(0)) { return; }   // If coef is zero, do nothing.
   CoefLabel coef_label = coef_label_convertor_.Convert(coef);
   long ntrvl_op_idx_head, ntrvl_op_idx_tail;
   ntrvl_op_idx_head = idxs.front();
