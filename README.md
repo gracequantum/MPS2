@@ -352,13 +352,13 @@ GraceQ/MPS2 is freely available under the [LGPL v3.0](https://www.gnu.org/licens
 ## How to cite
 
 Cite GraceQ/MPS2 as
-> "GraceQ/MPS2: A high-performance matrix product state(MPS) algorithms library based on GraceQ/tensor", https://github.com/gracequantum/mps2 .
+> R.-Y. Sun and C. Peng, "GraceQ/MPS2: A high-performance matrix product state(MPS) algorithms library based on GraceQ/tensor", https://github.com/gracequantum/mps2 .
 
 
 ## Acknowledgments
 
 The author(s) highly acknowledge the following people, project(s) and organization(s) (sorted in alphabetical order):
 
-ALPS project, Cheng Peng, Chunyu Sun, D. N. Sheng, Grace Song, Hong-Chen Jiang, itensor.org, Jisi Xu, Le Zhao, Shuai Chen, Shuo Yang, Thomas P. Devereaux, Wayne Zheng, Xiaoyu Dong, Yifan Jiang, Zheng-Yu Weng
+ALPS project, Chunyu Sun, D. N. Sheng, Grace Song, Hong-Chen Jiang, itensor.org, Jisi Xu, Le Zhao, Shuai Chen, Shuo Yang, Thomas P. Devereaux, Wayne Zheng, Xiaoyu Dong, Yifan Jiang, Zheng-Yu Weng
 
-You can not meet this library without anyone of them. And the basic part of this library was developed when (one of) the author R. Sun was a visiting student at Stanford University. So R. Sun want to give special thanks to his co-advisors Hong-Chen Jiang, Prof. Thomas P. Devereaux and their postdoctors Yifan Jiang and Cheng Peng.
+You can not meet this library without anyone of them. And the basic part of this library was developed when (one of) the authors Rong-Yang Sun was a visiting student at Stanford University. So R.-Y. Sun want to give special thanks to his co-advisors Hong-Chen Jiang, Prof. Thomas P. Devereaux and their postdoctors Yifan Jiang and Cheng Peng.
