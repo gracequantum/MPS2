@@ -921,3 +921,85 @@ TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
       zmps, zmpo, sweep_params,
       -2.828427124746, 1.0E-10);
 }
+
+
+///Ref: 10.1103/PhysRevB.97.245119
+struct TestKondoInsulatorSystem : public testing::Test {
+  long N = 4;
+  double t = 0.25;
+  double Jk = 1.0;
+  double Jz = 0.5;
+
+  QN qn0 = QN({QNNameVal("Sz", 0)});
+  Index pb_outE = Index({QNSector(QN({ QNNameVal("Sz",  0)}), 4)},OUT );//extended electron
+  Index pb_inE = InverseIndex(pb_outE);
+  Index pb_outL = Index({QNSector(QN({ QNNameVal("Sz",  0)}), 2)},OUT );//localized electron
+  Index pb_inL = InverseIndex(pb_outL);
+  DGQTensor sz = DGQTensor({pb_inE, pb_outE});
+  DGQTensor sp = DGQTensor({pb_inE, pb_outE});
+  DGQTensor sm = DGQTensor({pb_inE, pb_outE});
+  DGQTensor bupcF =DGQTensor({pb_inE,pb_outE});
+  DGQTensor bupaF = DGQTensor({pb_inE,pb_outE});
+  DGQTensor Fbdnc = DGQTensor({pb_inE,pb_outE});
+  DGQTensor Fbdna = DGQTensor({pb_inE,pb_outE});
+  DGQTensor bupc =DGQTensor({pb_inE,pb_outE});
+  DGQTensor bupa = DGQTensor({pb_inE,pb_outE});
+  DGQTensor bdnc = DGQTensor({pb_inE,pb_outE});
+  DGQTensor bdna = DGQTensor({pb_inE,pb_outE});
+
+
+  DGQTensor Sz =DGQTensor({pb_inL, pb_outL});
+  DGQTensor Sp =DGQTensor({pb_inL, pb_outL});
+  DGQTensor Sm =DGQTensor({pb_inL, pb_outL});
+  DTenPtrVec dmps    = DTenPtrVec(2*N);
+  std::vector<Index> pb_set = std::vector<Index>(2*N);
+
+  void SetUp(void) {
+    sz({0,0}) = 0.5;  sz({1,1}) = -0.5;
+    sp({0,1}) = 1.0;
+    sm({1,0}) = 1.0;
+    bupcF({2,1}) = -1;  bupcF({0,3}) = 1;
+    Fbdnc({2,0}) = 1;   Fbdnc({1,3}) = -1;
+    bupaF({1,2}) = 1;   bupaF({3,0}) = -1;
+    Fbdna({0,2}) = -1;  Fbdna({3,1}) = 1;
+
+    bupc({2,1}) = 1;  bupc({0,3}) = 1;
+    bdnc({2,0}) = 1;  bdnc({1,3}) = 1;
+    bupa({1,2}) = 1;  bupa({3,0}) = 1;
+    bdna({0,2}) = 1;  bdna({3,1}) = 1;
+
+    Sz({0,0}) = 0.5;  Sz({1,1}) = -0.5;
+    Sp({0,1}) = 1.0;
+    Sm({1,0}) = 1.0;
+    for(long i =0;i < 2*N; ++i){
+      if(i%2==0) pb_set[i] = pb_outE; // even site is extended electron
+      if(i%2==1) pb_set[i] = pb_outL; // odd site is localized electron
+    }
+  }
+};
+
+TEST_F(TestKondoInsulatorSystem, doublechain) {
+  auto dmpo_gen = MPOGenerator<GQTEN_Double>(pb_set, qn0);
+  for (long i = 0; i < 2*N-2; i=i+2){
+    dmpo_gen.AddTerm( -t, {bupcF,bupa},{i,i+2});
+    dmpo_gen.AddTerm( -t, {bdnc,Fbdna},{i,i+2});
+    dmpo_gen.AddTerm(  t, {bupaF,bupc},{i,i+2});
+    dmpo_gen.AddTerm(  t, {bdna,Fbdnc},{i,i+2});
+    dmpo_gen.AddTerm( Jz , {Sz,Sz}, {i+1,i+3});
+  }
+  for (long i = 0; i < 2*N; i=i+2){
+    dmpo_gen.AddTerm( Jk, {sz,Sz},{i, i+1} );
+    dmpo_gen.AddTerm(Jk/2,{sp,Sm},{i, i+1} );
+    dmpo_gen.AddTerm(Jk/2,{sm,Sp},{i, i+1} );
+  }
+  auto dmpo = dmpo_gen.Gen();
+  auto sweep_params = SweepParams(5,64, 64, 1.0E-9,true,//Sweep, Dmin, Dmax,Cutoff, FileIO
+    kTwoSiteAlgoWorkflowInitial, //mode
+    LanczosParams(1.0E-8, 20));  //LanczosParams
+
+    std::vector<long> stat_labs(2*N,0);
+    DirectStateInitMps(dmps, stat_labs, pb_set, qn0);
+    ///Benchmark with ED's results
+    RunTestTwoSiteAlgorithmCase(dmps, dmpo, sweep_params,-3.180025784229132, 1.0E-10);
+}
+

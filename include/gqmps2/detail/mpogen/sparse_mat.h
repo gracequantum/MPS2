@@ -11,6 +11,7 @@
 
 #include <iostream>
 #include <vector>
+#include "assert.h"
 
 
 template <typename ElemType>
