@@ -112,8 +112,8 @@ public:
 
   void AddTerm(
     const TenElemType coef,
-    const GQTensorVec &phys_ops,
-    const std::vector<long> &idxs,
+    GQTensorVec phys_ops,
+    std::vector<long> idxs,
     const GQTensorVec &inst_ops,
     const std::vector<long> &inst_idxs);
 

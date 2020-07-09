@@ -167,8 +167,8 @@ void MPOGenerator<TenElemType>::AddTerm(
 template <typename TenElemType>
 void MPOGenerator<TenElemType>::AddTerm(
         const TenElemType coef,
-        const GQTensorVec &phys_ops,
-        const std::vector<long> &idxs,
+        GQTensorVec phys_ops,
+        std::vector<long> idxs,
         const GQTensorVec &inst_ops,
         const std::vector<long> &inst_idxs) {
   assert(phys_ops.size() == idxs.size());
@@ -176,6 +176,22 @@ void MPOGenerator<TenElemType>::AddTerm(
   assert((inst_ops.size() == phys_ops.size()-1) ||
          (inst_ops.size() == phys_ops.size()));
   if (coef == TenElemType(0)) { return; }   // If coef is zero, do nothing.
+
+  if (!std::is_sorted(idxs.begin(),idxs.end())){
+    std::map<long, GQTensorT> TmpMap;
+    for (int i=0; i < idxs.size(); i++) {
+      TmpMap[idxs[i]] = phys_ops[i];
+    }
+    typename std::map<long,GQTensorT>::iterator iter;
+    int i = 0;
+    for (iter = TmpMap.begin(); iter!=TmpMap.end();iter++){
+      idxs[i] = iter->first;
+      phys_ops[i] = iter->second;
+      i=i+1;
+    }
+    TmpMap.clear();
+  }
+
   CoefLabel coef_label = coef_label_convertor_.Convert(coef);
   long ntrvl_op_idx_head, ntrvl_op_idx_tail;
   ntrvl_op_idx_head = idxs.front();

@@ -129,7 +129,7 @@ MeasuRes<TenElemType> MeasureOneSiteOp(
 }
 
 /** MeasuRes<TenElemType> MeasureOneSiteOp
- * To specify which site to be measured
+ * To specify which sites to be measured
  * @tparam TenElemType
  * @param mps
  * @param op
@@ -143,15 +143,19 @@ MeasuRes<TenElemType> MeasureOneSiteOp(
   const std::vector<long> &site_set,
   const std::string &res_file_basename) {
   auto N = mps.N;
-  MeasuRes<TenElemType> measu_res(N);
+  for(auto iter=site_set.begin(); iter<site_set.end();iter++){
+    assert(*iter < N);
+  }
+  MeasuRes<TenElemType> measu_res(site_set.size());
   bool disk_flag =false;
   if(mps.tens[0] == NULL) disk_flag = true;
+  long i =0;
   for (auto iter=site_set.begin(); iter<site_set.end();iter++) {
-    long i = *iter;
-    CentralizeMps(mps, i);
-    if (disk_flag) ReadMps(i,mps.tens);
-    measu_res[i] = OneSiteOpAvg(*mps.tens[i], op, i, N);
-    if (disk_flag) SaveMps(i,mps.tens);
+    CentralizeMps(mps, *iter);
+    if (disk_flag) ReadMps(*iter,mps.tens);
+    measu_res[i] = OneSiteOpAvg(*mps.tens[*iter], op, *iter, N);
+    if (disk_flag) SaveMps(*iter,mps.tens);
+    i++;
   }
   DumpMeasuRes(measu_res, res_file_basename);
   return measu_res;
