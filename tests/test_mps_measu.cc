@@ -130,6 +130,24 @@ void RunTestMeasureTwoSiteOpCase(
 }
 
 
+template <typename MpsType, typename TenElemType>
+void RunTestMeasureTwoSiteOpCase(
+    MpsType &mps,
+    const std::vector<GQTensor<TenElemType>> &phys_ops,
+    const std::vector<std::vector<GQTensor<TenElemType>>> &inst_ops_set,
+    const GQTensor<TenElemType> &id_op,
+    const std::vector<std::vector<long>> &sites_set,
+    const std::vector<TenElemType> &res) {
+  auto measu_res = MeasureTwoSiteOp(
+                       mps, phys_ops, inst_ops_set, id_op, sites_set, "op1op2"
+                   );
+  assert(measu_res.size() == res.size());
+  for (size_t i = 0; i < res.size(); ++i) {
+    ExpectDoubleEq(measu_res[i].avg, res[i]);
+  }
+}
+
+
 TEST_F(TestMpsMeasurement, TestMeasureTwoSiteOp) {
   std::vector<std::vector<long>> sites_set = {
                                                {0, 1}, {0, 2}, {0, 5},
@@ -143,9 +161,23 @@ TEST_F(TestMpsMeasurement, TestMeasureTwoSiteOp) {
   DirectStateInitMps(dmps1, stat_labs1, pb_out, qn0);
   auto dmps_for_measu1 = MPS<DGQTensor>(dmps1, -1); 
   RunTestMeasureTwoSiteOpCase(
-      dmps_for_measu1, {did, did}, did, did, sites_set, dres1);
+      dmps_for_measu1, {did, did}, did, did, sites_set, dres1
+  );
   RunTestMeasureTwoSiteOpCase(
-      dmps_for_measu1, {dntot, dntot}, did, did, sites_set, dres1);
+      dmps_for_measu1, {dntot, dntot}, did, did, sites_set, dres1
+  );
+  RunTestMeasureTwoSiteOpCase(
+      dmps_for_measu1,
+      {did, did},
+      {
+        {}, {did}, {did, did, did, did},
+        {}, {did},
+        {}
+      },
+      did,
+      sites_set,
+      dres1
+  );
   MpsFree(dmps1);
   // Double case 2
   auto dmps2 = dmps;
@@ -156,6 +188,18 @@ TEST_F(TestMpsMeasurement, TestMeasureTwoSiteOp) {
   std::vector<GQTEN_Double> dres2 = {0, 0, 0, 0, 1, 0};
   RunTestMeasureTwoSiteOpCase(
       dmps_for_measu2, {dntot, dntot}, did, did, sites_set, dres2);
+  RunTestMeasureTwoSiteOpCase(
+      dmps_for_measu2,
+      {dntot, dntot},
+      {
+        {}, {did}, {did, did, did, did},
+        {}, {did},
+        {}
+      },
+      did,
+      sites_set,
+      dres2
+  );
   MpsFree(dmps2);
 
   // Complex case 1
@@ -167,8 +211,20 @@ TEST_F(TestMpsMeasurement, TestMeasureTwoSiteOp) {
       zmps_for_measu1, {zid, zid}, zid, zid, sites_set, zres1);
   RunTestMeasureTwoSiteOpCase(
       zmps_for_measu1, {zntot, zntot}, zid, zid, sites_set, zres1);
+  RunTestMeasureTwoSiteOpCase(
+      zmps_for_measu1,
+      {zid, zid},
+      {
+        {}, {zid}, {zid, zid, zid, zid},
+        {}, {zid},
+        {}
+      },
+      zid,
+      sites_set,
+      zres1
+  );
   MpsFree(zmps1);
-  // Double case 2
+  // Complex case 2
   auto zmps2 = zmps;
   DirectStateInitMps(zmps2, stat_labs2, pb_out, qn0);
   auto zmps_for_measu2 = MPS<ZGQTensor>(zmps2, -1); 
@@ -177,5 +233,17 @@ TEST_F(TestMpsMeasurement, TestMeasureTwoSiteOp) {
   std::vector<GQTEN_Complex> zres2 = {0, 0, 0, 0, 1, 0};
   RunTestMeasureTwoSiteOpCase(
       zmps_for_measu2, {zntot, zntot}, zid, zid, sites_set, zres2);
+  RunTestMeasureTwoSiteOpCase(
+      zmps_for_measu2,
+      {zntot, zntot},
+      {
+        {}, {zid}, {zid, zid, zid, zid},
+        {}, {zid},
+        {}
+      },
+      zid,
+      sites_set,
+      zres2
+  );
   MpsFree(zmps2);
 }

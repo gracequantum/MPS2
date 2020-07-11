@@ -28,9 +28,26 @@ template <typename TenElemType>
 MeasuResElem<TenElemType> MultiSiteOpAvg(
     MPS<GQTensor<TenElemType>> &,
     const std::vector<GQTensor<TenElemType>> &,
+    const std::vector<std::vector<GQTensor<TenElemType>>> &,
+    const GQTensor<TenElemType> &,
+    const std::vector<long> &);
+
+template <typename TenElemType>
+MeasuResElem<TenElemType> MultiSiteOpAvg(
+    MPS<GQTensor<TenElemType>> &,
+    const std::vector<GQTensor<TenElemType>> &,
     const std::vector<GQTensor<TenElemType>> &,
     const GQTensor<TenElemType> &,
     const std::vector<long> &);
+
+template <typename TenElemType>
+TenElemType OpsVecAvg(
+    MPS<GQTensor<TenElemType>> &,
+    const std::vector<GQTensor<TenElemType>> &,
+    const size_t,
+    const size_t,
+    const GQTensor<TenElemType> &
+);
 
 template <typename TenType>
 void CtrctMidTen(
@@ -123,6 +140,42 @@ template <typename TenElemType>
 MeasuRes<TenElemType> MeasureTwoSiteOp(
     MPS<GQTensor<TenElemType>> &mps,
     const std::vector<GQTensor<TenElemType>> &phys_ops,
+    const std::vector<std::vector<GQTensor<TenElemType>>> &inst_ops_set,  ///< inset operators for each measure event
+    const GQTensor<TenElemType> &id_op,
+    const std::vector<std::vector<long>> &sites_set,
+    const std::string &res_file_basename
+) {
+  // Deal with two physical operators
+  assert(phys_ops.size() == 2);
+  auto measu_event_num = sites_set.size();
+  std::vector<std::vector<GQTensor<TenElemType>>> phys_ops_set(
+                                                      measu_event_num,
+                                                      phys_ops);
+
+  // Deal with inset operators for each measure event
+  assert(inst_ops_set.size() == measu_event_num);
+  std::vector<std::vector<std::vector<GQTensor<TenElemType>>>> inst_ops_set_set;
+  for (size_t i = 0; i < measu_event_num; ++i) {
+    assert(sites_set[i].size() == 2);
+    assert((sites_set[i][1] - sites_set[i][0] - 1) == inst_ops_set[i].size());
+    inst_ops_set_set.push_back({inst_ops_set[i]});
+  }
+
+  return MeasureMultiSiteOp(
+      mps,
+      phys_ops_set,
+      inst_ops_set_set,
+      id_op,
+      sites_set,
+      res_file_basename
+  );
+}
+
+
+template <typename TenElemType>
+MeasuRes<TenElemType> MeasureTwoSiteOp(
+    MPS<GQTensor<TenElemType>> &mps,
+    const std::vector<GQTensor<TenElemType>> &phys_ops,
     const GQTensor<TenElemType> &inst_op,
     const GQTensor<TenElemType> &id_op,
     const std::vector<std::vector<long>> &sites_set,
@@ -146,6 +199,33 @@ MeasuRes<TenElemType> MeasureTwoSiteOp(
 
 
 // Measure multi-site operator.
+template <typename TenElemType>
+MeasuRes<TenElemType> MeasureMultiSiteOp(
+    MPS<GQTensor<TenElemType>> &mps,
+    const std::vector<std::vector<GQTensor<TenElemType>>> &phys_ops_set,
+    const std::vector<
+        std::vector<std::vector<GQTensor<TenElemType>>>
+    >                                                     &inst_ops_set_set,
+    const GQTensor<TenElemType> &id_op,
+    const std::vector<std::vector<long>> &sites_set,
+    const std::string &res_file_basename
+) {
+  auto measu_event_num = sites_set.size();
+  MeasuRes<TenElemType> measu_res(measu_event_num);
+  for (std::size_t i = 0; i < measu_event_num; ++i) {
+    auto &phys_ops = phys_ops_set[i];
+    auto &inst_ops_set = inst_ops_set_set[i];
+    auto &sites = sites_set[i];
+    assert(sites.size() > 1);
+    assert(IsOrderKept(sites));
+    CentralizeMps(mps, sites[0]);
+    measu_res[i] = MultiSiteOpAvg(mps, phys_ops, inst_ops_set, id_op, sites);
+  }
+  DumpMeasuRes(measu_res, res_file_basename);
+  return measu_res;
+}
+
+
 template <typename TenElemType>
 MeasuRes<TenElemType> MeasureMultiSiteOp(
     MPS<GQTensor<TenElemType>> &mps,
@@ -208,14 +288,64 @@ template <typename TenElemType>
 MeasuResElem<TenElemType> MultiSiteOpAvg(
     MPS<GQTensor<TenElemType>> &mps,
     const std::vector<GQTensor<TenElemType>> &phys_ops,
+    const std::vector<std::vector<GQTensor<TenElemType>>> &inst_ops_set,
+    const GQTensor<TenElemType> &id_op,
+    const std::vector<long> &sites) {
+  auto inst_ops_num = inst_ops_set.size();
+  auto phys_op_num = phys_ops.size();
+  assert(phys_op_num == (inst_ops_num + 1));
+  std::vector<GQTensor<TenElemType>> ops;
+  for (size_t i = 0; i < inst_ops_num; ++i) {
+    ops.push_back(phys_ops[i]);
+    for (long j = sites[i] + 1; j < sites[i+1]; ++j) {
+      ops.push_back(inst_ops_set[i][j - sites[i] - 1]);
+    }
+  }
+  ops.push_back(phys_ops.back());
+
+  auto avg = OpsVecAvg(mps, ops, sites.front(), sites.back(), id_op);
+
+  return MeasuResElem<TenElemType>(sites, avg);
+}
+
+
+template <typename TenElemType>
+MeasuResElem<TenElemType> MultiSiteOpAvg(
+    MPS<GQTensor<TenElemType>> &mps,
+    const std::vector<GQTensor<TenElemType>> &phys_ops,
     const std::vector<GQTensor<TenElemType>> &inst_ops,
     const GQTensor<TenElemType> &id_op,
     const std::vector<long> &sites) {
+  auto inst_op_num = inst_ops.size();
+  auto phys_op_num = phys_ops.size();
+  assert(phys_op_num == (inst_op_num + 1));
+  std::vector<std::vector<GQTensor<TenElemType>>> inst_ops_set;
+  for (size_t i = 0; i < inst_op_num; ++i) {
+    inst_ops_set.push_back(
+        std::vector<GQTensor<TenElemType>>(
+            sites[i+1] - sites[i] - 1,
+            inst_ops[i]
+        )
+    );
+  }
+
+  return MultiSiteOpAvg(mps, phys_ops, inst_ops_set, id_op, sites);
+}
+
+
+template <typename TenElemType>
+TenElemType OpsVecAvg(
+    MPS<GQTensor<TenElemType>> &mps,      // Has been centralized to head_site
+    const std::vector<GQTensor<TenElemType>> &ops,
+    const size_t head_site,
+    const size_t tail_site,
+    const GQTensor<TenElemType> &id_op
+) {
   // Deal with head tensor.
   std::vector<long> head_mps_ten_ctrct_axes1;
   std::vector<long> head_mps_ten_ctrct_axes2;
   std::vector<long> head_mps_ten_ctrct_axes3;
-  if (sites[0] == 0) {
+  if (head_site == 0) {
     head_mps_ten_ctrct_axes1 = {0};
     head_mps_ten_ctrct_axes2 = {1};
     head_mps_ten_ctrct_axes3 = {0};
@@ -225,30 +355,23 @@ MeasuResElem<TenElemType> MultiSiteOpAvg(
     head_mps_ten_ctrct_axes3 = {0, 1};
   }
   auto temp_ten0 = Contract(
-                       *mps.tens[sites[0]], phys_ops[0],
+                       *mps.tens[head_site], ops[0],
                        {head_mps_ten_ctrct_axes1, {0}});
   auto temp_ten = Contract(
-                       *temp_ten0, Dag(*mps.tens[sites[0]]),
+                       *temp_ten0, Dag(*mps.tens[head_site]),
                        {head_mps_ten_ctrct_axes2, head_mps_ten_ctrct_axes3});
   delete temp_ten0;
 
   // Deal with middle tensors.
-  auto inst_op_num = inst_ops.size();
-  auto phys_op_num = phys_ops.size();
-  assert(phys_op_num == (inst_op_num+1));
-  for (std::size_t i = 0; i < inst_op_num; ++i) {
-    for (long j = sites[i]+1; j < sites[i+1]; j++) {
-      CtrctMidTen(mps, j, inst_ops[i], id_op, temp_ten);
-    } 
-    if (i != inst_op_num-1) {
-      CtrctMidTen(mps, sites[i+1], phys_ops[i+1], id_op, temp_ten); 
-    }
+  assert(ops.size() == (tail_site - head_site + 1));
+  for (size_t i = head_site + 1; i < tail_site; ++i) {
+    CtrctMidTen(mps, i, ops[i - head_site], id_op, temp_ten);
   }
 
   // Deal with tail tensor.
   std::vector<long> tail_mps_ten_ctrct_axes1;
   std::vector<long> tail_mps_ten_ctrct_axes2;
-  if (sites.back() == mps.N-1) {
+  if (tail_site == mps.N-1) {
     tail_mps_ten_ctrct_axes1 = {0, 1}; 
     tail_mps_ten_ctrct_axes2 = {1, 0};
   } else {
@@ -256,18 +379,19 @@ MeasuResElem<TenElemType> MultiSiteOpAvg(
     tail_mps_ten_ctrct_axes2 = {2, 0, 1};
   }
   auto temp_ten2 = Contract(
-                       *mps.tens[sites[inst_op_num]], *temp_ten, 
+                       *mps.tens[tail_site], *temp_ten, 
                        {{0}, {0}});
   delete temp_ten;
-  auto temp_ten3 = Contract(*temp_ten2, phys_ops[phys_op_num-1], {{0}, {0}});
+  auto temp_ten3 = Contract(*temp_ten2, ops.back(), {{0}, {0}});
   delete temp_ten2;
   auto res_ten = Contract(
-                     *temp_ten3, Dag(*mps.tens[sites[phys_op_num-1]]),
+                     *temp_ten3, Dag(*mps.tens[tail_site]),
                      {tail_mps_ten_ctrct_axes1, tail_mps_ten_ctrct_axes2});
   delete temp_ten3;
   auto avg = res_ten->scalar;
   delete res_ten;
-  return MeasuResElem<TenElemType>(sites, avg);
+
+  return avg;
 }
 
 

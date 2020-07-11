@@ -269,7 +269,7 @@ template <typename AvgType>
 using MeasuResSet = std::vector<MeasuRes<AvgType>>;
 
 
-// Single site operator.
+// Single-site operator
 template <typename TenElemType>
 MeasuRes<TenElemType> MeasureOneSiteOp(
     MPS<GQTensor<TenElemType>> &,
@@ -281,6 +281,17 @@ MeasuResSet<TenElemType> MeasureOneSiteOp(
     const std::vector<GQTensor<TenElemType>> &,
     const std::vector<std::string> &);
 
+// Two-site operator
+template <typename TenElemType>
+MeasuRes<TenElemType> MeasureTwoSiteOp(
+    MPS<GQTensor<TenElemType>> &,
+    const std::vector<GQTensor<TenElemType>> &,
+    const std::vector<std::vector<GQTensor<TenElemType>>> &,
+    const GQTensor<TenElemType> &,
+    const std::vector<std::vector<long>> &,
+    const std::string &
+);
+
 template <typename TenElemType>
 MeasuRes<TenElemType> MeasureTwoSiteOp(
     MPS<GQTensor<TenElemType>> &,
@@ -290,6 +301,7 @@ MeasuRes<TenElemType> MeasureTwoSiteOp(
     const std::vector<std::vector<long>> &,
     const std::string &);
 
+// Multi-site operator
 template <typename TenElemType>
 MeasuRes<TenElemType> MeasureMultiSiteOp(
     MPS<GQTensor<TenElemType>> &,
@@ -298,6 +310,16 @@ MeasuRes<TenElemType> MeasureMultiSiteOp(
     const GQTensor<TenElemType> &,
     const std::vector<std::vector<long>> &,
     const std::string &);
+
+template <typename TenElemType>
+MeasuRes<TenElemType> MeasureMultiSiteOp(
+    MPS<GQTensor<TenElemType>> &,
+    const std::vector<std::vector<GQTensor<TenElemType>>> &,
+    const std::vector<std::vector<std::vector<GQTensor<TenElemType>>>> &,
+    const GQTensor<TenElemType> &,
+    const std::vector<std::vector<long>> &,
+    const std::string &
+);
 
 
 // System I/O functions.
