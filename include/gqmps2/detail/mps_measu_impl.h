@@ -73,8 +73,7 @@ MeasuResElem<TenElemType> MultiSiteOpAvg(
 
 template <typename TenType>
 void CtrctMidTen(
-    const MPS<TenType> &, const long,
-    const TenType &,TenType * &);
+    const MPS<TenType> &, const long, const TenType &,TenType * &);
 
 template <typename TenType>
 void CtrctMidTen(
@@ -242,6 +241,31 @@ MeasuRes<TenElemType> MeasureTwoSiteOp(
     {inst_op});
   std::vector<long> NullVector;
   std::vector<std::vector<long>> insertsite_set(measu_event_num, NullVector);
+  return MeasureMultiSiteOp(
+    mps,
+    phys_ops_set,
+    inst_ops_set,
+    sites_set,
+    insertsite_set,
+    res_file_basename);
+}
+
+template <typename TenElemType>
+MeasuRes<TenElemType> MeasureTwoSiteOp(
+  MPS<GQTensor<TenElemType>> &mps,
+  const std::vector<GQTensor<TenElemType>> &phys_ops,
+  const std::vector<std::vector<long>> &sites_set,
+  const std::vector<std::vector<long>> &insertsite_set,
+  const std::string &res_file_basename) {
+  assert(phys_ops.size() == 2);
+  auto measu_event_num = sites_set.size();
+  std::vector<std::vector<GQTensor<TenElemType>>> phys_ops_set(
+    measu_event_num,
+    phys_ops);
+  auto inst_op = phys_ops.front();
+  std::vector<std::vector<GQTensor<TenElemType>>> inst_ops_set(
+    measu_event_num,
+    {inst_op});
   return MeasureMultiSiteOp(
     mps,
     phys_ops_set,
