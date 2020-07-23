@@ -21,10 +21,6 @@
 namespace  gqmps2 {
 using  namespace gqten;
 
-template <typename TenType>
-void ReadMps(const int i, std::vector<TenType *> & mps);
-template <typename TenType>
-void SaveMps(const int i, std::vector<TenType *> & mps);
 
 // Forward declarations
 // For random initialize MPS operation.
@@ -555,34 +551,18 @@ void CentralizeMps(MpsType &mps, const long target_center) {
 template <typename MpsType>
 void LeftNormalizeMps(MpsType &mps, const long from, const long to) {
   assert(to >= from);
-  bool disk_flag = false; // Add by wanghx June 25, 2020
-  if (mps.tens.front() == NULL ){
-    disk_flag =true;
-    ReadMps(from, mps.tens);
-  }
   for (long i = from; i <= to; ++i) {
-    if(disk_flag) ReadMps(i+1, mps.tens);
     LeftNormalizeMpsTen(mps, i);
-    if(disk_flag) SaveMps(i, mps.tens);
   }
-  if(disk_flag) SaveMps(to+1, mps.tens);
 }
 
 
 template <typename MpsType>
 void RightNormalizeMps(MpsType &mps, const long from, const long to) {
   assert(to <= from);
-  bool disk_flag = false; // Add by wanghx June 25, 2020
-  if (mps.tens.front() == NULL ){
-    disk_flag =true;
-    ReadMps(from, mps.tens);
-  }
   for (long i = from; i >= to; --i) {
-    if(disk_flag) ReadMps(i-1, mps.tens);
     RightNormalizeMpsTen(mps, i);
-    if(disk_flag) SaveMps(i, mps.tens);
   }
-  if(disk_flag) SaveMps(to-1, mps.tens);
 }
 
 

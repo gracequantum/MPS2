@@ -19,36 +19,6 @@ using namespace gqten;
 
 
 // Forward declaration.
-template <typename TenType>
-void ReadMps(const int i, std::vector<TenType *> & mps);
-template <typename TenType>
-void SaveMps(const int i, std::vector<TenType *> & mps);
-
-
-///Below two functions are added by wanghx 25 June 2020, note don't conflict in the future.
-template <typename TenType>
-void ReadMps(const int i, std::vector<TenType *> & mps){
-  assert(mps[i]==NULL);
-  mps[i] = new TenType();
-  std::string file;
-  file = kMpsPath + "/" + kMpsTenBaseName + std::to_string(i) + "." + kGQTenFileSuffix;
-  std::ifstream ifs(file, std::ifstream::binary);
-  bfread(ifs, *mps[i]);
-  ifs.close();
-  return;
-}
-template <typename TenType>
-void SaveMps(const int i, std::vector<TenType *> & mps){
-  std::string file;
-  file = kMpsPath + "/" + kMpsTenBaseName + std::to_string(i) + "." + kGQTenFileSuffix;
-  std::ofstream ofs(file, std::ifstream::binary);
-  bfwrite(ofs, *mps[i]);
-  ofs.close();
-  delete mps[i];
-  mps[i] = NULL;
-  return;
-}
-
 template <typename TenElemType>
 MeasuResElem<TenElemType> OneSiteOpAvg(
   const GQTensor<TenElemType> &, // mps tensor
@@ -108,20 +78,15 @@ inline void DumpAvgVal(std::ofstream &ofs, const GQTEN_Complex avg) {
 
 
 /// Measure one-site operator.
-/// Modified by wanghx 25 June 2020, to add support for disk operation.
 template <typename TenElemType>
 MeasuRes<TenElemType> MeasureOneSiteOp(
     MPS<GQTensor<TenElemType>> &mps,
     const GQTensor<TenElemType> &op, const std::string &res_file_basename) {
   auto N = mps.N;
   MeasuRes<TenElemType> measu_res(N);
-  bool disk_flag =false;
-  if(mps.tens[0] == NULL) disk_flag = true;
   for (std::size_t i = 0; i < N; ++i) {
     CentralizeMps(mps, i);
-    if (disk_flag) ReadMps(i,mps.tens);
     measu_res[i] = OneSiteOpAvg(*mps.tens[i], op, i, N);
-    if (disk_flag) SaveMps(i,mps.tens);
   }
   DumpMeasuRes(measu_res, res_file_basename);
   return measu_res;
@@ -146,21 +111,16 @@ MeasuRes<TenElemType> MeasureOneSiteOp(
     assert(*iter < N);
   }
   MeasuRes<TenElemType> measu_res(site_set.size());
-  bool disk_flag =false;
-  if(mps.tens[0] == NULL) disk_flag = true;
   long i =0;
   for (auto iter=site_set.begin(); iter<site_set.end();iter++) {
     CentralizeMps(mps, *iter);
-    if (disk_flag) ReadMps(*iter,mps.tens);
     measu_res[i] = OneSiteOpAvg(*mps.tens[*iter], op, *iter, N);
-    if (disk_flag) SaveMps(*iter,mps.tens);
     i++;
   }
   DumpMeasuRes(measu_res, res_file_basename);
   return measu_res;
 }
 
-/// Modified by wanghx 25 June 2020, to add support for disk operation.
 template <typename TenElemType>
 MeasuResSet<TenElemType> MeasureOneSiteOp(
     MPS<GQTensor<TenElemType>> &mps,
@@ -169,19 +129,15 @@ MeasuResSet<TenElemType> MeasureOneSiteOp(
   auto op_num = ops.size();
   assert(op_num == res_file_basenames.size());
   auto N = mps.N;
-  bool disk_flag =false;
-  if(mps.tens[0] == NULL) disk_flag = true;
   MeasuResSet<TenElemType> measu_res_set(op_num);
   for (auto &measu_res : measu_res_set) {
     measu_res = MeasuRes<TenElemType>(N);
   }
   for (std::size_t i = 0; i < N; ++i) {
     CentralizeMps(mps, i);
-    if (disk_flag) ReadMps(i,mps.tens);
     for (std::size_t j = 0; j < op_num; ++j) {
       measu_res_set[j][i] = OneSiteOpAvg(*mps.tens[i], ops[j], i, N);
     }
-    if (disk_flag) SaveMps(i,mps.tens);
   }
   for (std::size_t i = 0; i < op_num; ++i) {
     DumpMeasuRes(measu_res_set[i], res_file_basenames[i]);
@@ -371,7 +327,6 @@ MeasuResElem<TenElemType> OneSiteOpAvg(
 
 /** MeasuResElem<TenElemType> MultiSiteOpAvg
  * Add by wanghx 25 June 2020.Difference with previous version: No identity parameter;
- * And mps can be saved into disk
  * @tparam TenElemType
  * @param mps
  * @param phys_ops
@@ -398,18 +353,12 @@ MeasuResElem<TenElemType> MultiSiteOpAvg(
     head_mps_ten_ctrct_axes2 = {0, 2};
     head_mps_ten_ctrct_axes3 = {0, 1};
   }
-  bool disk_save_flag = false;
-  if (mps.tens[0] == NULL){// if point to nothing, using the read-saving disk mode
-    ReadMps(sites[0], mps.tens);
-    disk_save_flag = true;
-  }
   auto temp_ten0 = Contract(
     *mps.tens[sites[0]], phys_ops[0],
     {head_mps_ten_ctrct_axes1, {0}});
   auto temp_ten = Contract(
     *temp_ten0, Dag(*mps.tens[sites[0]]),
     {head_mps_ten_ctrct_axes2, head_mps_ten_ctrct_axes3});
-  if(disk_save_flag) SaveMps(sites[0], mps.tens);
   delete temp_ten0;
 
   // Deal with middle tensors.
@@ -435,7 +384,6 @@ MeasuResElem<TenElemType> MultiSiteOpAvg(
     tail_mps_ten_ctrct_axes1 = {0, 1, 2};
     tail_mps_ten_ctrct_axes2 = {2, 0, 1};
   }
-  if(disk_save_flag) ReadMps(sites[inst_op_num], mps.tens);
   auto temp_ten2 = Contract(
     *mps.tens[sites[inst_op_num]], *temp_ten,
     {{0}, {0}});
@@ -445,7 +393,6 @@ MeasuResElem<TenElemType> MultiSiteOpAvg(
   auto res_ten = Contract(// I think below phys_op_num-1 == inst_op_num? wanghx June 25 2020
     *temp_ten3, Dag(*mps.tens[sites[phys_op_num-1]]),
     {tail_mps_ten_ctrct_axes1, tail_mps_ten_ctrct_axes2});
-  if(disk_save_flag) SaveMps(sites[inst_op_num], mps.tens);
   delete temp_ten3;
   auto avg = res_ten->scalar;
   delete res_ten;
@@ -453,7 +400,7 @@ MeasuResElem<TenElemType> MultiSiteOpAvg(
 }
 
 /** MeasuResElem<TenElemType> MultiSiteOpAvg
- * Add by wanghx 30 June 2020. Can specify which sites are inserted. And mps can be saved into disk
+ * Add by wanghx 30 June 2020. Can specify which sites are inserted.
  * @tparam TenElemType GQTEN_Double or GQTEN_Complex
  * @param mps MPS struct, including mps tensor pointers, center and mps size
  * @param phys_ops physical operators, a vector
@@ -482,18 +429,12 @@ MeasuResElem<TenElemType> MultiSiteOpAvg(
     head_mps_ten_ctrct_axes2 = {0, 2};
     head_mps_ten_ctrct_axes3 = {0, 1};
   }
-  bool disk_save_flag = false;
-  if (mps.tens[0] == NULL){// if point to nothing, using the read-saving disk mode
-    ReadMps(phys_sites[0], mps.tens);
-    disk_save_flag = true;
-  }
   auto temp_ten0 = Contract(
     *mps.tens[phys_sites[0]], phys_ops[0],
     {head_mps_ten_ctrct_axes1, {0}});
   auto temp_ten = Contract(
     *temp_ten0, Dag(*mps.tens[phys_sites[0]]),
     {head_mps_ten_ctrct_axes2, head_mps_ten_ctrct_axes3});
-  if(disk_save_flag) SaveMps(phys_sites[0], mps.tens);
   delete temp_ten0;
 
   // Deal with middle tensors.
@@ -521,7 +462,6 @@ MeasuResElem<TenElemType> MultiSiteOpAvg(
     tail_mps_ten_ctrct_axes1 = {0, 1, 2};
     tail_mps_ten_ctrct_axes2 = {2, 0, 1};
   }
-  if(disk_save_flag) ReadMps(phys_sites[inst_op_num], mps.tens);
   auto temp_ten2 = Contract(
     *mps.tens[phys_sites[inst_op_num]], *temp_ten,
     {{0}, {0}});
@@ -531,7 +471,6 @@ MeasuResElem<TenElemType> MultiSiteOpAvg(
   auto res_ten = Contract(// I think below phys_op_num-1 == inst_op_num? wanghx June 25 2020
     *temp_ten3, Dag(*mps.tens[phys_sites[phys_op_num-1]]),
     {tail_mps_ten_ctrct_axes1, tail_mps_ten_ctrct_axes2});
-  if(disk_save_flag) SaveMps(phys_sites[inst_op_num], mps.tens);
   delete temp_ten3;
   auto avg = res_ten->scalar;
   delete res_ten;
@@ -548,11 +487,6 @@ void CtrctMidTen(
   for(int i = 0;i<id_op.shape[0];i++){
     id_op({i,i})=1.0;
   }
-  bool disk_save_flag = false;
-  if (mps.tens[0] == NULL){// if point to nothing, using the read-saving disk mode
-    ReadMps(site, mps.tens);
-    disk_save_flag = true;
-  }
   if (op == id_op) {
     auto temp_ten = Contract(*mps.tens[site], *t, {{0}, {0}});
     delete t;
@@ -566,7 +500,6 @@ void CtrctMidTen(
     t = Contract(*temp_ten2, Dag(*mps.tens[site]), {{1, 2}, {0, 1}});
     delete temp_ten2;
   }
-  if (disk_save_flag) SaveMps(site, mps.tens);
 }
 
 /** void CtrctMidTen
@@ -579,16 +512,10 @@ void CtrctMidTen(
 template <typename TenType>
 void CtrctMidTen(
   const MPS<TenType> &mps, const long site, TenType * &t) {
-  bool disk_save_flag = false;
-  if (mps.tens[0] == NULL){// if point to nothing, using the read-saving disk mode
-    ReadMps(site, mps.tens);
-    disk_save_flag = true;
-  }
   auto temp_ten = Contract(*mps.tens[site], *t, {{0}, {0}});
   delete t;
   t = Contract(*temp_ten, Dag(*mps.tens[site]), {{0, 2}, {1, 0}});
   delete temp_ten;
-  if (disk_save_flag) SaveMps(site, mps.tens);
 }
 
 // Date dump.
