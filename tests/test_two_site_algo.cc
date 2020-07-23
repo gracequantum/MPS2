@@ -27,6 +27,15 @@ void RunTestTwoSiteAlgorithmCase(
   EXPECT_NEAR(e0, benmrk_e0, precision);
 }
 
+template <typename TenType>
+void RunTestTwoSiteAlgorithmNoiseCase(
+  std::vector<TenType *> &mps, const std::vector<TenType *> &mpo,
+  const SweepParams &sweep_params, const std::vector<double> noise,
+  const double benmrk_e0, const double precision) {
+  auto e0 = TwoSiteAlgorithm(mps, mpo, sweep_params,noise);
+  EXPECT_NEAR(e0, benmrk_e0, precision);
+}
+
 
 // Helpers
 inline void KeepOrder(long &x, long &y) {
@@ -923,7 +932,7 @@ TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
 }
 
 
-///Ref: 10.1103/PhysRevB.97.245119
+///Ref: 10.1103/PhysRevB.97.245119, test for non-uniform indices
 struct TestKondoInsulatorSystem : public testing::Test {
   long N = 4;
   double t = 0.25;
@@ -1002,4 +1011,117 @@ TEST_F(TestKondoInsulatorSystem, doublechain) {
     ///Benchmark with ED's results
     RunTestTwoSiteAlgorithmCase(dmps, dmpo, sweep_params,-3.180025784229132, 1.0E-10);
 }
+
+
+
+///electron-phonon interaction, holstein chain, test for non-uniform indices and noise
+///Reference: PRB VOLUME 57, NUMBER 11 Density-matrix renormalization-group study of the polaron problem in the Holstein model
+struct TestHolsteinChain : public testing::Test {
+  long L = 4; // The number of electron
+  long Np = 3; // per electron has Np pseudosite
+  double t = 1; //electron hopping
+  double g = 1; //electron-phonon interaction
+  double U = 8; //Hubbard U
+  double omega = 5; //phonon on-site potential
+  int N = (1+Np)*L; // The length of the mps/mpo
+
+  QN qn0 = QN({ QNNameVal("Nf", 0), QNNameVal("Sz", 0) });
+  //Fermion(electron)
+  Index pb_outF = Index({QNSector(QN( {QNNameVal("Nf", 2), QNNameVal("Sz",  0)}), 1),
+                         QNSector(QN( {QNNameVal("Nf", 1), QNNameVal("Sz",  1)} ), 1),
+                         QNSector(QN( {QNNameVal("Nf", 1), QNNameVal("Sz", -1)} ), 1),
+                         QNSector(QN( {QNNameVal("Nf", 0), QNNameVal("Sz",  0)} ), 1)},OUT);
+  Index pb_inF = InverseIndex(pb_outF);
+  //Boson(Phonon)
+  Index pb_outB = Index({QNSector(QN( {QNNameVal("Nf", 0), QNNameVal("Sz",  0)} ), 2)},OUT);
+  Index pb_inB = InverseIndex(pb_outB);
+  DGQTensor nf = DGQTensor({pb_inF, pb_outF}); //fermion number
+  DGQTensor bupcF =DGQTensor({pb_inF,pb_outF});
+  DGQTensor bupaF = DGQTensor({pb_inF,pb_outF});
+  DGQTensor Fbdnc = DGQTensor({pb_inF,pb_outF});
+  DGQTensor Fbdna = DGQTensor({pb_inF,pb_outF});
+  DGQTensor bupc =DGQTensor({pb_inF,pb_outF});
+  DGQTensor bupa = DGQTensor({pb_inF,pb_outF});
+  DGQTensor bdnc = DGQTensor({pb_inF,pb_outF});
+  DGQTensor bdna = DGQTensor({pb_inF,pb_outF});
+  DGQTensor Uterm = DGQTensor({pb_inF,pb_outF}); // Hubbard Uterm, nup*ndown
+
+  DGQTensor a = DGQTensor({pb_inB, pb_outB}); //bosonic annihilation
+  DGQTensor adag = DGQTensor({pb_inB, pb_outB}); //bosonic creation
+  DGQTensor n_a =  DGQTensor({pb_inB, pb_outB}); // the number of phonon
+  DGQTensor idB =  DGQTensor({pb_inB, pb_outB}); // bosonic identity
+  DGQTensor &P1 = n_a;
+  DGQTensor P0 = DGQTensor({pb_inB, pb_outB});
+
+  DTenPtrVec dmps    = DTenPtrVec(N);
+  std::vector<Index> pb_set = std::vector<Index>(N);
+
+
+  void SetUp(void) {
+    nf({0,0}) = 2;  nf({1,1}) = 1;  nf({2,2}) = 1;
+
+    bupcF({0,2}) = -1;  bupcF({1,3}) = 1;
+    Fbdnc({0,1}) = 1;   Fbdnc({2,3}) = -1;
+    bupaF({2,0}) = 1;   bupaF({3,1}) = -1;
+    Fbdna({1,0}) = -1;  Fbdna({3,2}) = 1;
+
+    bupc({0,2}) = 1;    bupc({1,3}) = 1;
+    bdnc({0,1}) = 1;    bdnc({2,3}) = 1;
+    bupa({2,0}) = 1;    bupa({3,1}) = 1;
+    bdna({1,0}) = 1;    bdna({3,2}) = 1;
+
+    Uterm({0,0}) = 1;
+
+
+    adag({0,1}) = 1;
+    a({1,0}) = 1;
+    n_a({0,0}) = 1;
+    idB({0,0}) = 1; idB({1,1}) = 1;
+    P0 = idB+(-n_a);
+    for(long i =0;i < N; ++i){
+      if(i%(Np+1)==0) pb_set[i] = pb_outF; // even site is fermion
+      else pb_set[i] = pb_outB; // odd site is boson
+    }
+  }
+};
+
+TEST_F(TestHolsteinChain, holsteinchain) {
+auto dmpo_gen = MPOGenerator<GQTEN_Double>(pb_set, qn0);
+for (long i = 0; i < N-Np-1; i=i+Np+1){
+dmpo_gen.AddTerm( -t, {bupcF,bupa},{i,i+Np+1});
+dmpo_gen.AddTerm( -t, {bdnc,Fbdna},{i,i+Np+1});
+dmpo_gen.AddTerm(  t, {bupaF,bupc},{i,i+Np+1});
+dmpo_gen.AddTerm(  t, {bdna,Fbdnc},{i,i+Np+1});
+}
+for (long i = 0; i < N; i=i+Np+1){
+dmpo_gen.AddTerm(U, Uterm, i);
+for(int j=0;j<Np;j++){
+dmpo_gen.AddTerm(omega, (double)(pow(2,j))*n_a, i+j+1);
+}
+
+dmpo_gen.AddTerm(2*g,{nf,a,a,adag},{i,i+1,i+2,i+3});
+dmpo_gen.AddTerm(2*g,{nf,adag,adag,a},{i,i+1,i+2,i+3});
+dmpo_gen.AddTerm(g,{nf,a,adag, sqrt(2)*P0+sqrt(6)*P1},{i,i+1,i+2,i+3});
+dmpo_gen.AddTerm(g,{nf,adag,a, sqrt(2)*P0+sqrt(6)*P1},{i,i+1,i+2,i+3});
+dmpo_gen.AddTerm(g,{nf,a+adag,P1, sqrt(3)*P0+sqrt(7)*P1},{i,i+1,i+2,i+3});
+dmpo_gen.AddTerm(g,{nf,a+adag,P0, P0+sqrt(5)*P1},{i,i+1,i+2,i+3});
+}
+
+auto dmpo = dmpo_gen.Gen();
+auto sweep_params = SweepParams(5,256, 256, 1.0E-10,true,//Sweep, Dmin, Dmax,Cutoff, FileIO
+                                kTwoSiteAlgoWorkflowInitial, //mode
+                                LanczosParams(1.0E-10, 40));  //LanczosParams
+
+std::vector<long> stat_labs(N,0);
+int qn_label = 1;
+for (int i = 0; i < N; i=i+Np+1) {
+stat_labs[i] = qn_label;
+qn_label=3-qn_label;
+}
+DirectStateInitMps(dmps, stat_labs, pb_set, qn0);
+std::vector<double> noise = {0.1,0.1,0.01,0.001};
+///Benchmark with ED's results
+RunTestTwoSiteAlgorithmNoiseCase(dmps, dmpo, sweep_params,noise,-1.9363605088186260 , 1.0E-8);
+}
+
 
