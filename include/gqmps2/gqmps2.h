@@ -93,6 +93,11 @@ template <typename TenElemType>
 class MPOGenerator {
 public:
   MPOGenerator(const long, const Index &, const QN &);
+  /** MPOGenerator Generator for non-uniform local hilbert space
+    Input: - vector<Index>& pb_out_vector: the sets collecting the indices of all sites
+           - const QN& zero_div: The leftmost index of MPO
+   */
+  MPOGenerator(const std::vector<Index> &, const QN& );
 
   using TenElemVec = std::vector<TenElemType>;
   using GQTensorT = GQTensor<TenElemType>;
@@ -104,6 +109,13 @@ public:
       const GQTensorVec &,
       const std::vector<long> &,
       const GQTensorVec &);
+
+  void AddTerm(
+    const TenElemType coef,
+    GQTensorVec phys_ops,
+    std::vector<long> idxs,
+    const GQTensorVec &inst_ops,
+    const std::vector<long> &inst_idxs);
 
   void AddTerm(
       const TenElemType,
@@ -122,10 +134,10 @@ public:
 
 private:
   long N_;
-  Index pb_in_;
-  Index pb_out_;
+  std::vector<Index> pb_in_vector_;
+  std::vector<Index> pb_out_vector_;
   QN zero_div_;
-  GQTensorT id_op_;
+  std::vector<GQTensorT> id_op_vector_;
   FSM fsm_;
   LabelConvertor<TenElemType> coef_label_convertor_;
   LabelConvertor<GQTensorT> op_label_convertor_;
@@ -153,7 +165,8 @@ private:
       const SparOpReprMat &,
       const Index &,
       const Index &,
-      const TenElemVec &, const GQTensorVec &);
+      const TenElemVec &,
+      const GQTensorVec &, const long);
 };
 
 
@@ -215,6 +228,13 @@ double TwoSiteAlgorithm(
     const SweepParams &);
 
 
+template <typename TenType>
+double TwoSiteAlgorithm(
+  std::vector<TenType *> &,
+  const std::vector<TenType *> &,
+  const SweepParams &,
+  std::vector<double>);
+
 // MPS operations.
 template <typename TenType>
 void DumpMps(const std::vector<TenType *> &);
@@ -234,6 +254,11 @@ template <typename TenType>
 void DirectStateInitMps(
     std::vector<TenType *> &, const std::vector<long> &,
     const Index &, const QN &);
+
+template <typename TenType>
+void DirectStateInitMps(
+        std::vector<TenType *> &, const std::vector<long> &,
+        const std::vector<Index> &, const QN &);
 
 template <typename TenType>
 void ExtendDirectRandomInitMps(
@@ -269,11 +294,19 @@ template <typename AvgType>
 using MeasuResSet = std::vector<MeasuRes<AvgType>>;
 
 
-// Single site operator.
+/// Single site operator. Uniform indices version
 template <typename TenElemType>
 MeasuRes<TenElemType> MeasureOneSiteOp(
     MPS<GQTensor<TenElemType>> &,
     const GQTensor<TenElemType> &, const std::string &);
+
+/// For non-uniform indices
+template <typename TenElemType>
+MeasuRes<TenElemType> MeasureOneSiteOp(
+  MPS<GQTensor<TenElemType>> &,
+  const GQTensor<TenElemType> &,
+  const std::vector<long> &site_set, //specify which site are be measured
+  const std::string &);
 
 template <typename TenElemType>
 MeasuResSet<TenElemType> MeasureOneSiteOp(
@@ -282,23 +315,86 @@ MeasuResSet<TenElemType> MeasureOneSiteOp(
     const std::vector<std::string> &);
 
 template <typename TenElemType>
+MeasuRes<TenElemType> MeasureOneSiteOp(
+  MPS<GQTensor<TenElemType>> &,
+  const GQTensor<TenElemType> &,
+  const std::vector<long> &site_set,//For nonuniform hilbert space we must
+  const std::string &);//specify which sites are be measured
+
+  /// The insertion operators are inserted in all the sites between physical opeartors
+  /// usually for uniform indices
+template <typename TenElemType>
 MeasuRes<TenElemType> MeasureTwoSiteOp(
     MPS<GQTensor<TenElemType>> &,
-    const std::vector<GQTensor<TenElemType>> &,
-    const GQTensor<TenElemType> &,
-    const GQTensor<TenElemType> &,
-    const std::vector<std::vector<long>> &,
+    const std::vector<GQTensor<TenElemType>> &, //physical operator
+    const GQTensor<TenElemType> &, //insertion opeartor
+    const std::vector<std::vector<long>> &, // physical operator sites
     const std::string &);
 
+/// No insertion operators, can be used for uniform or non-uniform indices
+template <typename TenElemType>
+MeasuRes<TenElemType> MeasureTwoSiteOp(
+  MPS<GQTensor<TenElemType>> &mps,
+  const std::vector<GQTensor<TenElemType>> &phys_ops, //physical operator
+  const std::vector<std::vector<long>> &sites_set, //physical operator sites
+  const std::string &res_file_basename);
+
+  /// For compatibility of old version, where we should input an indentity operator.
+  /// For uniform indices
+template <typename TenElemType>
+MeasuRes<TenElemType> MeasureTwoSiteOp(
+  MPS<GQTensor<TenElemType>> & mps,
+  const std::vector<GQTensor<TenElemType>> & op_set,
+  const GQTensor<TenElemType> & insertop,
+  const GQTensor<TenElemType> & id,
+  const std::vector<std::vector<long>> &site_set,
+  const std::string & filename){
+  return MeasureTwoSiteOp(mps, op_set,insertop,site_set,filename);
+}
+
+/// Specify which sites are be inserted, can be used for non-uniform indices
+template <typename TenElemType>
+MeasuRes<TenElemType> MeasureTwoSiteOp(
+  MPS<GQTensor<TenElemType>> &mps,
+  const std::vector<GQTensor<TenElemType>> &phys_ops,
+  const std::vector<std::vector<long>> &sites_set,
+  const std::vector<std::vector<long>> &insertsite_set,
+  const std::string &res_file_basename);
+
+/// The insertion operators are inserted in all the sites between physical opeartors
+/// usually for uniform indices
 template <typename TenElemType>
 MeasuRes<TenElemType> MeasureMultiSiteOp(
     MPS<GQTensor<TenElemType>> &,
     const std::vector<std::vector<GQTensor<TenElemType>>> &,
     const std::vector<std::vector<GQTensor<TenElemType>>> &,
-    const GQTensor<TenElemType> &,
     const std::vector<std::vector<long>> &,
     const std::string &);
 
+
+/// For compatibility of old version, where we should input an indentity operator.
+/// For uniform indices
+template <typename TenElemType>
+MeasuRes<TenElemType> MeasureMultiSiteOp(
+  MPS<GQTensor<TenElemType>> & mps,
+  const std::vector<std::vector<GQTensor<TenElemType>>> & phy_op,
+  const std::vector<std::vector<GQTensor<TenElemType>>> & ins_op,
+  const GQTensor<TenElemType> & id,
+  const std::vector<std::vector<long>> & site_set,
+  const std::string &filename){
+  return MeasureMultiSiteOp(mps, phy_op,ins_op, site_set,filename);
+}
+
+
+/// Specify which sites are be inserted, can be used for non-uniform indices
+template <typename TenElemType>
+MeasuRes<TenElemType> MeasureMultiSiteOp(
+  MPS<GQTensor<TenElemType>> &mps,
+  const std::vector<std::vector<GQTensor<TenElemType>>> &phys_ops_set,
+  const std::vector<std::vector<GQTensor<TenElemType>>> &inst_ops_set,
+  const std::vector<std::vector<long>> &sites_set,
+  const std::vector<std::vector<long>> &insertsites_set,
+  const std::string &res_file_basename);
 
 // System I/O functions.
 template <typename TenType>
@@ -340,6 +436,7 @@ inline void CreatPath(const std::string &path) {
 #include "gqmps2/detail/lanczos_impl.h"
 #include "gqmps2/detail/mpogen/mpogen_impl.h"
 #include "gqmps2/detail/two_site_algo_impl.h"
+#include "gqmps2/detail/two_site_algo_impl_with_noise.h"
 #include "gqmps2/detail/mps_ops_impl.h"
 #include "gqmps2/detail/mps_measu_impl.h"
 

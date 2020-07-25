@@ -58,7 +58,8 @@ public:
       fsm_site_num_(phys_site_num+1),
       mid_stat_nums_(phys_site_num+1, 0),
       has_readys_(phys_site_num+1, false),
-      has_finals_(phys_site_num+1, false) {
+      has_finals_(phys_site_num+1, false),
+      id_op_labels_(phys_site_num, kIdOpLabel) {
     assert(fsm_site_num_ == phys_site_num_ + 1); 
   }
   
@@ -75,6 +76,8 @@ public:
   SparOpReprMatVec GenMatRepr(void) const;
 
   SparOpReprMatVec GenCompressedMatRepr(void) const;
+
+  void ReplaceIdOpLabels(std::vector<OpLabel> &);
 
 
 private:
@@ -93,6 +96,8 @@ private:
   std::vector<bool> has_readys_;
   std::vector<bool> has_finals_;
   FSMPathVec fsm_paths_;
+
+  std::vector<OpLabel> id_op_labels_;
 };
 
 
@@ -111,9 +116,9 @@ void FSM::AddPath(
   // Set operator representations.
   for (size_t i = 0; i < phys_site_num_; ++i) {
     if (i < head_ntrvl_site_idx) {
-      fsm_path.op_reprs[i] = kIdOpRepr;
+      fsm_path.op_reprs[i] = OpRepr(id_op_labels_[i]);
     } else if (i > tail_ntrvl_site_idx) {
-      fsm_path.op_reprs[i] = kIdOpRepr;
+      fsm_path.op_reprs[i] = OpRepr(id_op_labels_[i]);
     } else {
       fsm_path.op_reprs[i] = ntrvl_ops[i-head_ntrvl_site_idx];
     }
@@ -233,6 +238,12 @@ SparOpReprMatVec FSM::GenCompressedMatRepr(void) const {
     SparOpReprMatRowCompresser(comp_mat_repr[i], comp_mat_repr[i-1]);
   }
   return comp_mat_repr;
+}
+
+
+void FSM::ReplaceIdOpLabels(std::vector<OpLabel> &new_id_op_labels) {
+  assert(new_id_op_labels.size() == id_op_labels_.size());
+  id_op_labels_ = new_id_op_labels;
 }
 
 
