@@ -293,17 +293,26 @@ MeasuResElem<TenElemType> MultiSiteOpAvg(
     const std::vector<long> &sites) {
   auto inst_ops_num = inst_ops_set.size();
   auto phys_op_num = phys_ops.size();
-  assert(phys_op_num == (inst_ops_num + 1));
+  // All the insert operators are at the middle or
+  // has a tail string behind the last physical operator.
+  assert((phys_op_num == (inst_ops_num + 1)) || (phys_op_num == inst_ops_num));
   std::vector<GQTensor<TenElemType>> ops;
-  for (size_t i = 0; i < inst_ops_num; ++i) {
+  auto middle_inst_ops_num = phys_op_num - 1;
+  for (size_t i = 0; i < middle_inst_ops_num; ++i) {
     ops.push_back(phys_ops[i]);
-    for (long j = sites[i] + 1; j < sites[i+1]; ++j) {
-      ops.push_back(inst_ops_set[i][j - sites[i] - 1]);
+    for (auto &inst_op : inst_ops_set[i]) {
+      ops.push_back(inst_op);
     }
   }
   ops.push_back(phys_ops.back());
-
-  auto avg = OpsVecAvg(mps, ops, sites.front(), sites.back(), id_op);
+  if (inst_ops_num == phys_op_num) {    // Deal with tail insert operator string.
+    for (auto &tail_inst_op : inst_ops_set.back()) {
+      ops.push_back(tail_inst_op);
+    }
+  }
+  auto head_site = sites.front();
+  auto tail_site = head_site + ops.size() - 1;
+  auto avg = OpsVecAvg(mps, ops, head_site, tail_site, id_op);
 
   return MeasuResElem<TenElemType>(sites, avg);
 }

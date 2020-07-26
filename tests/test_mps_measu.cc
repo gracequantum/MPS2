@@ -78,7 +78,7 @@ void RunTestMeasureOneSiteOpCase(
 
 
 TEST_F(TestMpsMeasurement, TestMeasureOneSiteOp) {
-  // Double case 1
+  // Double case 1 |1 1 1 1 1 1>
   std::vector<GQTEN_Double> dres1;
   for (long i = 0; i < N; ++i) { dres1.push_back(stat_labs1[i]); }
   auto dmps1 = dmps;
@@ -86,7 +86,7 @@ TEST_F(TestMpsMeasurement, TestMeasureOneSiteOp) {
   auto dmps_for_measu1 = MPS<DGQTensor>(dmps1, -1); 
   RunTestMeasureOneSiteOpCase(dmps_for_measu1, dntot, dres1);
   MpsFree(dmps1);
-  // Double case 2
+  // Double case 2 |0 1 0 1 0 1>
   std::vector<GQTEN_Double> dres2;
   for (long i = 0; i < N; ++i) { dres2.push_back(stat_labs2[i]); }
   auto dmps2 = dmps;
@@ -155,7 +155,7 @@ TEST_F(TestMpsMeasurement, TestMeasureTwoSiteOp) {
                                                {4, 5}
                                              };
 
-  // Double case 1
+  // Double case 1 |1 1 1 1 1 1>
   std::vector<GQTEN_Double> dres1(sites_set.size(), 1.0);
   auto dmps1 = dmps;
   DirectStateInitMps(dmps1, stat_labs1, pb_out, qn0);
@@ -179,7 +179,7 @@ TEST_F(TestMpsMeasurement, TestMeasureTwoSiteOp) {
       dres1
   );
   MpsFree(dmps1);
-  // Double case 2
+  // Double case 2 |0 1 0 1 0 1>
   auto dmps2 = dmps;
   DirectStateInitMps(dmps2, stat_labs2, pb_out, qn0);
   auto dmps_for_measu2 = MPS<DGQTensor>(dmps2, -1); 
@@ -246,4 +246,81 @@ TEST_F(TestMpsMeasurement, TestMeasureTwoSiteOp) {
       zres2
   );
   MpsFree(zmps2);
+}
+
+
+template <typename MpsType, typename TenElemType>
+void RunTestMeasureMultiSiteOpCase(
+    MpsType &mps,
+    const std::vector<std::vector<GQTensor<TenElemType>>> &phys_ops_set,
+    const std::vector<
+        std::vector<std::vector<GQTensor<TenElemType>>>
+    > &inst_ops_set_set,
+    const GQTensor<TenElemType> &id_op,
+    const std::vector<std::vector<long>> &sites_set,
+    const std::vector<TenElemType> &res
+) {
+  auto measu_res = MeasureMultiSiteOp(
+                       mps,
+                       phys_ops_set,
+                       inst_ops_set_set,
+                       id_op,
+                       sites_set,
+                       "op1op2op3"
+                   );
+  assert(measu_res.size() == res.size());
+  for (size_t i = 0; i < res.size(); ++i) {
+    ExpectDoubleEq(measu_res[i].avg, res[i]);
+  }
+}
+
+
+TEST_F(TestMpsMeasurement, RunTestMeasureMultiSiteOp) {
+  std::vector<std::vector<long>> sites_set = {{0, 1}, {0, 2, 3}, {1, 2, 4}};
+  // Double case 1 |1 1 1 1 1 1>
+  std::vector<GQTEN_Double> dres1(sites_set.size(), 1.0);
+  auto dmps1 = dmps;
+  DirectStateInitMps(dmps1, stat_labs1, pb_out, qn0);
+  auto dmps_for_measu1 = MPS<DGQTensor>(dmps1, -1); 
+  RunTestMeasureMultiSiteOpCase(
+      dmps_for_measu1,
+      {
+        {did, did}, {did, did, did}, {did, did, did}
+      },
+      {
+        {{}}, {{did}, {}}, {{}, {did}, {did}}
+      },
+      did,
+      sites_set,
+      dres1
+  );
+  // Double case 2 |0 1 0 1 0 1>
+  auto dmps2 = dmps;
+  DirectStateInitMps(dmps2, stat_labs2, pb_out, qn0);
+  auto dmps_for_measu2 = MPS<DGQTensor>(dmps2, -1); 
+  RunTestMeasureMultiSiteOpCase(
+      dmps_for_measu2,
+      {
+        {did, did}, {did, did, did}, {did, did, did}
+      },
+      {
+        {{}}, {{did}, {}}, {{}, {did}, {did}}
+      },
+      did,
+      sites_set,
+      dres1
+  );
+  std::vector<GQTEN_Double> dres2 = {0, 0, 0};
+  RunTestMeasureMultiSiteOpCase(
+      dmps_for_measu2,
+      {
+        {dntot, dntot}, {dntot, dntot, dntot}, {dntot, dntot, dntot}
+      },
+      {
+        {{}}, {{did}, {}}, {{}, {did}, {did}}
+      },
+      did,
+      sites_set,
+      dres2
+  );
 }
