@@ -1,3 +1,0 @@
-[submodule "external/gqten"]
-	path = external/gqten
-	url = https://github.com/gracequantum/tensor.git

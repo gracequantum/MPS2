@@ -34,10 +34,6 @@ endif()
 option(GQMPS2_BUILD_UNITTEST "Build unittests for GraceQ/mps2." OFF)
 
 option(GQMPS2_BUILD_GQTEN_USE_EXTERNAL_HPTT_LIB "Use external hptt library when building dependency external/gqten." OFF)
-if(GQMPS2_BUILD_GQTEN_USE_EXTERNAL_HPTT_LIB)
-  option(GQTEN_USE_EXTERNAL_HPTT_LIB "Set related option in external/gqten" ON)
-  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/external/gqten/cmake/Modules/")
-endif()
 
 # Compilation and linking control.
 set(CMAKE_CXX_STANDARD 14)
@@ -49,11 +45,7 @@ set(GQMPS2_TOOL_SCRIPT_DEST "${CMAKE_INSTALL_PREFIX}/bin")
 set(GQMPS2_INCLUDE_DEST "${CMAKE_INSTALL_PREFIX}/include")
 
 
-# Build dependencies.
-add_subdirectory(external)
-
-
-# Build(install) library.
+# Build(Install) library.
 set(GQMPS2_HEADER_PATH "${PROJECT_SOURCE_DIR}/include")
 set(GQMPS2_HEADER_DIR ${GQMPS2_HEADER_PATH}/gqmps2)
 install(
@@ -66,8 +58,15 @@ add_subdirectory(script)
 
 
 # Build unittests.
-set(GQMPS2_TENSOR_LIB_HEADER_PATH "${PROJECT_SOURCE_DIR}/external/gqten/include")
 if(GQMPS2_BUILD_UNITTEST)
+  # Build dependencies (GraceQ/tensor).
+  if(GQMPS2_BUILD_GQTEN_USE_EXTERNAL_HPTT_LIB)
+    option(GQTEN_USE_EXTERNAL_HPTT_LIB "Set related option in external/gqten" ON)
+    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/external/gqten/cmake/Modules/")
+  endif()
+  add_subdirectory(external)
+  set(GQMPS2_TENSOR_LIB_HEADER_PATH "${PROJECT_SOURCE_DIR}/external/gqten/include")
+
   enable_testing()
   find_package(GTest REQUIRED)
   add_subdirectory(tests tests)

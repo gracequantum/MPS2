@@ -2,6 +2,7 @@
 build/
 test/
 build_doc/
+external/gqten/
 
 # File
 *swp
