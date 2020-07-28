@@ -9,7 +9,7 @@
 #define GQMPS2_GQMPS2_H
 
 
-#include "gqmps2/detail/consts.h"
+#include "gqmps2/detail/case_params_parser.h"
 #include "gqten/gqten.h"
 #include "gqmps2/detail/mpogen/fsm.h"
 #include "gqmps2/detail/mpogen/coef_op_alg.h"
@@ -21,55 +21,9 @@
 
 #include <sys/stat.h>
 
-#include "third_party/nlohmann/json.hpp"
-
 
 namespace gqmps2 {
 using namespace gqten;
-using json = nlohmann::json;
-
-
-// Simulation case parameter parser basic class.
-class CaseParamsParserBasic {
-public:
-  CaseParamsParserBasic(const char *file) {
-    std::ifstream ifs(file);
-    ifs >> raw_json_;
-    ifs.close();
-    if (raw_json_.find(kCaseParamsJsonObjName) != raw_json_.end()) {
-      case_params = raw_json_[kCaseParamsJsonObjName];
-    } else {
-      std::cout << "CaseParams object not found, exit!" << std::endl;
-      exit(1);
-    }
-  }
-
-  int ParseInt(const std::string &item) {
-    return case_params[item].get<int>();
-  }
-
-  double ParseDouble(const std::string &item) {
-    return case_params[item].get<double>();
-  }
-
-  char ParseChar(const std::string &item) {
-    auto char_str = case_params[item].get<std::string>();
-    return char_str.at(0);
-  }
-
-  std::string ParseStr(const std::string &item) {
-    return case_params[item].get<std::string>();
-  }
-
-  bool ParseBool(const std::string &item) {
-    return case_params[item].get<bool>();
-  }
-
-  json case_params;
-
-private:
-  json raw_json_;
-};
 
 
 // MPO generator.
