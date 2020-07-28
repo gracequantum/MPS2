@@ -9,6 +9,7 @@
 #define GQMPS2_GQMPS2_H
 
 
+#include "gqmps2/detail/consts.h"
 #include "gqten/gqten.h"
 #include "gqmps2/detail/mpogen/fsm.h"
 #include "gqmps2/detail/mpogen/coef_op_alg.h"
@@ -26,23 +27,6 @@
 namespace gqmps2 {
 using namespace gqten;
 using json = nlohmann::json;
-
-
-const std::string kCaseParamsJsonObjName = "CaseParams";
-
-const std::string kMpsPath = "mps";
-const std::string kRuntimeTempPath = ".temp";
-const std::string kBlockFileBaseName = "block";
-const std::string kMpsTenBaseName = "mps_ten";
-
-const char kTwoSiteAlgoWorkflowInitial = 'i';
-const char kTwoSiteAlgoWorkflowRestart = 'r';
-const char kTwoSiteAlgoWorkflowContinue = 'c';
-
-const int kLanczEnergyOutputPrecision = 16;
-
-template <typename TenElemType>
-const GQTensor<TenElemType> kNullOperator = GQTensor<TenElemType>();    // C++14
 
 
 // Simulation case parameter parser basic class.
@@ -89,6 +73,10 @@ private:
 
 
 // MPO generator.
+template <typename TenElemType>
+const GQTensor<TenElemType> kNullOperator = GQTensor<TenElemType>();    // C++14
+
+
 template <typename TenElemType>
 class MPOGenerator {
 public:
