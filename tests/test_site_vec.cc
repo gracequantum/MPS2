@@ -5,7 +5,7 @@
 * 
 * Description: GraceQ/MPS2 project. Unittests for SiteVec .
 */
-#include "gqmps2/detail/site_vec.h"
+#include "gqmps2/gqmps2.h"
 #include "gqten/gqten.h"
 
 #include "gtest/gtest.h"

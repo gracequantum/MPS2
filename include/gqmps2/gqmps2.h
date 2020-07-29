@@ -3,13 +3,14 @@
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
 * Creation Date: 2019-05-11 14:37
 * 
-* Description: GraceQ/mps2 project. The main header file.
+* Description: GraceQ/MPS2 project. The main header file.
 */
 #ifndef GQMPS2_GQMPS2_H
 #define GQMPS2_GQMPS2_H
 
 
-#include "gqmps2/detail/case_params_parser.h"
+#include "gqmps2/detail/case_params_parser.h"     // CaseParamsParserBasic
+#include "gqmps2/detail/site_vec.h"               // SiteVec
 #include "gqten/gqten.h"
 #include "gqmps2/detail/mpogen/fsm.h"
 #include "gqmps2/detail/mpogen/coef_op_alg.h"
