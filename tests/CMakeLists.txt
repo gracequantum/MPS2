@@ -46,6 +46,10 @@ macro(add_unittest
   set_target_properties(${TEST_NAME} PROPERTIES FOLDER tests)
 endmacro()
 
+
+# Test sites vector.
+add_unittest(test_site_vec test_site_vec.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
+
 # Test Lanczos algorithm.
 add_unittest(test_lanczos test_lanczos.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
 
