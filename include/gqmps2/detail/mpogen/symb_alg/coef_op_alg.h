@@ -8,7 +8,7 @@
 #ifndef GQMPS2_DETAIL_MPOGEN_COEF_OP_ALG_H
 #define GQMPS2_DETAIL_MPOGEN_COEF_OP_ALG_H
 
-#include "gqmps2/detail/mpogen/sparse_mat.h"
+#include "gqmps2/detail/mpogen/symb_alg/sparse_mat.h"
 
 #include <vector>
 #include <algorithm>

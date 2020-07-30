@@ -5,13 +5,14 @@
 * 
 * Description: GraceQ/MPS2 project. Implantation details for MPO generator.
 */
-#include "gqmps2/gqmps2.h"
+#include "gqmps2/detail/mpogen/mpogen.h"
 #include "gqten/gqten.h"
-#include "gqmps2/detail/mpogen/coef_op_alg.h"
+#include "gqmps2/detail/mpogen/symb_alg/coef_op_alg.h"
 
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
+#include <map>
 
 #include <assert.h>
 
@@ -247,7 +248,7 @@ void MPOGenerator<TenElemType>::AddTerm(
   auto phys_ops_num = phys_ops.size();
   assert(phys_ops_num > 0);
   GQTensorVec inst_ops(phys_ops_num-1, inst_op);
-  if (inst_op != kNullOperator<TenElemType>) {
+  if (inst_op != GQTensor<TenElemType>()) {
     AddTerm(coef, phys_ops, idxs, inst_ops);
   }else{
     std::vector<long> inst_idxs_null;

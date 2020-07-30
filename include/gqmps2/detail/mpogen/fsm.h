@@ -9,7 +9,7 @@
 #define GQMPS2_DETAIL_MPOGEN_FSM
 
 
-#include "gqmps2/detail/mpogen/coef_op_alg.h"
+#include "gqmps2/detail/mpogen/symb_alg/coef_op_alg.h"
 
 #include <vector>
 

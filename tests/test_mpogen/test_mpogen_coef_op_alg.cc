@@ -5,7 +5,7 @@
 * 
 * Description: GraceQ/MPS2 project. Unittests for algebra of MPO's coefficient and operator.
 */
-#include "gqmps2/detail/mpogen/coef_op_alg.h"
+#include "gqmps2/detail/mpogen/symb_alg/coef_op_alg.h"
 
 #include <vector>
 
