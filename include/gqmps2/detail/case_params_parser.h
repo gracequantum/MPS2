@@ -7,9 +7,10 @@
 * Description: GraceQ/MPS2 project. Simulation case parameters parser.
 */
 
-/** @file case_params_parser.h
- *  @brief Simulation case parameters parser.
- */
+/**
+@file case_params_parser.h
+@brief Simulation case parameters parser.
+*/
 #ifndef GQMPS2_DETAIL_CASE_PARAMS_PARSER_H
 #define GQMPS2_DETAIL_CASE_PARAMS_PARSER_H
 
@@ -25,18 +26,25 @@
 namespace gqmps2 {
 
 
-/** Basic simulation case parameter parser.
- *
- */
+/**
+Basic simulation case parameter parser.
+
+@since version 0.0.0
+*/
 class CaseParamsParserBasic {
 public:
   using json = nlohmann::json;
 
-  /** Create simulation case parameters parser.
-   *  Read the input file as a JSON file and parse the contained simulation case parameters JSON object.
-   */
+  /**
+  Create simulation case parameters parser. Read the input file as a JSON file
+  and parse the contained simulation case parameters JSON object.
+
+  @param file Path of the to be parsed file. For example, `argv[1]`.
+
+  @since version 0.0.0
+  */
   CaseParamsParserBasic(
-      const char *file    ///< Path of the to be parsed file. For example, `argv[1]`.
+      const char *file
   ) {
     std::ifstream ifs(file);
     json raw_json;

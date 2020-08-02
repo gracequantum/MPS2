@@ -7,9 +7,11 @@
 * Description: GraceQ/MPS2 project. One-dimensional vector representation of the local Hilbert spaces of the system.
 */
 
-/** @file site_vec.h
- *  @brief One-dimensional vector representation of the local Hilbert spaces of the system.
- */
+/**
+@file site_vec.h
+@brief One-dimensional vector representation of the local Hilbert spaces of the
+       system.
+*/
 #ifndef GQMPS2_DETAIL_SITE_VEC_H
 #define GQMPS2_DETAIL_SITE_VEC_H
 
@@ -39,22 +41,39 @@ Index SetIndexDirOut(const Index &idx) {
 }
 
 
-/** Vector of the local Hilbert spaces of the system.
- */
+/**
+Vector of the local Hilbert spaces of the system.
+
+@since version 0.2.0
+*/
 class SiteVec {
 public:
-  /// Create a system with N identical sites.
+  /**
+  Create a system with N identical sites.
+
+  @param N Total number of sites of the system.
+  @param local_hilbert_space Local (on-site) Hilbert space represented by a
+         Index.
+
+  @since version 0.2.0
+  */
   SiteVec(
-      const size_t N,                     ///< Total number of sites of the system.
-      const Index &local_hilbert_space    ///< Local (on-site) Hilbert space represented by a Index.
+      const size_t N,
+      const Index &local_hilbert_space
   ) {
     size = N;
     sites = IndexVec(N, SetIndexDirOut(local_hilbert_space));
   }
 
-  /// Create a sites vector using a vector of arbitrary Indexes.
+  /**
+  Create a sites vector using a vector of arbitrary Indexes.
+
+  @param local_hilbert_spaces Local (on-site) Hilbert spaces on the each site.
+
+  @since version 0.2.0
+  */
   SiteVec(
-      const IndexVec &local_hilbert_spaces    ///< Local (on-site) Hilbert spaces on the each site.
+      const IndexVec &local_hilbert_spaces
   ) {
     size = local_hilbert_spaces.size(); 
     sites.reserve(size);

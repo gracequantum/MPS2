@@ -7,14 +7,16 @@
 * Description: GraceQ/MPS2 project. Constant declarations.
 */
 
-/** @file consts.h
- *  @brief Constant declarations.
- */
+/**
+@file consts.h
+@brief Constant declarations.
+*/
 #ifndef GQMPS2_DETAIL_CONSTS_H
 #define GQMPS2_DETAIL_CONSTS_H
 
 
-#include <string>       // string
+#include <string>     // string
+#include <vector>     // vector
 
 
 namespace gqmps2 {
@@ -33,5 +35,7 @@ const char kTwoSiteAlgoWorkflowRestart = 'r';
 const char kTwoSiteAlgoWorkflowContinue = 'c';
 
 const int kLanczEnergyOutputPrecision = 16;
+
+const std::vector<std::vector<size_t>> kNullIntVecVec;
 } /* gqmps2 */ 
 #endif /* ifndef GQMPS2_DETAIL_CONSTS_H */
