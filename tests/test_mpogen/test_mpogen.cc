@@ -23,6 +23,10 @@ struct TestMpoGenerator : public testing::Test {
                            QNSector(QN({QNNameVal("Sz", -1)}), 1),
                            QNSector(QN({QNNameVal("Sz",  1)}), 1)}, OUT);
   Index phys_idx_in = InverseIndex(phys_idx_out);
+  SiteVec site_vec_2 = SiteVec(2, phys_idx_out);
+  SiteVec site_vec_3 = SiteVec(3, phys_idx_out);
+  SiteVec site_vec_4 = SiteVec(4, phys_idx_out);
+  SiteVec site_vec_5 = SiteVec(5, phys_idx_out);
   DGQTensor dsz = DGQTensor({phys_idx_in, phys_idx_out});
   ZGQTensor zsz = ZGQTensor({phys_idx_in, phys_idx_out});
   ZGQTensor zsx = ZGQTensor({phys_idx_in, phys_idx_out});
@@ -49,7 +53,7 @@ struct TestMpoGenerator : public testing::Test {
 
 
 TEST_F(TestMpoGenerator, TestInitialization) {
-  DMPOGenerator mpo_generator(2, phys_idx_out, qn0);
+  DMPOGenerator mpo_generator(site_vec_2, qn0);
 }
 
 
@@ -58,21 +62,21 @@ TEST_F(TestMpoGenerator, TestAddTermCase1) {
   bchmk_m0.SetElem(0, 0, OpRepr(1));
   bchmk_m1.SetElem(0, 0, kIdOpRepr);
 
-  DMPOGenerator mpo_generator1(2, phys_idx_out, qn0);
+  DMPOGenerator mpo_generator1(site_vec_2, qn0);
   mpo_generator1.AddTerm(1., {dsz}, {0});
   auto fsm1 = mpo_generator1.GetFSM();
   auto fsm_comp_mat_repr1 = fsm1.GenCompressedMatRepr();
   EXPECT_EQ(fsm_comp_mat_repr1[0], bchmk_m0);
   EXPECT_EQ(fsm_comp_mat_repr1[1], bchmk_m1);
 
-  DMPOGenerator mpo_generator2(2, phys_idx_out, qn0);
+  DMPOGenerator mpo_generator2(site_vec_2, qn0);
   mpo_generator2.AddTerm(1., dsz, 0);
   auto fsm2 = mpo_generator2.GetFSM();
   auto fsm_comp_mat_repr2 = fsm2.GenCompressedMatRepr();
   EXPECT_EQ(fsm_comp_mat_repr2[0], bchmk_m0);
   EXPECT_EQ(fsm_comp_mat_repr2[1], bchmk_m1);
 
-  DMPOGenerator mpo_generator3(2, phys_idx_out, qn0);
+  DMPOGenerator mpo_generator3(site_vec_2, qn0);
   mpo_generator3.AddTerm(1., dsz, 0);
   mpo_generator3.AddTerm(0.0, dsz, 0);
   auto fsm3 = mpo_generator3.GetFSM();
@@ -88,7 +92,7 @@ TEST_F(TestMpoGenerator, TestAddTermCase2) {
   bchmk_m0.SetElem(0, 0, s);
   bchmk_m1.SetElem(0, 0, s+s);
 
-  DMPOGenerator mpo_generator1(2, phys_idx_out, qn0);
+  DMPOGenerator mpo_generator1(site_vec_2, qn0);
   mpo_generator1.AddTerm(1., {dsz, dsz}, {0, 1}, {did});
   mpo_generator1.AddTerm(1., {dsz, dsz}, {0, 1}, {did});
   auto fsm1 = mpo_generator1.GetFSM();
@@ -96,7 +100,7 @@ TEST_F(TestMpoGenerator, TestAddTermCase2) {
   EXPECT_EQ(fsm_comp_mat_repr1[0], bchmk_m0);
   EXPECT_EQ(fsm_comp_mat_repr1[1], bchmk_m1);
 
-  DMPOGenerator mpo_generator2(2, phys_idx_out, qn0);
+  DMPOGenerator mpo_generator2(site_vec_2, qn0);
   mpo_generator2.AddTerm(1., {dsz, dsz}, {0, 1}, did);
   mpo_generator2.AddTerm(1., {dsz, dsz}, {0, 1}, did);
   auto fsm2 = mpo_generator2.GetFSM();
@@ -120,7 +124,7 @@ TEST_F(TestMpoGenerator, TestAddTermCase3) {
   bchmk_m3.SetElem(0, 0, s);
   bchmk_m3.SetElem(1, 0, kIdOpRepr);
 
-  DMPOGenerator mpo_generator1(4, phys_idx_out, qn0);
+  DMPOGenerator mpo_generator1(site_vec_4, qn0);
   mpo_generator1.AddTerm(1., {dsz, dsz}, {0, 1}, {did});
   mpo_generator1.AddTerm(1., {dsz, dsz}, {1, 2}, {did});
   mpo_generator1.AddTerm(1., {dsz, dsz}, {2, 3}, {did});
@@ -131,7 +135,7 @@ TEST_F(TestMpoGenerator, TestAddTermCase3) {
   EXPECT_EQ(fsm_comp_mat_repr1[2], bchmk_m2);
   EXPECT_EQ(fsm_comp_mat_repr1[3], bchmk_m3);
 
-  DMPOGenerator mpo_generator2(4, phys_idx_out, qn0);
+  DMPOGenerator mpo_generator2(site_vec_4, qn0);
   mpo_generator2.AddTerm(1., {dsz, dsz}, {0, 1}, did);
   mpo_generator2.AddTerm(1., {dsz, dsz}, {1, 2}, did);
   mpo_generator2.AddTerm(1., {dsz, dsz}, {2, 3}, did);
@@ -159,7 +163,7 @@ TEST_F(TestMpoGenerator, TestAddTermCase4) {
   bchmk_m4.SetElem(0, 0, kIdOpRepr);
   bchmk_m4.SetElem(0, 1, s);
 
-  DMPOGenerator mpo_generator1(5, phys_idx_out, qn0);
+  DMPOGenerator mpo_generator1(site_vec_5, qn0);
   mpo_generator1.AddTerm(1., {dsz, dsz}, {0, 4}, {did});
   mpo_generator1.AddTerm(1., {dsz, dsz, dsz}, {1, 2, 4}, {did, did});
   mpo_generator1.AddTerm(1., {dsz, dsz, dsz}, {1, 2, 3}, {did, did});
@@ -195,7 +199,7 @@ TEST_F(TestMpoGenerator, TestAddTermCase5) {
 
   GQTEN_Double ja = 0.5, jb = 2.0;
 
-  DMPOGenerator mpo_generator1(4, phys_idx_out, qn0);
+  DMPOGenerator mpo_generator1(site_vec_4, qn0);
   mpo_generator1.AddTerm(ja, {dsz, dsz}, {0, 1}, {did});
   mpo_generator1.AddTerm(ja, {dsz, dsz}, {0, 2}, {did});
   mpo_generator1.AddTerm(ja, {dsz, dsz}, {1, 3}, {did});
@@ -209,7 +213,7 @@ TEST_F(TestMpoGenerator, TestAddTermCase5) {
   EXPECT_EQ(fsm_comp_mat_repr1[2], bchmk_m2);
   EXPECT_EQ(fsm_comp_mat_repr1[3], bchmk_m3);
 
-  DMPOGenerator mpo_generator2(4, phys_idx_out, qn0);
+  DMPOGenerator mpo_generator2(site_vec_4, qn0);
   mpo_generator2.AddTerm(ja, {dsz, dsz}, {0, 1}, did);
   mpo_generator2.AddTerm(ja, {dsz, dsz}, {0, 2}, did);
   mpo_generator2.AddTerm(ja, {dsz, dsz}, {1, 3}, did);
@@ -226,7 +230,7 @@ TEST_F(TestMpoGenerator, TestAddTermCase5) {
 
 
 TEST_F(TestMpoGenerator, TestAddTermCase6) {
-  ZMPOGenerator mpo_generator(3, phys_idx_out, qn0);
+  ZMPOGenerator mpo_generator(site_vec_3, qn0);
   GQTEN_Complex J = 0.5, K = 2.0;
   mpo_generator.AddTerm(J, {zsx, zsx}, {0, 1}, {zid});
   mpo_generator.AddTerm(J, {zsy, zsy}, {0, 1}, {zid});

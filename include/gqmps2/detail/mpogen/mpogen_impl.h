@@ -40,47 +40,22 @@ void AddOpToCentMpoTen(
     const long, const long);
 
 
-/** MPOGenerator<TenElemType>::MPOGenerator
- * For uniform hilbert spaces, i.e. Heisenberg model, Hubbard model, etc.
- * @tparam TenElemType GQTEN_Double or GQTEN_Complex
- * @param N system size
- * @param pb_out local hilbert spaces
- * @param zero_div the leftmost index of MPO
+/** Create a MPO generator.
+ *  Create a MPO generator using the sites of the system.
  */
 template <typename TenElemType>
 MPOGenerator<TenElemType>::MPOGenerator(
-    const long N, const Index &pb_out, const QN &zero_div) :
-    N_(N),
-    zero_div_(zero_div),
-    fsm_(N) {
-      for(long i = 0; i< N; i++) {
-        pb_out_vector_.push_back(pb_out);
-        pb_in_vector_.push_back(InverseIndex(pb_out));
-        id_op_vector_.push_back(GenIdOpTen_(pb_out));
-      }
-      op_label_convertor_ = LabelConvertor<GQTensorT>(id_op_vector_[0]);
-      coef_label_convertor_ = LabelConvertor<TenElemType>(TenElemType(1));
-}
-
-/** MPOGenerator<TenElemType>::MPOGenerator
- * For non-uniform hilbert spaces, i.e. phonon-electron coupling, or mixed space DMRG
- * @tparam TenElemType GQTEN_Double or GQTEN_Complex
- * @param pb_out_vector local hilbert space sets, pb_out_vector.size() == the system size
- * @param zero_d the leftmost index of MPO
- * iv
- */
-template <typename TenElemType>
-MPOGenerator<TenElemType>::MPOGenerator(
-  const std::vector<Index> &pb_out_vector, const QN &zero_div) :
-  N_(pb_out_vector.size()),
-  pb_out_vector_(pb_out_vector),
-  zero_div_(zero_div),
-  fsm_(pb_out_vector.size()) {
-  for(auto iter = pb_out_vector.begin(); iter < pb_out_vector.end(); iter++) {
-    pb_in_vector_.push_back(InverseIndex(*iter));
-    id_op_vector_.push_back(GenIdOpTen_(*iter));
+    const SiteVec & site_vec,     ///< The local Hilbert spaces of each sites of the system.
+    const QN & zero_div           ///< The zero value of the given quantum number type which is used to set the divergence of the MPO.
+) : N_(site_vec.size), zero_div_(zero_div), fsm_(site_vec.size) {
+  pb_out_vector_.reserve(N_);
+  pb_in_vector_.reserve(N_);
+  id_op_vector_.reserve(N_);
+  for (size_t i = 0; i < N_; ++i) {
+    pb_out_vector_.emplace_back(site_vec.sites[i]);
+    pb_in_vector_.emplace_back(InverseIndex(site_vec.sites[i]));
+    id_op_vector_.emplace_back(GenIdOpTen_(site_vec.sites[i]));
   }
-
   op_label_convertor_ = LabelConvertor<GQTensorT>(id_op_vector_[0]);
   std::vector<OpLabel> id_op_label_vector;
   for(auto iter = id_op_vector_.begin(); iter< id_op_vector_.end();iter++){
@@ -90,6 +65,58 @@ MPOGenerator<TenElemType>::MPOGenerator(
 
   coef_label_convertor_ = LabelConvertor<TenElemType>(TenElemType(1));
 }
+
+
+/** MPOGenerator<TenElemType>::MPOGenerator
+ * For uniform hilbert spaces, i.e. Heisenberg model, Hubbard model, etc.
+ * @tparam TenElemType GQTEN_Double or GQTEN_Complex
+ * @param N system size
+ * @param pb_out local hilbert spaces
+ * @param zero_div the leftmost index of MPO
+ */
+//template <typename TenElemType>
+//MPOGenerator<TenElemType>::MPOGenerator(
+    //const long N, const Index &pb_out, const QN &zero_div) :
+    //N_(N),
+    //zero_div_(zero_div),
+    //fsm_(N) {
+      //for(long i = 0; i< N; i++) {
+        //pb_out_vector_.push_back(pb_out);
+        //pb_in_vector_.push_back(InverseIndex(pb_out));
+        //id_op_vector_.push_back(GenIdOpTen_(pb_out));
+      //}
+      //op_label_convertor_ = LabelConvertor<GQTensorT>(id_op_vector_[0]);
+      //coef_label_convertor_ = LabelConvertor<TenElemType>(TenElemType(1));
+//}
+
+/** MPOGenerator<TenElemType>::MPOGenerator
+ * For non-uniform hilbert spaces, i.e. phonon-electron coupling, or mixed space DMRG
+ * @tparam TenElemType GQTEN_Double or GQTEN_Complex
+ * @param pb_out_vector local hilbert space sets, pb_out_vector.size() == the system size
+ * @param zero_d the leftmost index of MPO
+ * iv
+ */
+//template <typename TenElemType>
+//MPOGenerator<TenElemType>::MPOGenerator(
+  //const std::vector<Index> &pb_out_vector, const QN &zero_div) :
+  //N_(pb_out_vector.size()),
+  //pb_out_vector_(pb_out_vector),
+  //zero_div_(zero_div),
+  //fsm_(pb_out_vector.size()) {
+  //for(auto iter = pb_out_vector.begin(); iter < pb_out_vector.end(); iter++) {
+    //pb_in_vector_.push_back(InverseIndex(*iter));
+    //id_op_vector_.push_back(GenIdOpTen_(*iter));
+  //}
+
+  //op_label_convertor_ = LabelConvertor<GQTensorT>(id_op_vector_[0]);
+  //std::vector<OpLabel> id_op_label_vector;
+  //for(auto iter = id_op_vector_.begin(); iter< id_op_vector_.end();iter++){
+    //id_op_label_vector.push_back(op_label_convertor_.Convert(*iter));
+  //}
+  //fsm_.ReplaceIdOpLabels(id_op_label_vector);
+
+  //coef_label_convertor_ = LabelConvertor<TenElemType>(TenElemType(1));
+//}
 
 
 template <typename TenElemType>

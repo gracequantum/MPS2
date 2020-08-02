@@ -14,6 +14,7 @@
 #define GQMPS2_DETAIL_MPOGEN_MPOGEN_H
 
 
+#include "gqmps2/detail/site_vec.h"     // SiteVec
 #include "gqmps2/detail/mpogen/fsm.h"
 #include "gqmps2/detail/mpogen/symb_alg/coef_op_alg.h"
 #include "gqten/gqten.h"
@@ -23,20 +24,22 @@ namespace gqmps2 {
 using namespace gqten;
 
 
+/** A generic MPO generator.
+ *  A matrix-product operator (MPO) generator which can generate an efficient
+ *  MPO for a quantum many-body system with any type of n-body interaction term.
+ *
+ *  @tparam TenElemType Element type of the MPO tensors, can be GQTEN_Double or
+ *  GQTEN_Complex.
+ */
 template <typename TenElemType>
 class MPOGenerator {
 public:
-  MPOGenerator(const long, const Index &, const QN &);
-  /** MPOGenerator Generator for non-uniform local hilbert space
-    Input: - vector<Index>& pb_out_vector: the sets collecting the indices of all sites
-           - const QN& zero_div: The leftmost index of MPO
-   */
-  MPOGenerator(const std::vector<Index> &, const QN& );
-
   using TenElemVec = std::vector<TenElemType>;
   using GQTensorT = GQTensor<TenElemType>;
   using GQTensorVec = std::vector<GQTensorT>;
   using PGQTensorVec = std::vector<GQTensorT *>;
+
+  MPOGenerator(const SiteVec &, const QN &);
 
   void AddTerm(
       const TenElemType,
