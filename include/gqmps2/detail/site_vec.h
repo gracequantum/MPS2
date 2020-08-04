@@ -51,16 +51,17 @@ public:
   /**
   Create a system with N identical sites.
 
-  @param N Total number of sites of the system.
+  @param N Total number of sites (> 0) of the system.
   @param local_hilbert_space Local (on-site) Hilbert space represented by a
          Index.
 
   @since version 0.2.0
   */
   SiteVec(
-      const size_t N,
+      const int N,
       const Index &local_hilbert_space
   ) {
+    assert(N > 0);
     size = N;
     sites = IndexVec(N, SetIndexDirOut(local_hilbert_space));
   }
@@ -75,14 +76,15 @@ public:
   SiteVec(
       const IndexVec &local_hilbert_spaces
   ) {
-    size = local_hilbert_spaces.size(); 
+    size = local_hilbert_spaces.size();
+    assert(size > 0);
     sites.reserve(size);
-    for (size_t i = 0; i < size; ++i) {
+    for (int i = 0; i < size; ++i) {
       sites.emplace_back(SetIndexDirOut(local_hilbert_spaces[i]));
     }
   }
 
-  size_t size;        ///< The size of the SiteVec, i.e. the size of the system.
+  int size;        ///< The size of the SiteVec, i.e. the size of the system.
   IndexVec sites;     ///< Local Hilbert spaces represented by a vector of Index with OUT direction.
 };
 } /* gqmps2 */ 

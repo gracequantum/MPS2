@@ -16,7 +16,7 @@ using namespace gqten;
 
 
 void RunTestSiteVecBasicFeatures(
-    const size_t N,
+    const int N,
     const Index &local_hilbert_space
 ) {
   SiteVec site_vec(N, local_hilbert_space);
@@ -34,7 +34,7 @@ void RunTestSiteVecBasicFeatures(
 void RunTestSiteVecBasicFeatures(const IndexVec &local_hilbert_spaces) {
   SiteVec site_vec(local_hilbert_spaces);
   EXPECT_EQ(site_vec.size, local_hilbert_spaces.size());
-  for (size_t i = 0; i < site_vec.size; ++i) {
+  for (int i = 0; i < site_vec.size; ++i) {
     if (local_hilbert_spaces[i].dir == OUT) {
       EXPECT_EQ(site_vec.sites[i], local_hilbert_spaces[i]);
     } else {

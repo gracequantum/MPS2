@@ -36,7 +36,7 @@ const char kTwoSiteAlgoWorkflowContinue = 'c';
 
 const int kLanczEnergyOutputPrecision = 16;
 
-const std::vector<size_t> kNullIntVec;
-const std::vector<std::vector<size_t>> kNullIntVecVec;
+const std::vector<int> kNullIntVec;
+const std::vector<std::vector<int>> kNullIntVecVec;
 } /* gqmps2 */ 
 #endif /* ifndef GQMPS2_DETAIL_CONSTS_H */

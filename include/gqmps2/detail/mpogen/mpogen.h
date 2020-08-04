@@ -49,52 +49,26 @@ public:
   void AddTerm(
       const TenElemType,
       const GQTensorVec &,
-      const std::vector<size_t> &
+      const std::vector<int> &
   );
 
   void AddTerm(
       const TenElemType,
       const GQTensorVec &,
-      const std::vector<size_t> &,
+      const std::vector<int> &,
       const GQTensorVec &,
-      const std::vector<std::vector<size_t>> &inst_ops_idxs_set = kNullIntVecVec
+      const std::vector<std::vector<int>> &inst_ops_idxs_set = kNullIntVecVec
   );
 
   void AddTerm(
     const TenElemType,
     const GQTensorT &,
-    const size_t,
+    const int,
     const GQTensorT &op2 = GQTensorT(),
-    const size_t op2_idx = 0,
+    const int op2_idx = 0,
     const GQTensorT &inst_op = GQTensorT(),
-    const std::vector<size_t> &inst_op_idxs = kNullIntVec
+    const std::vector<int> &inst_op_idxs = kNullIntVec
   );
-
-
-  //void AddTerm(
-      //const TenElemType,
-      //const GQTensorVec &,
-      //const std::vector<long> &,
-      //const GQTensorVec &);
-
-  //void AddTerm(
-    //const TenElemType coef,
-    //GQTensorVec phys_ops,
-    //std::vector<long> idxs,
-    //const GQTensorVec &inst_ops,
-    //const std::vector<long> &inst_idxs);
-
-  //void AddTerm(
-      //const TenElemType,
-      //const GQTensorVec &,
-      //const std::vector<long> &,
-      //const GQTensorT &inst_op=GQTensor<TenElemType>()
-  //);
-
-  //void AddTerm(
-      //const TenElemType,
-      //const GQTensorT &,
-      //const long);
 
   FSM GetFSM(void) { return fsm_; }
 
