@@ -67,6 +67,23 @@ inline double Real(const GQTEN_Complex z) { return z.real(); }
 
 
 // Lanczos solver.
+//
+// Effective Hamiltonian setup:
+//
+// +-----+          2             2        +-----+
+// |      0        +             +        2      |
+// |               |             |               |
+// +-----+      +-----+       +-----+      +-----+
+// |      1    0   |   3     0   |   3    1      |
+// |               +             +               |
+// +-----+          1             1        +-----+
+//        2                               0
+//                 + 1           + 2
+//                 |             |
+//                 |             |
+//             +---------------------+
+//            0                       3
+//
 template <typename TenElemType>
 LanczosRes<TenElemType> LanczosSolver(
     const std::vector<GQTensor<TenElemType> *> &rpeff_ham,
@@ -210,10 +227,13 @@ template <typename TenElemType>
 GQTensor<TenElemType> *eff_ham_mul_state_cent(
     const std::vector<GQTensor<TenElemType> *> &eff_ham,
     GQTensor<TenElemType> *state) {
-  auto res = Contract(*eff_ham[0], *state, {{0}, {0}});
-  InplaceContract(res, *eff_ham[1], {{0, 2}, {0, 1}});
-  InplaceContract(res, *eff_ham[2], {{4, 1}, {0, 1}});
-  InplaceContract(res, *eff_ham[3], {{4, 1}, {1, 0}});
+  auto res = Contract(*eff_ham[0], *state, {{2}, {0}});
+  res->Transpose({0, 3, 4, 2, 1});
+  InplaceContract(res, *eff_ham[1], {{4, 3}, {0, 1}});
+  res->Transpose({0, 3, 2, 1, 4});
+  InplaceContract(res, *eff_ham[2], {{4, 3}, {0, 1}});
+  res->Transpose({0, 1, 3, 4, 2});
+  InplaceContract(res, *eff_ham[3], {{4, 3}, {0, 1}});
   return res;
 }
 
@@ -222,9 +242,11 @@ template <typename TenElemType>
 GQTensor<TenElemType> *eff_ham_mul_state_lend(
     const std::vector<GQTensor<TenElemType> *> &eff_ham,
     GQTensor<TenElemType> *state) {
-  auto res = Contract(*state, *eff_ham[1], {{0}, {0}});
-  InplaceContract(res, *eff_ham[2], {{0, 2}, {1, 0}});
-  InplaceContract(res, *eff_ham[3], {{0, 3}, {0, 1}});
+  auto res = Contract(*eff_ham[1], *state, {{0}, {0}});
+  res->Transpose({1, 3, 2, 0});
+  InplaceContract(res, *eff_ham[2], {{3, 2}, {0, 1}});
+  res->Transpose({0, 2, 3, 1});
+  InplaceContract(res, *eff_ham[3], {{3, 2}, {0, 1}});
   return res;
 }
 
@@ -233,9 +255,11 @@ template <typename TenElemType>
 GQTensor<TenElemType> *eff_ham_mul_state_rend(
     const std::vector<GQTensor<TenElemType> *> &eff_ham,
     GQTensor<TenElemType> *state) {
-  auto res = Contract(*state, *eff_ham[0], {{0}, {0}});
-  InplaceContract(res, *eff_ham[1], {{2, 0}, {0, 1}});
-  InplaceContract(res, *eff_ham[2], {{3, 0}, {1,0}});
+  auto res = Contract(*eff_ham[0], *state, {{2}, {0}});
+  res->Transpose({0, 3, 2, 1});
+  InplaceContract(res, *eff_ham[1], {{3, 2}, {0, 1}});
+  res->Transpose({0, 2, 3, 1});
+  InplaceContract(res, *eff_ham[2], {{3, 2}, {0, 1}});
   return res;
 }
 

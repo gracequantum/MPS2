@@ -261,6 +261,9 @@ double TwoSiteUpdate(
 
   // Lanczos
   std::vector<TenType *>eff_ham(4);
+  if ((dir == 'r' && i != 0) || (dir == 'l' && i != 1)) {
+    lblocks[lblock_len]->Transpose({2, 1, 0});
+  }
   eff_ham[0] = lblocks[lblock_len];
   eff_ham[1] = mpo[lsite_idx];
   eff_ham[2] = mpo[rsite_idx];
@@ -337,11 +340,13 @@ double TwoSiteUpdate(
         delete new_lblock;
         new_lblock = temp_new_lblock;
       } else if (i != N-2) {
-        new_lblock = Contract(*lblocks[i], *mps[i], {{0}, {0}});
-        auto temp_new_lblock = Contract(*new_lblock, *mpo[i], {{0, 2}, {0, 1}});
+        new_lblock = Contract(*lblocks[i], *mps[i], {{2}, {0}});
+        new_lblock->Transpose({0, 3, 2, 1});
+        auto temp_new_lblock = Contract(*new_lblock, *mpo[i], {{3, 2}, {0, 1}});
         delete new_lblock;
         new_lblock = temp_new_lblock;
-        temp_new_lblock = Contract(*new_lblock, Dag(*mps[i]), {{0, 2}, {0, 1}});
+        new_lblock->Transpose({1, 3, 2, 0});
+        temp_new_lblock = Contract(*new_lblock, Dag(*mps[i]), {{3, 2}, {0, 1}});
         delete new_lblock;
         new_lblock = temp_new_lblock;
       } else {

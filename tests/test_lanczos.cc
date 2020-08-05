@@ -46,10 +46,12 @@ void RunTestCentLanczosSolverCase(
     GQTensor<TenElemType> *pinit_state,
     const LanczosParams &lanczos_params) {
   std::cout << "\n";
+  eff_ham[0]->Transpose({2, 1, 0});
   auto lancz_res = LanczosSolver(
                        eff_ham, pinit_state,
                        lanczos_params,
                        "cent");
+  eff_ham[0]->Transpose({2, 1, 0});
 
   std::vector<long> ta_ctrct_axes1 = {1};
   std::vector<long> ta_ctrct_axes2 = {4};
