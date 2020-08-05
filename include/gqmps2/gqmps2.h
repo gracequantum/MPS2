@@ -9,9 +9,9 @@
 #define GQMPS2_GQMPS2_H
 
 
-#include "gqmps2/detail/case_params_parser.h"     // CaseParamsParserBasic
-#include "gqmps2/detail/site_vec.h"               // SiteVec
-#include "gqmps2/detail/mpogen/mpogen.h"          // MPOGenerator
+#include "gqmps2/case_params_parser.h"     // CaseParamsParserBasic
+#include "gqmps2/site_vec.h"               // SiteVec
+#include "gqmps2/mpogen/mpogen.h"          // MPOGenerator
 #include "gqten/gqten.h"
 
 #include <string>
@@ -289,11 +289,11 @@ inline void CreatPath(const std::string &path) {
 
 
 // Implementation details
-#include "gqmps2/detail/lanczos_impl.h"
-#include "gqmps2/detail/two_site_algo_impl.h"
-#include "gqmps2/detail/two_site_algo_impl_with_noise.h"
-#include "gqmps2/detail/mps_ops_impl.h"
-#include "gqmps2/detail/mps_measu_impl.h"
+#include "gqmps2/lanczos_impl.h"
+#include "gqmps2/two_site_algo_impl.h"
+#include "gqmps2/two_site_algo_impl_with_noise.h"
+#include "gqmps2/mps_ops_impl.h"
+#include "gqmps2/mps_measu_impl.h"
 
 
 #endif /* ifndef GQMPS2_GQMPS2_H */

@@ -11,8 +11,8 @@
 @file consts.h
 @brief Constant declarations.
 */
-#ifndef GQMPS2_DETAIL_CONSTS_H
-#define GQMPS2_DETAIL_CONSTS_H
+#ifndef GQMPS2_CONSTS_H
+#define GQMPS2_CONSTS_H
 
 
 #include <string>     // string
@@ -39,4 +39,4 @@ const int kLanczEnergyOutputPrecision = 16;
 const std::vector<int> kNullIntVec;
 const std::vector<std::vector<int>> kNullIntVecVec;
 } /* gqmps2 */ 
-#endif /* ifndef GQMPS2_DETAIL_CONSTS_H */
+#endif /* ifndef GQMPS2_CONSTS_H */

@@ -11,11 +11,11 @@
 @file case_params_parser.h
 @brief Simulation case parameters parser.
 */
-#ifndef GQMPS2_DETAIL_CASE_PARAMS_PARSER_H
-#define GQMPS2_DETAIL_CASE_PARAMS_PARSER_H
+#ifndef GQMPS2_CASE_PARAMS_PARSER_H
+#define GQMPS2_CASE_PARAMS_PARSER_H
 
 
-#include "gqmps2/detail/consts.h"
+#include "gqmps2/consts.h"
 
 #include <iostream>
 #include <fstream>                                  // ifstream
@@ -101,4 +101,4 @@ private:
   json case_params_;
 };
 } /* gqmps2 */ 
-#endif /* ifndef GQMPS2_DETAIL_CASE_PARAMS_PARSER_H */
+#endif /* ifndef GQMPS2_CASE_PARAMS_PARSER_H */

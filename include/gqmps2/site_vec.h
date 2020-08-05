@@ -12,8 +12,8 @@
 @brief One-dimensional vector representation of the local Hilbert spaces of the
        system.
 */
-#ifndef GQMPS2_DETAIL_SITE_VEC_H
-#define GQMPS2_DETAIL_SITE_VEC_H
+#ifndef GQMPS2_SITE_VEC_H
+#define GQMPS2_SITE_VEC_H
 
 
 #include "gqten/gqten.h"  // IndexVec
@@ -88,4 +88,4 @@ public:
   IndexVec sites;     ///< Local Hilbert spaces represented by a vector of Index with OUT direction.
 };
 } /* gqmps2 */ 
-#endif /* ifndef GQMPS2_DETAIL_SITE_VEC_H */
+#endif /* ifndef GQMPS2_SITE_VEC_H */

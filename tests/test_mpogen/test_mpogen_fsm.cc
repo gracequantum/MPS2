@@ -5,7 +5,7 @@
 * 
 * Description: GraceQ/MPS2 project. Unittests for finite state machine used by MPO generator.
 */
-#include "gqmps2/detail/mpogen/fsm.h"
+#include "gqmps2/mpogen/fsm.h"
 
 #include "gtest/gtest.h"
 
