@@ -13,6 +13,8 @@
 #include "gqmps2/site_vec.h"                    // SiteVec
 #include "gqmps2/mpogen/mpogen.h"               // MPOGenerator
 #include "gqmps2/algorithm/lanczos_solver.h"    // LanczosParams
+// Algorithms
+#include "gqmps2/algorithm/dmrg/two_site_update_finite_dmrg.h"
 #include "gqten/gqten.h"
 
 #include <string>
@@ -24,44 +26,6 @@
 namespace gqmps2 {
 using namespace gqten;
 
-
-// Two sites update algorithm.
-struct SweepParams {
-  SweepParams(
-      const long sweeps,
-      const long dmin, const long dmax, const double cutoff,
-      const bool fileio,
-      const char workflow,
-      const LanczosParams &lancz_params) :
-      Sweeps(sweeps), Dmin(dmin), Dmax(dmax), Cutoff(cutoff), FileIO(fileio),
-      Workflow(workflow),
-      LanczParams(lancz_params) {}
-
-  long Sweeps;
-
-  long Dmin;
-  long Dmax;
-  double Cutoff;
-
-  bool FileIO;
-  char Workflow;
-
-  LanczosParams LanczParams;
-};
-
-template <typename TenType>
-double TwoSiteAlgorithm(
-    std::vector<TenType *> &,
-    const std::vector<TenType *> &,
-    const SweepParams &);
-
-
-template <typename TenType>
-double TwoSiteAlgorithm(
-  std::vector<TenType *> &,
-  const std::vector<TenType *> &,
-  const SweepParams &,
-  std::vector<double>);
 
 // MPS operations.
 template <typename TenType>
@@ -227,8 +191,6 @@ MeasuRes<TenElemType> MeasureMultiSiteOp(
 
 
 // Implementation details
-#include "gqmps2/two_site_algo_impl.h"
-#include "gqmps2/two_site_algo_impl_with_noise.h"
 #include "gqmps2/mps_ops_impl.h"
 #include "gqmps2/mps_measu_impl.h"
 

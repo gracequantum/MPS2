@@ -64,15 +64,18 @@ add_unittest(test_mpogen
   "" "" "${MATH_LIB_LINK_FLAGS}" ""
 )
 
-# Test Lanczos algorithm.
+## Test algorithms
+# Lanczos solver
 add_unittest(test_lanczos_solver
   "test_algorithm/test_lanczos_solver.cc"
   "" "" "${MATH_LIB_LINK_FLAGS}" ""
 )
 
-# Test two site algorithm.
+# Two-site update finite DMRG
 add_unittest(test_two_site_algo
-  test_two_site_algo.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
+  "test_algorithm/test_two_site_update_finite_dmrg.cc"
+  "" "" "${MATH_LIB_LINK_FLAGS}" ""
+)
 
 # Test MPS measurement.
 add_unittest(test_mps_measu
