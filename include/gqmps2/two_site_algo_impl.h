@@ -7,6 +7,7 @@
 */
 #include "gqmps2/gqmps2.h"
 #include "gqmps2/one_dim_tn/mpo.h"    // MPO
+#include "gqmps2/utilities.h"         // ReadGQTensorFromFile, WriteGQTensorTOFile, IsPathExist, CreatPath
 #include "gqten/gqten.h"
 
 #include <iostream>

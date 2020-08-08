@@ -20,8 +20,6 @@
 #include <iostream>
 #include <fstream>
 
-#include <sys/stat.h>
-
 
 namespace gqmps2 {
 using namespace gqten;
@@ -225,41 +223,7 @@ MeasuRes<TenElemType> MeasureMultiSiteOp(
   const std::vector<std::vector<long>> &sites_set,
   const std::vector<std::vector<long>> &insertsites_set,
   const std::string &res_file_basename);
-
-// System I/O functions.
-template <typename TenType>
-inline void WriteGQTensorTOFile(const TenType &t, const std::string &file) {
-  std::ofstream ofs(file, std::ofstream::binary);
-  bfwrite(ofs, t);
-  ofs.close();
-}
-
-
-template <typename TenType>
-inline void ReadGQTensorFromFile(TenType * &rpt, const std::string &file) {
-  std::ifstream ifs(file, std::ifstream::binary);
-  rpt = new TenType();
-  bfread(ifs, *rpt);
-  ifs.close();
-}
-
-
-inline bool IsPathExist(const std::string &path) {
-  struct stat buffer;
-  return (stat(path.c_str(), &buffer) == 0);
-}
-
-
-inline void CreatPath(const std::string &path) {
-  const int dir_err = mkdir(
-                          path.c_str(),
-                          S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  if (dir_err == -1) {
-    std::cout << "error creating directory!" << std::endl;
-    exit(1);
-  }
-}
-} /* gqmps2 */ 
+} /* gqmps2 */
 
 
 // Implementation details
