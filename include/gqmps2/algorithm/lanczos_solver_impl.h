@@ -5,10 +5,12 @@
 * 
 * Description: GraceQ/MPS2 project. Implementation details for Lanczos solver.
 */
-#include "gqmps2/gqmps2.h"
+#include "gqmps2/algorithm/lanczos_solver.h"    // LanczosParams
 #include "gqten/gqten.h"
 
+
 #include <iostream>
+#include <vector>     // vector
 #include <cstring>
 
 #include "mkl.h"
@@ -67,6 +69,14 @@ inline double Real(const GQTEN_Complex z) { return z.real(); }
 
 
 // Lanczos solver.
+template <typename TenElemType>
+struct LanczosRes {
+  long iters;
+  double gs_eng;
+  GQTensor<TenElemType> *gs_vec;
+};
+
+
 template <typename TenElemType>
 LanczosRes<TenElemType> LanczosSolver(
     const std::vector<GQTensor<TenElemType> *> &rpeff_ham,

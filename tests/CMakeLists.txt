@@ -65,7 +65,10 @@ add_unittest(test_mpogen
 )
 
 # Test Lanczos algorithm.
-add_unittest(test_lanczos test_lanczos.cc "" "" "${MATH_LIB_LINK_FLAGS}" "")
+add_unittest(test_lanczos_solver
+  "test_algorithm/test_lanczos_solver.cc"
+  "" "" "${MATH_LIB_LINK_FLAGS}" ""
+)
 
 # Test two site algorithm.
 add_unittest(test_two_site_algo

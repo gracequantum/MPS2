@@ -9,9 +9,10 @@
 #define GQMPS2_GQMPS2_H
 
 
-#include "gqmps2/case_params_parser.h"     // CaseParamsParserBasic
-#include "gqmps2/site_vec.h"               // SiteVec
-#include "gqmps2/mpogen/mpogen.h"          // MPOGenerator
+#include "gqmps2/case_params_parser.h"          // CaseParamsParserBasic
+#include "gqmps2/site_vec.h"                    // SiteVec
+#include "gqmps2/mpogen/mpogen.h"               // MPOGenerator
+#include "gqmps2/algorithm/lanczos_solver.h"    // LanczosParams
 #include "gqten/gqten.h"
 
 #include <string>
@@ -24,33 +25,6 @@
 
 namespace gqmps2 {
 using namespace gqten;
-
-
-// Lanczos Ground state search algorithm.
-struct LanczosParams {
-  LanczosParams(double err, long max_iter) :
-      error(err), max_iterations(max_iter) {}
-  LanczosParams(double err) : LanczosParams(err, 200) {}
-  LanczosParams(void) : LanczosParams(1.0E-7, 200) {}
-  LanczosParams(const LanczosParams &lancz_params) :
-      LanczosParams(lancz_params.error, lancz_params.max_iterations) {}
-
-  double error;
-  long max_iterations;
-};
-
-template <typename TenElemType>
-struct LanczosRes {
-  long iters;
-  double gs_eng;
-  GQTensor<TenElemType> *gs_vec;
-};
-
-template <typename TenElemType>
-LanczosRes<TenElemType> LanczosSolver(
-    const std::vector<GQTensor<TenElemType> *> &, GQTensor<TenElemType> *,
-    const LanczosParams &,
-    const std::string &);
 
 
 // Two sites update algorithm.
@@ -289,7 +263,6 @@ inline void CreatPath(const std::string &path) {
 
 
 // Implementation details
-#include "gqmps2/lanczos_impl.h"
 #include "gqmps2/two_site_algo_impl.h"
 #include "gqmps2/two_site_algo_impl_with_noise.h"
 #include "gqmps2/mps_ops_impl.h"

@@ -5,10 +5,11 @@
 * 
 * Description: GraceQ/mps2 project. Lanczos algorithm unittests.
 */
-#include "gtest/gtest.h"
+#include "gqmps2/algorithm/lanczos_solver.h"
+#include "../testing_utils.h"
 #include "gqten/gqten.h"
-#include "gqmps2/gqmps2.h"
-#include "testing_utils.h"
+
+#include "gtest/gtest.h"
 
 #include <vector>
 #include <iostream>
