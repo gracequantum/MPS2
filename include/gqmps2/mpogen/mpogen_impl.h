@@ -55,7 +55,10 @@ template <typename TenElemType>
 MPOGenerator<TenElemType>::MPOGenerator(
     const SiteVec & site_vec,
     const QN & zero_div
-) : N_(site_vec.size), zero_div_(zero_div), fsm_(site_vec.size) {
+) : N_(site_vec.size),
+    site_vec_(site_vec),
+    zero_div_(zero_div),
+    fsm_(site_vec.size) {
   pb_out_vector_.reserve(N_);
   pb_in_vector_.reserve(N_);
   id_op_vector_.reserve(N_);
@@ -246,7 +249,7 @@ void MPOGenerator<TenElemType>::AddTerm(
 
 
 template <typename TenElemType>
-typename MPOGenerator<TenElemType>::PGQTensorVec
+MPO<typename MPOGenerator<TenElemType>::GQTensorT>
 MPOGenerator<TenElemType>::Gen(void) {
   auto fsm_comp_mat_repr = fsm_.GenCompressedMatRepr();
   auto label_coef_mapping = coef_label_convertor_.GetLabelObjMapping();
@@ -257,7 +260,7 @@ MPOGenerator<TenElemType>::Gen(void) {
     std::cout << std::setw(3) << mpo_ten_repr.cols << std::endl;
   }
 
-  PGQTensorVec mpo(N_);
+  MPO<GQTensorT> mpo(N_);
   Index trans_vb({QNSector(zero_div_, 1)}, OUT);
   std::vector<size_t> transposed_idxs;
   for (long i = 0; i < N_; ++i) {
@@ -347,60 +350,60 @@ std::vector<size_t> MPOGenerator<TenElemType>::SortSparOpReprMatColsByQN_(
 
 
 template <typename TenElemType>
-typename MPOGenerator<TenElemType>::GQTensorT *
+typename MPOGenerator<TenElemType>::GQTensorT
 MPOGenerator<TenElemType>::HeadMpoTenRepr2MpoTen_(
     const SparOpReprMat &op_repr_mat,
     const Index &rvb,
     const TenElemVec &label_coef_mapping, const GQTensorVec &label_op_mapping) {
-  auto pmpo_ten = new GQTensorT({pb_in_vector_.front(), rvb, pb_out_vector_.front()});
+  auto mpo_ten = GQTensorT({pb_in_vector_.front(), rvb, pb_out_vector_.front()});
   for (size_t y = 0; y < op_repr_mat.cols; ++y) {
     auto elem = op_repr_mat(0, y);
     if (elem != kNullOpRepr) {
       auto op = elem.Realize(label_coef_mapping, label_op_mapping);
-      AddOpToHeadMpoTen(pmpo_ten, op, y);
+      AddOpToHeadMpoTen(&mpo_ten, op, y);
     }
   }
-  return pmpo_ten;
+  return mpo_ten;
 }
 
 
 template <typename TenElemType>
-typename MPOGenerator<TenElemType>::GQTensorT *
+typename MPOGenerator<TenElemType>::GQTensorT
 MPOGenerator<TenElemType>::TailMpoTenRepr2MpoTen_(
     const SparOpReprMat &op_repr_mat,
     const Index &lvb,
     const TenElemVec &label_coef_mapping, const GQTensorVec &label_op_mapping) {
-  auto pmpo_ten = new GQTensor<TenElemType>({pb_in_vector_.back(), lvb, pb_out_vector_.back()});
+  auto mpo_ten = GQTensor<TenElemType>({pb_in_vector_.back(), lvb, pb_out_vector_.back()});
   for (size_t x = 0; x < op_repr_mat.rows; ++x) {
     auto elem = op_repr_mat(x, 0);
     if (elem != kNullOpRepr) {
       auto op = elem.Realize(label_coef_mapping, label_op_mapping);
-      AddOpToTailMpoTen(pmpo_ten, op, x);
+      AddOpToTailMpoTen(&mpo_ten, op, x);
     }
   }
-  return pmpo_ten;
+  return mpo_ten;
 }
 
 
 template <typename TenElemType>
-typename MPOGenerator<TenElemType>::GQTensorT *
+typename MPOGenerator<TenElemType>::GQTensorT
 MPOGenerator<TenElemType>::CentMpoTenRepr2MpoTen_(
     const SparOpReprMat &op_repr_mat,
     const Index &lvb,
     const Index &rvb,
     const TenElemVec &label_coef_mapping, const GQTensorVec &label_op_mapping,
     const long site) {
-  auto pmpo_ten = new GQTensor<TenElemType>({lvb, pb_in_vector_[site], pb_out_vector_[site], rvb});
+  auto mpo_ten = GQTensor<TenElemType>({lvb, pb_in_vector_[site], pb_out_vector_[site], rvb});
   for (size_t x = 0; x < op_repr_mat.rows; ++x) {
     for (size_t y = 0; y < op_repr_mat.cols; ++y) {
       auto elem = op_repr_mat(x, y);
       if (elem != kNullOpRepr) {
         auto op = elem.Realize(label_coef_mapping, label_op_mapping);
-        AddOpToCentMpoTen(pmpo_ten, op, x, y);
+        AddOpToCentMpoTen(&mpo_ten, op, x, y);
       }
     }
   }
-  return pmpo_ten;
+  return mpo_ten;
 }
 
 

@@ -7,6 +7,7 @@
 * Reference: Arxiv: 1501.05504v2
 */
 #include "gqmps2/gqmps2.h"
+#include "gqmps2/one_dim_tn/mpo.h"    // MPO
 #include "gqten/gqten.h"
 
 #include <iostream>
@@ -41,15 +42,11 @@ void FuseIndex(GQTensor<TenElemType>* &T, int i, int j);
 inline double MeasureEE(const DGQTensor *s, const long sdim);
 inline std::string GenBlockFileName(const std::string &dir, const long blk_len);
 inline void RemoveFile(const std::string &file);
-template<typename TenType>
-std::pair<std::vector<TenType *>, std::vector<TenType *>> InitBlocks(
-  const std::vector<TenType *> &mps, const std::vector<TenType *> &mpo,
-  const SweepParams &sweep_params);
 
 // Two-site algorithm
 template <typename TenType>
 double TwoSiteAlgorithm(
-  std::vector<TenType *> &mps, const std::vector<TenType *> &mpo,
+  std::vector<TenType *> &mps, const MPO<TenType> &mpo,
   const SweepParams &sweep_params, std::vector<double> noise) {
   if ( sweep_params.FileIO && !IsPathExist(kRuntimeTempPath)) {
     CreatPath(kRuntimeTempPath);
@@ -79,7 +76,7 @@ double TwoSiteAlgorithm(
 
 template <typename TenType>
 double TwoSiteSweep(
-  std::vector<TenType *> &mps, const std::vector<TenType *> &mpo,
+  std::vector<TenType *> &mps, const MPO<TenType> &mpo,
   std::vector<TenType *> &lblocks, std::vector<TenType *> &rblocks,
   const SweepParams &sweep_params,const double noise_sweep) {
   auto N = mps.size();
@@ -98,7 +95,7 @@ template <typename TenType>
 double TwoSiteUpdate(
   const long i,
   std::vector<TenType *> &mps,
-  const std::vector<TenType *> &mpo,
+  const MPO<TenType> &mpo,
   std::vector<TenType*> &lblocks,
   std::vector<TenType *> &rblocks,
   const SweepParams &sweep_params, const char dir, const double noise) {
@@ -199,8 +196,9 @@ double TwoSiteUpdate(
 // Lanczos
   std::vector<TenType *>eff_ham(4);
   eff_ham[0] = lblocks[lblock_len];
-  eff_ham[1] = mpo[lsite_idx];
-  eff_ham[2] = mpo[rsite_idx];
+  // Safe const casts for MPO local tensors.
+  eff_ham[1] = const_cast<TenType *>(&mpo[lsite_idx]);
+  eff_ham[2] = const_cast<TenType *>(&mpo[rsite_idx]);
   eff_ham[3] = rblocks[rblock_len];
   auto init_state = Contract(
     *mps[lsite_idx], *mps[rsite_idx],
@@ -335,7 +333,7 @@ double TwoSiteUpdate(
       delete svd_pv;
 
       if (i == 0) {
-        new_lblock = Contract(*mps[i], *mpo[i], {{0}, {0}});
+        new_lblock = Contract(*mps[i], mpo[i], {{0}, {0}});
         auto temp_new_lblock = Contract(
           *new_lblock, Dag(*mps[i]),
           {{2}, {0}});
@@ -343,7 +341,7 @@ double TwoSiteUpdate(
         new_lblock = temp_new_lblock;
       } else if (i != N-2) {
         new_lblock = Contract(*lblocks[i], *mps[i], {{0}, {0}});
-        auto temp_new_lblock = Contract(*new_lblock, *mpo[i], {{0, 2}, {0, 1}});
+        auto temp_new_lblock = Contract(*new_lblock, mpo[i], {{0, 2}, {0, 1}});
         delete new_lblock;
         new_lblock = temp_new_lblock;
         temp_new_lblock = Contract(*new_lblock, Dag(*mps[i]), {{0, 2}, {0, 1}});
@@ -396,13 +394,13 @@ double TwoSiteUpdate(
       mps[rsite_idx] = svd_pv;
 
       if (i == N-1) {
-        new_rblock = Contract(*mps[i], *mpo[i], {{1}, {0}});
+        new_rblock = Contract(*mps[i], mpo[i], {{1}, {0}});
         auto temp_new_rblock = Contract(*new_rblock, Dag(*mps[i]), {{2}, {1}});
         delete new_rblock;
         new_rblock = temp_new_rblock;
       } else if (i != 1) {
         new_rblock = Contract(*mps[i], *eff_ham[3], {{2}, {0}});
-        auto temp_new_rblock = Contract(*new_rblock, *mpo[i], {{1, 2}, {1, 3}});
+        auto temp_new_rblock = Contract(*new_rblock, mpo[i], {{1, 2}, {1, 3}});
         delete new_rblock;
         new_rblock = temp_new_rblock;
         temp_new_rblock = Contract(*new_rblock, Dag(*mps[i]), {{3, 1}, {1, 2}});

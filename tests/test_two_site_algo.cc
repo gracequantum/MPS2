@@ -20,7 +20,7 @@ using ZTenPtrVec = std::vector<ZGQTensor *>;
 
 template <typename TenType>
 void RunTestTwoSiteAlgorithmCase(
-    std::vector<TenType *> &mps, const std::vector<TenType *> &mpo,
+    std::vector<TenType *> &mps, const MPO<TenType> &mpo,
     const SweepParams &sweep_params,
     const double benmrk_e0, const double precision) {
   auto e0 = TwoSiteAlgorithm(mps, mpo, sweep_params);
@@ -29,7 +29,7 @@ void RunTestTwoSiteAlgorithmCase(
 
 template <typename TenType>
 void RunTestTwoSiteAlgorithmNoiseCase(
-  std::vector<TenType *> &mps, const std::vector<TenType *> &mpo,
+  std::vector<TenType *> &mps, const MPO<TenType> &mpo,
   const SweepParams &sweep_params, const std::vector<double> noise,
   const double benmrk_e0, const double precision) {
   auto e0 = TwoSiteAlgorithm(mps, mpo, sweep_params,noise);

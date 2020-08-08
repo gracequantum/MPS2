@@ -51,7 +51,7 @@ endmacro()
 add_unittest(test_site_vec test_site_vec.cc "" "" "" "")
 
 # Test one-dimensional tensor networks.
-add_unittest(test_ten_vec test_one_dim_tn/test_ten_vec.cc "" "" "" "")
+add_unittest(test_mpo test_one_dim_tn/test_mpo.cc "" "" "" "")
 
 ## Test MPO generation.
 add_unittest(test_mpogen_coef_op_alg

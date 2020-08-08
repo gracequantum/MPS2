@@ -17,6 +17,7 @@
 
 #include "gqmps2/consts.h"       // kNullIntVec
 #include "gqmps2/site_vec.h"     // SiteVec
+#include "gqmps2/one_dim_tn/mpo.h"    // MPO
 #include "gqmps2/mpogen/fsm.h"
 #include "gqmps2/mpogen/symb_alg/coef_op_alg.h"
 #include "gqten/gqten.h"
@@ -72,10 +73,11 @@ public:
 
   FSM GetFSM(void) { return fsm_; }
 
-  PGQTensorVec Gen(void);
+  MPO<GQTensorT> Gen(void);
 
 private:
   long N_;
+  SiteVec site_vec_;
   std::vector<Index> pb_in_vector_;
   std::vector<Index> pb_out_vector_;
   QN zero_div_;
@@ -93,17 +95,17 @@ private:
     const size_t, const size_t, const OpRepr &,
     const GQTensorVec &, const Index &);
 
-  GQTensorT *HeadMpoTenRepr2MpoTen_(
+  GQTensorT HeadMpoTenRepr2MpoTen_(
       const SparOpReprMat &,
       const Index &,
       const TenElemVec &, const GQTensorVec &);
 
-  GQTensorT *TailMpoTenRepr2MpoTen_(
+  GQTensorT TailMpoTenRepr2MpoTen_(
       const SparOpReprMat &,
       const Index &,
       const TenElemVec &, const GQTensorVec &);
 
-  GQTensorT *CentMpoTenRepr2MpoTen_(
+  GQTensorT CentMpoTenRepr2MpoTen_(
       const SparOpReprMat &,
       const Index &,
       const Index &,

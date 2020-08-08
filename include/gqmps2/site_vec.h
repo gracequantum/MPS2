@@ -57,10 +57,7 @@ public:
 
   @since version 0.2.0
   */
-  SiteVec(
-      const int N,
-      const Index &local_hilbert_space
-  ) {
+  SiteVec(const int N, const Index &local_hilbert_space) {
     assert(N > 0);
     size = N;
     sites = IndexVec(N, SetIndexDirOut(local_hilbert_space));
@@ -73,9 +70,7 @@ public:
 
   @since version 0.2.0
   */
-  SiteVec(
-      const IndexVec &local_hilbert_spaces
-  ) {
+  SiteVec(const IndexVec &local_hilbert_spaces) {
     size = local_hilbert_spaces.size();
     assert(size > 0);
     sites.reserve(size);
@@ -83,6 +78,16 @@ public:
       sites.emplace_back(SetIndexDirOut(local_hilbert_spaces[i]));
     }
   }
+
+  /**
+  The copy constructor.
+
+  @param site_vec A SiteVec instance.
+
+  @since version 0.2.0
+  */
+  SiteVec(const SiteVec &site_vec) :
+      size(site_vec.size), sites(site_vec.sites) {}
 
   int size;        ///< The size of the SiteVec, i.e. the size of the system.
   IndexVec sites;     ///< Local Hilbert spaces represented by a vector of Index with OUT direction.
