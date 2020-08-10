@@ -5,7 +5,8 @@
 * 
 * Description: GraceQ/MPS2 project. Implementation details for MPS operations.
 */
-#include "gqmps2/gqmps2.h"
+#include "gqmps2/one_dim_tn/mps/mps.h"    // MPS
+#include "gqmps2/consts.h"
 #include "gqmps2/utilities.h"     // IsPathExist, CreatPath
 #include "gqten/gqten.h"
 

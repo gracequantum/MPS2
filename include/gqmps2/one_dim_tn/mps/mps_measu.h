@@ -5,7 +5,7 @@
 * 
 * Description: GraceQ/MPS2 project. Implementation details for MPS observation measurements.
 */
-#include "gqmps2/gqmps2.h"
+#include "gqmps2/one_dim_tn/mps/mps.h"    // MPS
 #include "gqten/gqten.h"
 
 #include <string>
@@ -16,6 +16,24 @@
 
 namespace gqmps2 {
 using namespace gqten;
+
+
+template <typename AvgType>
+struct MeasuResElem {
+  MeasuResElem(void) = default;
+  MeasuResElem(const std::vector<long> &sites, const AvgType avg) :
+    sites(sites), avg(avg) {}
+
+  std::vector<long> sites;
+  AvgType avg;
+};
+
+template <typename AvgType>
+using MeasuRes = std::vector<MeasuResElem<AvgType>>;
+
+template <typename AvgType>
+using MeasuResSet = std::vector<MeasuRes<AvgType>>;
+
 
 
 // Forward declaration.
@@ -544,5 +562,33 @@ void DumpMeasuRes(
   ofs << "]";
 
   ofs.close();
+}
+
+
+/// For compatibility of old version, where we should input an indentity operator.
+/// For uniform indices
+template <typename TenElemType>
+MeasuRes<TenElemType> MeasureTwoSiteOp(
+  MPS<GQTensor<TenElemType>> & mps,
+  const std::vector<GQTensor<TenElemType>> & op_set,
+  const GQTensor<TenElemType> & insertop,
+  const GQTensor<TenElemType> & id,
+  const std::vector<std::vector<long>> &site_set,
+  const std::string & filename){
+  return MeasureTwoSiteOp(mps, op_set,insertop,site_set,filename);
+}
+
+
+/// For compatibility of old version, where we should input an indentity operator.
+/// For uniform indices
+template <typename TenElemType>
+MeasuRes<TenElemType> MeasureMultiSiteOp(
+  MPS<GQTensor<TenElemType>> & mps,
+  const std::vector<std::vector<GQTensor<TenElemType>>> & phy_op,
+  const std::vector<std::vector<GQTensor<TenElemType>>> & ins_op,
+  const GQTensor<TenElemType> & id,
+  const std::vector<std::vector<long>> & site_set,
+  const std::string &filename){
+  return MeasureMultiSiteOp(mps, phy_op,ins_op, site_set,filename);
 }
 } /* gqmps2 */ 
