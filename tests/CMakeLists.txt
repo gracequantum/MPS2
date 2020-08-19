@@ -51,6 +51,8 @@ endmacro()
 add_unittest(test_site_vec test_site_vec.cc "" "" "" "")
 
 ## Test one-dimensional tensor networks.
+# Test DuoVector class
+add_unittest(test_duovector test_one_dim_tn/test_duovector.cc "" "" "" "")
 # Test MPO class
 add_unittest(test_mpo test_one_dim_tn/test_mpo.cc "" "" "" "")
 # Test MPS measurement.
