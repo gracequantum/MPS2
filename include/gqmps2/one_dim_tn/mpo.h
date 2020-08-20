@@ -15,8 +15,10 @@
 #define GQMPS2_ONE_DIM_TN_MPO_H
 
 
-#include <memory>         // shared_ptr, make_shared
-#include <assert.h>       // assert
+#include <memory>       // shared_ptr, make_shared
+#include <vector>       // vector
+
+#include <assert.h>     // assert
 
 
 #ifdef Release
