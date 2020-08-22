@@ -58,13 +58,18 @@ add_unittest(test_ten_vec
   "test_one_dim_tn/test_ten_vec.cc"
   "" "" "${MATH_LIB_LINK_FLAGS}" ""
 )
-# Test MPO class
-add_unittest(test_mpo test_one_dim_tn/test_mpo.cc "" "" "" "")
-# Test MPS measurement.
-add_unittest(test_mps_measu
-  "./test_one_dim_tn/test_mps_measu.cc"
+# Test MPS class
+add_unittest(test_mps
+  "test_one_dim_tn/test_mps.cc"
   "" "" "${MATH_LIB_LINK_FLAGS}" ""
 )
+# Test MPO class
+add_unittest(test_mpo test_one_dim_tn/test_mpo.cc "" "" "" "")
+## Test MPS measurement.
+#add_unittest(test_mps_measu
+  #"./test_one_dim_tn/test_mps_measu.cc"
+  #"" "" "${MATH_LIB_LINK_FLAGS}" ""
+#)
 
 ## Test MPO generation.
 add_unittest(test_mpogen_coef_op_alg
@@ -77,17 +82,17 @@ add_unittest(test_mpogen
   "" "" "${MATH_LIB_LINK_FLAGS}" ""
 )
 
-## Test algorithms
-# Lanczos solver
-add_unittest(test_lanczos_solver
-  "test_algorithm/test_lanczos_solver.cc"
-  "" "" "${MATH_LIB_LINK_FLAGS}" ""
-)
-# Two-site update finite DMRG
-add_unittest(test_two_site_algo
-  "test_algorithm/test_two_site_update_finite_dmrg.cc"
-  "" "" "${MATH_LIB_LINK_FLAGS}" ""
-)
+### Test algorithms
+## Lanczos solver
+#add_unittest(test_lanczos_solver
+  #"test_algorithm/test_lanczos_solver.cc"
+  #"" "" "${MATH_LIB_LINK_FLAGS}" ""
+#)
+## Two-site update finite DMRG
+#add_unittest(test_two_site_algo
+  #"test_algorithm/test_two_site_update_finite_dmrg.cc"
+  #"" "" "${MATH_LIB_LINK_FLAGS}" ""
+#)
 
 ## Test simulation case parameters parser.
 add_unittest(test_case_params_parser
