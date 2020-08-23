@@ -3,7 +3,7 @@
 /*
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
 * Creation Date: 2020-08-19 21:36
-* 
+*
 * Description: GraceQ/MPS2 project. A fix size tensor vector class.
 */
 
@@ -29,7 +29,7 @@ using namespace gqten;
 /**
 A fix size tensor vector.
 
-@tparam TenT Type of the element tensor. 
+@tparam TenT Type of the element tensor.
 */
 template <typename TenT>
 class TenVec : public DuoVector<TenT> {
@@ -61,7 +61,7 @@ public:
   @param file The element tensor will be dumped to this file.
   */
   void DumpTen(const size_t idx, const std::string &file) const {
-    std::ofstream ofs(file, std::ofstream::binary); 
+    std::ofstream ofs(file, std::ofstream::binary);
     bfwrite(ofs, (*this)[idx]);
     ofs.close();
   }

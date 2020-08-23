@@ -3,7 +3,7 @@
 /*
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
 * Creation Date: 2020-08-19 16:40
-* 
+*
 * Description: GraceQ/MPS2 project. A fix size vector which supports maintaining
 *              elements using a reference (the memory managed by this class) or
 *              a pointer (the memory managed by user themselves).
@@ -18,6 +18,7 @@
 
 
 #include <vector>     // vector
+#include <utility>    // move
 
 
 namespace gqmps2 {
@@ -32,6 +33,11 @@ template <typename ElemT>
 class DuoVector {
 public:
   /**
+  Default constructor.
+  */
+  DuoVector(void) = default;
+
+  /**
   Create a DuoVector using its size.
 
   @param size The size of the DuoVector.
@@ -39,9 +45,54 @@ public:
   DuoVector(const size_t size) : raw_data_(size, nullptr) {}
 
   /**
+  Create a DuoVector by copying another DuoVector.
+
+  @param duovec A DuoVector instance.
+  */
+  DuoVector(const DuoVector &duovec) : raw_data_(duovec.size(), nullptr) {
+    for (size_t i = 0; i < duovec.size(); ++i) {
+      raw_data_[i] = new ElemT(duovec[i]);
+    }
+  }
+
+  /**
+  Copy a DuoVector.
+
+  @param rhs A DuoVector instance.
+  */
+  DuoVector<ElemT> &operator=(const DuoVector &rhs) {
+    ~DuoVector();
+    raw_data_ = std::vector<ElemT *>(rhs.size(), nullptr);
+    for (size_t i = 0; i < rhs[i]; ++i) {
+      raw_data_[i] = new ElemT(rhs[i]);
+    }
+    return *this;
+  }
+
+  /**
+  Create a DuoVector by moving raw data from another DuoVector instance.
+
+  @param duovec A DuoVector instance.
+  */
+  DuoVector(
+      DuoVector &&duovec
+  ) noexcept : raw_data_(std::move(duovec.raw_data_)) {}
+
+  /**
+  Move a DuoVector.
+
+  @param rhs A DuoVector instance.
+  */
+  DuoVector<ElemT> &operator=(DuoVector &&rhs) noexcept {
+    ~DuoVector();
+    raw_data_ = std::move(rhs.raw_data_);
+    return *this;
+  }
+
+  /**
   Destruct a DuoVector. Release memory it maintained.
   */
-  ~DuoVector(void) {
+  virtual ~DuoVector(void) {
     for (auto &rpelem : raw_data_) {
       if (rpelem != nullptr) {
         delete rpelem;
@@ -87,7 +138,7 @@ public:
   /**
   Read-only raw data access.
   */
-  const std::vector<const ElemT *> cdata(void) const { 
+  const std::vector<const ElemT *> cdata(void) const {
     std::vector<const ElemT *> craw_data;
     for (auto &rpelem : raw_data_) {
       craw_data.push_back(rpelem);
@@ -130,5 +181,5 @@ public:
 private:
   std::vector<ElemT *> raw_data_;
 };
-} /* gqmps2 */ 
+} /* gqmps2 */
 #endif /* ifndef GQMPS2_ONE_DIM_TN_FRAMEWORK_DUOVECTOR_H */

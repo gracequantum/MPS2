@@ -3,13 +3,14 @@
 /*
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
 * Creation Date: 2020-08-21 09:13
-* 
+*
 * Description: GraceQ/MPS2 project. Unittests for MPS .
 */
 #include "gqmps2/one_dim_tn/mps/mps.h"
 #include "gqten/gqten.h"
-
 #include "gtest/gtest.h"
+
+#include <utility>    // move
 
 using namespace gqmps2;
 using namespace gqten;
@@ -31,18 +32,18 @@ struct TestMPS : public testing::Test {
   Index vb012_in = InverseIndex(vb012_out);
   Tensor t0 = Tensor({pb_out, vb01_out});
   Tensor t1 = Tensor({vb01_in, pb_out, vb012_out});
-  Tensor t2 = Tensor({vb012_in, pb_out, vb012_out}); 
+  Tensor t2 = Tensor({vb012_in, pb_out, vb012_out});
   Tensor t3 = Tensor({vb012_in, pb_out, vb01_out});
   Tensor t4 = Tensor({vb01_in, pb_out});
 
   MPS<Tensor> mps = MPS<Tensor>(5);
 
   void SetUp(void) {
-    t0.Random(qn0); 
-    t1.Random(qn0); 
-    t2.Random(qn0); 
-    t3.Random(qn0); 
-    t4.Random(qn0); 
+    t0.Random(qn0);
+    t1.Random(qn0);
+    t2.Random(qn0);
+    t3.Random(qn0);
+    t4.Random(qn0);
     mps[0] = t0;
     mps[1] = t1;
     mps[2] = t2;
@@ -52,14 +53,14 @@ struct TestMPS : public testing::Test {
 };
 
 
-// Helpers
+// Helpers for testing MPS centralization.
 template <typename TenT>
 void CheckIsIdTen(const TenT &t) {
   auto shape = t.shape;
   EXPECT_EQ(shape.size(), 2);
   EXPECT_EQ(shape[0], shape[1]);
   for (long i = 0; i < shape[0]; ++i) {
-    EXPECT_DOUBLE_EQ(t.Elem({i, i}), 1.0);
+    EXPECT_NEAR(t.Elem({i, i}), 1.0, 1E-15);
   }
 }
 
@@ -148,6 +149,50 @@ TEST_F(TestMPS, TestCentralize) {
   RunTestMPSCentralizeCase(mps, 2);
   RunTestMPSCentralizeCase(mps, 4);
   RunTestMPSCentralizeCase(mps);
+}
+
+
+TEST_F(TestMPS, TestCopyAndMove) {
+  mps.Centralize(2);
+  const MPS<Tensor> &crmps = mps;
+
+  MPS<Tensor> mps_copy(mps);
+  const MPS<Tensor> &crmps_copy = mps_copy;
+  EXPECT_EQ(mps_copy.GetCenter(), mps.GetCenter());
+  for (size_t i = 0; i < mps.size(); ++i) {
+    EXPECT_EQ(mps_copy.GetTenCanoType(i), mps.GetTenCanoType(i));
+    EXPECT_EQ(crmps_copy[i], crmps[i]);
+    EXPECT_NE(crmps_copy(i), crmps(i));
+  }
+
+  MPS<Tensor> mps_copy2 = mps;
+  const MPS<Tensor> &crmps_copy2 = mps_copy2;
+  EXPECT_EQ(mps_copy2.GetCenter(), mps.GetCenter());
+  for (size_t i = 0; i < mps.size(); ++i) {
+    EXPECT_EQ(mps_copy2.GetTenCanoType(i), mps.GetTenCanoType(i));
+    EXPECT_EQ(crmps_copy2[i], crmps[i]);
+    EXPECT_NE(crmps_copy2(i), crmps(i));
+  }
+
+  auto craw_data_copy = mps_copy.cdata();
+  MPS<Tensor> mps_move(std::move(mps_copy));
+  const MPS<Tensor> &crmps_move = mps_move;
+  EXPECT_EQ(mps_move.GetCenter(), mps.GetCenter());
+  for (size_t i = 0; i < mps.size(); ++i) {
+    EXPECT_EQ(mps_move.GetTenCanoType(i), mps.GetTenCanoType(i));
+    EXPECT_EQ(crmps_move[i], crmps[i]);
+    EXPECT_EQ(crmps_move(i), craw_data_copy[i]);
+  }
+
+  auto craw_data_copy2 = mps_copy2.cdata();
+  MPS<Tensor> mps_move2 = std::move(mps_copy2);
+  const MPS<Tensor> &crmps_move2 = mps_move2;
+  EXPECT_EQ(mps_move2.GetCenter(), mps.GetCenter());
+  for (size_t i = 0; i < mps.size(); ++i) {
+    EXPECT_EQ(mps_move2.GetTenCanoType(i), mps.GetTenCanoType(i));
+    EXPECT_EQ(crmps_move2[i], crmps[i]);
+    EXPECT_EQ(crmps_move2(i), craw_data_copy2[i]);
+  }
 }
 
 

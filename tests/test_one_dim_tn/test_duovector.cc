@@ -3,12 +3,13 @@
 /*
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
 * Creation Date: 2020-08-19 17:33
-* 
+*
 * Description: GraceQ/MPS2 project. Unittests for DuoVector .
 */
 #include "gqmps2/one_dim_tn/framework/duovector.h"
-
 #include "gtest/gtest.h"
+
+#include <utility>    // move
 
 
 using namespace gqmps2;
@@ -18,19 +19,48 @@ template <typename ElemT>
 void RunTestDuoVectorConstructorsCase(const size_t size) {
   DuoVector<ElemT> duovec(size);
   EXPECT_EQ(duovec.size(), size);
-  
   auto craw_data = duovec.cdata();
   for (auto &rpelem : craw_data) {
     EXPECT_EQ(rpelem, nullptr);
   }
+
+  for (size_t i = 0; i < size; ++i) {
+    duovec[i] = i + 5;
+  }
+
+  DuoVector<ElemT> duovec_copy(duovec);
+  for (size_t i = 0; i < size; ++i) {
+    EXPECT_EQ(duovec_copy[i], duovec[i]);
+    EXPECT_NE(duovec_copy(i), duovec(i));
+  }
+  auto craw_data_copy = duovec_copy.cdata();
+  DuoVector<ElemT> duovec_moved(std::move(duovec_copy));
+  for (size_t i = 0; i < size; ++i) {
+    EXPECT_EQ(duovec_moved(i), craw_data_copy[i]);
+    EXPECT_EQ(duovec_moved[i], duovec[i]);
+  }
+
+  auto duovec_copy2 = duovec;
+  for (size_t i = 0; i < size; ++i) {
+    EXPECT_EQ(duovec_copy2[i], duovec[i]);
+    EXPECT_NE(duovec_copy2(i), duovec(i));
+  }
+  auto craw_data_copy2 = duovec_copy2.cdata();
+  auto duovec_moved2 = std::move(duovec_copy2);
+  for (size_t i = 0; i < size; ++i) {
+    EXPECT_EQ(duovec_moved2(i), craw_data_copy2[i]);
+    EXPECT_EQ(duovec_moved2[i], duovec[i]);
+  }
 }
 
+
 TEST(TestDuoVector, TestConstructors) {
-  RunTestDuoVectorConstructorsCase<int>(0);
+  DuoVector<int> default_duovec;
+  EXPECT_EQ(default_duovec.size(), 0);
+
   RunTestDuoVectorConstructorsCase<int>(1);
   RunTestDuoVectorConstructorsCase<int>(3);
 
-  RunTestDuoVectorConstructorsCase<double>(0);
   RunTestDuoVectorConstructorsCase<double>(1);
   RunTestDuoVectorConstructorsCase<double>(3);
 }
