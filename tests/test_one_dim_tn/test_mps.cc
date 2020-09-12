@@ -214,3 +214,19 @@ TEST_F(TestMPS, TestElemAccess) {
   EXPECT_EQ(mps.GetTenCanoType(3), MPSTenCanoType::NONE);
   EXPECT_EQ(crmps.GetTenCanoType(3), MPSTenCanoType::NONE);
 }
+
+
+TEST_F(TestMPS, TestIO) {
+  MPS<Tensor> mps2(5);
+  mps.Dump();
+  mps2.Load();
+  for (size_t i = 0; i < 5; ++i) {
+    EXPECT_EQ(mps2[i], mps[i]);
+  }
+
+  mps.Dump("mps2");
+  mps2.Load("mps2");
+  for (size_t i = 0; i < 5; ++i) {
+    EXPECT_EQ(mps2[i], mps[i]);
+  }
+}

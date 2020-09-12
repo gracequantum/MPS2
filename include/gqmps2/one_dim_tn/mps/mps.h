@@ -3,7 +3,7 @@
 /*
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
 * Creation Date: 2020-08-10 11:32
-* 
+*
 * Description: GraceQ/MPS2 project. The matrix product state (MPS) class.
 */
 
@@ -16,6 +16,8 @@
 
 
 #include "gqmps2/one_dim_tn/framework/ten_vec.h"    // TenVec
+#include "gqmps2/consts.h"    // kMpsPath
+#include "gqmps2/utilities.h"     // IsPathExist, CreatPath
 #include "gqten/gqten.h"    // Svd, Contract
 
 #include <vector>     // vector
@@ -41,6 +43,13 @@ enum MPSTenCanoType {
   LEFT,   ///< Left canonical MPS tensor.
   RIGHT   ///< Right canonical MPS tensor.
 };
+
+
+// Helpers
+std::string GenMPSTenName(const std::string &mps_path, const size_t idx) {
+  return mps_path + "/" +
+         kMpsTenBaseName + std::to_string(idx) + "." + kGQTenFileSuffix;
+}
 
 
 /**
@@ -101,7 +110,7 @@ public:
   @param idx Index of the MPS local tensor.
   */
   const ElemT *operator()(const size_t idx) const {
-    return DuoVector<ElemT>::operator()(idx); 
+    return DuoVector<ElemT>::operator()(idx);
   }
 
   // MPS global operations.
@@ -128,7 +137,35 @@ public:
   MPSTenCanoType GetTenCanoType(const size_t idx) const {
     return tens_cano_type_[idx];
   }
-  
+
+  // HDD I/O
+  /**
+  Dump MPS to HDD.
+
+  @param mps_path Path to the MPS directory.
+  */
+  void Dump(const std::string &mps_path = kMpsPath) const {
+    if (!IsPathExist(mps_path)) { CreatPath(mps_path); }
+    std::string file;
+    for (size_t i = 0; i < this->size(); ++i) {
+      file = GenMPSTenName(mps_path, i);
+      this->DumpTen(i, file);
+    }
+  }
+
+  /**
+  Load MPS from HDD.
+
+  @param mps_path Path to the MPS directory.
+  */
+  void Load(const std::string &mps_path = kMpsPath) {
+    std::string file;
+    for (size_t i = 0; i < this->size(); ++i) {
+      file = GenMPSTenName(mps_path, i);
+      this->LoadTen(i, file);
+    }
+  }
+
 private:
   int center_;
   std::vector<MPSTenCanoType> tens_cano_type_;
