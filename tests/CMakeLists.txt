@@ -98,4 +98,4 @@ add_unittest(test_mpogen
 add_unittest(test_case_params_parser
   test_case_params_parser.cc
   "" "" "${MATH_LIB_LINK_FLAGS}"
-  "${CMAKE_CURRENT_LIST_DIR}/test_data/test-params.json" "")
+  "${CMAKE_CURRENT_LIST_DIR}/testdata/test-params.json" "")
