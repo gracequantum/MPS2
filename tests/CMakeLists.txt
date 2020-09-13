@@ -65,11 +65,11 @@ add_unittest(test_mps
 )
 # Test MPO class
 add_unittest(test_mpo test_one_dim_tn/test_mpo.cc "" "" "" "")
-## Test MPS measurement.
-#add_unittest(test_mps_measu
-  #"./test_one_dim_tn/test_mps_measu.cc"
-  #"" "" "${MATH_LIB_LINK_FLAGS}" ""
-#)
+# Test MPS measurement.
+add_unittest(test_mps_measu
+  "test_one_dim_tn/test_mps_measu.cc"
+  "" "" "${MATH_LIB_LINK_FLAGS}" ""
+)
 
 ## Test MPO generation.
 add_unittest(test_mpogen_coef_op_alg
