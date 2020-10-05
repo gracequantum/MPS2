@@ -8,3 +8,4 @@ external/gqten/
 *swp
 *swo
 .DS_Store
+.ycm_extra_conf.py
