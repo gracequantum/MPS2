@@ -12,21 +12,29 @@
 
 #include "gtest/gtest.h"
 
+
 using namespace gqmps2;
 using namespace gqten;
 
+using DSiteVec = SiteVec<DGQTensor>;
+using ZSiteVec = SiteVec<ZGQTensor>;
 using DMPOGenerator = MPOGenerator<GQTEN_Double>;
 using ZMPOGenerator = MPOGenerator<GQTEN_Complex>;
+
 
 struct TestMpoGenerator : public testing::Test {
   Index phys_idx_out = Index({
                            QNSector(QN({QNNameVal("Sz", -1)}), 1),
                            QNSector(QN({QNNameVal("Sz",  1)}), 1)}, OUT);
   Index phys_idx_in = InverseIndex(phys_idx_out);
-  SiteVec site_vec_2 = SiteVec(2, phys_idx_out);
-  SiteVec site_vec_3 = SiteVec(3, phys_idx_out);
-  SiteVec site_vec_4 = SiteVec(4, phys_idx_out);
-  SiteVec site_vec_5 = SiteVec(5, phys_idx_out);
+  DSiteVec dsite_vec_2 = DSiteVec(2, phys_idx_out);
+  DSiteVec dsite_vec_3 = DSiteVec(3, phys_idx_out);
+  DSiteVec dsite_vec_4 = DSiteVec(4, phys_idx_out);
+  DSiteVec dsite_vec_5 = DSiteVec(5, phys_idx_out);
+  ZSiteVec zsite_vec_2 = ZSiteVec(2, phys_idx_out);
+  ZSiteVec zsite_vec_3 = ZSiteVec(3, phys_idx_out);
+  ZSiteVec zsite_vec_4 = ZSiteVec(4, phys_idx_out);
+  ZSiteVec zsite_vec_5 = ZSiteVec(5, phys_idx_out);
   DGQTensor dsz = DGQTensor({phys_idx_in, phys_idx_out});
   ZGQTensor zsz = ZGQTensor({phys_idx_in, phys_idx_out});
   ZGQTensor zsx = ZGQTensor({phys_idx_in, phys_idx_out});
@@ -53,7 +61,7 @@ struct TestMpoGenerator : public testing::Test {
 
 
 TEST_F(TestMpoGenerator, TestInitialization) {
-  DMPOGenerator mpo_generator(site_vec_2, qn0);
+  DMPOGenerator mpo_generator(dsite_vec_2, qn0);
 }
 
 
@@ -62,14 +70,14 @@ TEST_F(TestMpoGenerator, TestAddTermCase1) {
   bchmk_m0.SetElem(0, 0, OpRepr(1));
   bchmk_m1.SetElem(0, 0, kIdOpRepr);
 
-  DMPOGenerator mpo_generator1(site_vec_2, qn0);
+  DMPOGenerator mpo_generator1(dsite_vec_2, qn0);
   mpo_generator1.AddTerm(1., {dsz}, {0});
   auto fsm1 = mpo_generator1.GetFSM();
   auto fsm_comp_mat_repr1 = fsm1.GenCompressedMatRepr();
   EXPECT_EQ(fsm_comp_mat_repr1[0], bchmk_m0);
   EXPECT_EQ(fsm_comp_mat_repr1[1], bchmk_m1);
 
-  DMPOGenerator mpo_generator3(site_vec_2, qn0);
+  DMPOGenerator mpo_generator3(dsite_vec_2, qn0);
   mpo_generator3.AddTerm(1., {dsz}, {0});
   mpo_generator3.AddTerm(0.0, {dsz}, {0});
   auto fsm3 = mpo_generator3.GetFSM();
@@ -85,7 +93,7 @@ TEST_F(TestMpoGenerator, TestAddTermCase2) {
   bchmk_m0.SetElem(0, 0, s);
   bchmk_m1.SetElem(0, 0, s+s);
 
-  DMPOGenerator mpo_generator1(site_vec_2, qn0);
+  DMPOGenerator mpo_generator1(dsite_vec_2, qn0);
   mpo_generator1.AddTerm(1., {dsz, dsz}, {0, 1});
   mpo_generator1.AddTerm(1., {dsz, dsz}, {0, 1});
   auto fsm1 = mpo_generator1.GetFSM();
@@ -109,7 +117,7 @@ TEST_F(TestMpoGenerator, TestAddTermCase3) {
   bchmk_m3.SetElem(0, 0, s);
   bchmk_m3.SetElem(1, 0, kIdOpRepr);
 
-  DMPOGenerator mpo_generator1(site_vec_4, qn0);
+  DMPOGenerator mpo_generator1(dsite_vec_4, qn0);
   mpo_generator1.AddTerm(1., {dsz, dsz}, {0, 1});
   mpo_generator1.AddTerm(1., {dsz, dsz}, {1, 2});
   mpo_generator1.AddTerm(1., {dsz, dsz}, {2, 3});
@@ -138,7 +146,7 @@ TEST_F(TestMpoGenerator, TestAddTermCase4) {
   bchmk_m4.SetElem(0, 0, kIdOpRepr);
   bchmk_m4.SetElem(0, 1, s);
 
-  DMPOGenerator mpo_generator1(site_vec_5, qn0);
+  DMPOGenerator mpo_generator1(dsite_vec_5, qn0);
   mpo_generator1.AddTerm(1., {dsz, dsz}, {0, 4});
   mpo_generator1.AddTerm(1., {dsz, dsz, dsz}, {1, 2, 4});
   mpo_generator1.AddTerm(1., {dsz, dsz, dsz}, {1, 2, 3});
@@ -174,7 +182,7 @@ TEST_F(TestMpoGenerator, TestAddTermCase5) {
 
   GQTEN_Double ja = 0.5, jb = 2.0;
 
-  DMPOGenerator mpo_generator1(site_vec_4, qn0);
+  DMPOGenerator mpo_generator1(dsite_vec_4, qn0);
   mpo_generator1.AddTerm(ja, {dsz, dsz}, {0, 1});
   mpo_generator1.AddTerm(ja, {dsz, dsz}, {0, 2});
   mpo_generator1.AddTerm(ja, {dsz, dsz}, {1, 3});
@@ -191,7 +199,7 @@ TEST_F(TestMpoGenerator, TestAddTermCase5) {
 
 
 TEST_F(TestMpoGenerator, TestAddTermCase6) {
-  ZMPOGenerator mpo_generator(site_vec_3, qn0);
+  ZMPOGenerator mpo_generator(zsite_vec_3, qn0);
   GQTEN_Complex J = 0.5, K = 2.0;
   mpo_generator.AddTerm(J, {zsx, zsx}, {0, 1});
   mpo_generator.AddTerm(J, {zsy, zsy}, {0, 1});

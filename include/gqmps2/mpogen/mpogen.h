@@ -45,7 +45,7 @@ public:
   using GQTensorVec = std::vector<GQTensorT>;
   using PGQTensorVec = std::vector<GQTensorT *>;
 
-  MPOGenerator(const SiteVec &, const QN &);
+  MPOGenerator(const SiteVec<GQTensorT> &, const QN &);
 
   void AddTerm(
       const TenElemType,
@@ -77,7 +77,7 @@ public:
 
 private:
   long N_;
-  SiteVec site_vec_;
+  SiteVec<GQTensorT> site_vec_;
   std::vector<Index> pb_in_vector_;
   std::vector<Index> pb_out_vector_;
   QN zero_div_;
@@ -85,8 +85,6 @@ private:
   FSM fsm_;
   LabelConvertor<TenElemType> coef_label_convertor_;
   LabelConvertor<GQTensorT> op_label_convertor_;
-
-  GQTensorT GenIdOpTen_(const Index &);
 
   std::vector<size_t> SortSparOpReprMatColsByQN_(
       SparOpReprMat &, Index &, const GQTensorVec &);

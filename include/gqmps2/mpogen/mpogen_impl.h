@@ -53,7 +53,7 @@ which is described by a SiteVec.
 */
 template <typename TenElemType>
 MPOGenerator<TenElemType>::MPOGenerator(
-    const SiteVec & site_vec,
+    const SiteVec<GQTensorT> & site_vec,
     const QN & zero_div
 ) : N_(site_vec.size),
     site_vec_(site_vec),
@@ -61,12 +61,11 @@ MPOGenerator<TenElemType>::MPOGenerator(
     fsm_(site_vec.size) {
   pb_out_vector_.reserve(N_);
   pb_in_vector_.reserve(N_);
-  id_op_vector_.reserve(N_);
   for (size_t i = 0; i < N_; ++i) {
     pb_out_vector_.emplace_back(site_vec.sites[i]);
     pb_in_vector_.emplace_back(InverseIndex(site_vec.sites[i]));
-    id_op_vector_.emplace_back(GenIdOpTen_(site_vec.sites[i]));
   }
+  id_op_vector_ = site_vec.id_ops;
   op_label_convertor_ = LabelConvertor<GQTensorT>(id_op_vector_[0]);
   std::vector<OpLabel> id_op_label_vector;
   for(auto iter = id_op_vector_.begin(); iter< id_op_vector_.end();iter++){
@@ -448,14 +447,4 @@ void AddOpToCentMpoTen(
     }
   }
 }
-
-
-template <typename TenElemType>
-GQTensor<TenElemType>
-MPOGenerator<TenElemType>::GenIdOpTen_(const Index &pb_out) {
-  auto pb_in = InverseIndex(pb_out);
-  auto id_op = GQTensorT({pb_in, pb_out});
-  for (long i = 0; i < pb_out.dim; ++i) { id_op({i, i}) = 1; }
-  return id_op;
-}
-} /* gqmps2 */ 
+} /* gqmps2 */
