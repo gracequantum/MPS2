@@ -3,7 +3,7 @@
 /*
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
 * Creation Date: 2020-07-29 14:29
-* 
+*
 * Description: GraceQ/MPS2 project. One-dimensional vector representation of the local Hilbert spaces of the system.
 */
 
@@ -16,7 +16,9 @@
 #define GQMPS2_SITE_VEC_H
 
 
-#include "gqten/gqten.h"  // IndexVec
+#include "gqten/gqten.h"  // Index, IndexVec, InverseIndex
+
+#include <vector>   // vector
 
 #include <assert.h>       // assert
 
@@ -41,11 +43,23 @@ Index SetIndexDirOut(const Index &idx) {
 }
 
 
+template <typename TenT>
+TenT GenIdOp(const Index &idx_out) {
+  auto idx_in = InverseIndex(idx_out);
+  TenT id_op({idx_in, idx_out});
+  for (int i = 0; i < idx_out.dim; ++i) { id_op({i, i}) = 1.0; }
+  return id_op;
+}
+
+
 /**
 Vector of the local Hilbert spaces of the system.
 
+@tparam TenT The type of tensor used in the system.
+
 @since version 0.2.0
 */
+template <typename TenT>
 class SiteVec {
 public:
   /**
@@ -61,6 +75,7 @@ public:
     assert(N > 0);
     size = N;
     sites = IndexVec(N, SetIndexDirOut(local_hilbert_space));
+    GenIdOpsVec_();
   }
 
   /**
@@ -77,6 +92,7 @@ public:
     for (int i = 0; i < size; ++i) {
       sites.emplace_back(SetIndexDirOut(local_hilbert_spaces[i]));
     }
+    GenIdOpsVec_();
   }
 
   /**
@@ -87,10 +103,26 @@ public:
   @since version 0.2.0
   */
   SiteVec(const SiteVec &site_vec) :
-      size(site_vec.size), sites(site_vec.sites) {}
+      size(site_vec.size), sites(site_vec.sites), id_ops(site_vec.id_ops) {}
 
-  int size;        ///< The size of the SiteVec, i.e. the size of the system.
-  IndexVec sites;     ///< Local Hilbert spaces represented by a vector of Index with OUT direction.
+  int size;                     ///< The size of the SiteVec, i.e. the size of the system.
+  IndexVec sites;               ///< Local Hilbert spaces represented by a vector of Index with OUT direction.
+  std::vector<TenT> id_ops;     ///< Identity operators on each site.
+
+private:
+  /**
+  Generate identity operators for each site.
+  */
+  void GenIdOpsVec_(void);
 };
-} /* gqmps2 */ 
+
+
+template <typename TenT>
+void SiteVec<TenT>::GenIdOpsVec_(void) {
+  id_ops.reserve(size);
+  for (int i = 0; i < size; ++i) {
+    id_ops.emplace_back(GenIdOp<TenT>(sites[i]));
+  }
+}
+} /* gqmps2 */
 #endif /* ifndef GQMPS2_SITE_VEC_H */
