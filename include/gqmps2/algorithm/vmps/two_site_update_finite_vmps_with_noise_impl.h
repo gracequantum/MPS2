@@ -6,7 +6,7 @@
 * Description: GraceQ/MPS2 project. Implementation details for two-site algorithm, with support for noise.
 * Reference: Arxiv: 1501.05504v2
 */
-#include "gqmps2/algorithm/dmrg/two_site_update_finite_dmrg.h"
+#include "gqmps2/algorithm/vmps/two_site_update_finite_vmps.h"
 #include "gqmps2/consts.h"
 #include "gqmps2/one_dim_tn/mpo.h"    // MPO
 #include "gqmps2/utilities.h"         // ReadGQTensorFromFile, WriteGQTensorTOFile, IsPathExist, CreatPath

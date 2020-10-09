@@ -1042,7 +1042,7 @@ TEST_F(TestKondoInsulatorSystem, doublechain) {
 
 
 
-// Test noised tow-site DMRG algorithm.
+// Test noised tow-site vMPS algorithm.
 // Electron-phonon interaction Holstein chain, ref 10.1103/PhysRevB.57.6376
 struct TestHolsteinChain : public testing::Test {
   int L = 4;           // The number of electron

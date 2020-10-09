@@ -82,15 +82,15 @@ add_unittest(test_mpogen
   "" "" "${MATH_LIB_LINK_FLAGS}" ""
 )
 
-### Test algorithms
-## Lanczos solver
-#add_unittest(test_lanczos_solver
-  #"test_algorithm/test_lanczos_solver.cc"
-  #"" "" "${MATH_LIB_LINK_FLAGS}" ""
-#)
-## Two-site update finite DMRG
+## Test algorithms
+# Lanczos solver
+add_unittest(test_lanczos_solver
+  "test_algorithm/test_lanczos_solver.cc"
+  "" "" "${MATH_LIB_LINK_FLAGS}" ""
+)
+## Two-site update finite vMPS
 #add_unittest(test_two_site_algo
-  #"test_algorithm/test_two_site_update_finite_dmrg.cc"
+  #"test_algorithm/test_two_site_update_finite_vmps.cc"
   #"" "" "${MATH_LIB_LINK_FLAGS}" ""
 #)
 

@@ -20,7 +20,7 @@
 #include "gqmps2/mpogen/mpogen.h"               // MPOGenerator
 #include "gqmps2/algorithm/lanczos_solver.h"    // LanczosParams
 // Algorithms
-#include "gqmps2/algorithm/dmrg/two_site_update_finite_dmrg.h"
+#include "gqmps2/algorithm/vmps/two_site_update_finite_vmps.h"
 // MPS operations and measurements
 #include "gqmps2/one_dim_tn/mps/mps.h"
 #include "gqmps2/one_dim_tn/mps/mps_ops.h"
