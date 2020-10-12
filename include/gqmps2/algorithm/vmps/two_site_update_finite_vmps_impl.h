@@ -62,7 +62,8 @@ inline void RemoveFile(const std::string &file) {
 // Two-site algorithm
 template <typename TenType>
 double TwoSiteAlgorithm(
-    std::vector<TenType *> &mps, const MPO<TenType> &mpo,
+    MPS<TenType> &mps,
+    const MPO<TenType> &mpo,
     const SweepParams &sweep_params) {
   if ( sweep_params.FileIO && !IsPathExist(kRuntimeTempPath)) {
     CreatPath(kRuntimeTempPath);
@@ -89,7 +90,8 @@ double TwoSiteAlgorithm(
 
 template<typename TenType>
 std::pair<std::vector<TenType *>, std::vector<TenType *>> InitBlocks(
-    const std::vector<TenType *> &mps, const MPO<TenType> &mpo,
+    const MPS<TenType> &mps,
+    const MPO<TenType> &mpo,
     const SweepParams &sweep_params) {
   assert(mps.size() == mpo.size());
   auto N = mps.size();
@@ -104,8 +106,8 @@ std::pair<std::vector<TenType *>, std::vector<TenType *>> InitBlocks(
   // Right blocks.
   auto rblock0 = new TenType();
   rblocks[0] = rblock0;
-  auto rblock1 = Contract(*mps.back(), mpo.back(), {{1}, {0}});
-  auto temp_rblock1 = Contract(*rblock1, Dag(*mps.back()), {{2}, {1}});
+  auto rblock1 = Contract(mps[N-1], mpo.back(), {{1}, {0}});
+  auto temp_rblock1 = Contract(*rblock1, Dag(mps[N-1]), {{2}, {1}});
   delete rblock1;
   rblock1 = temp_rblock1;
   rblocks[1] = rblock1;
@@ -118,11 +120,11 @@ std::pair<std::vector<TenType *>, std::vector<TenType *>> InitBlocks(
     WriteGQTensorTOFile(*rblock1, file);
   }
   for (size_t i = 2; i < N-1; ++i) {
-    auto rblocki = Contract(*mps[N-i], *rblocks[i-1], {{2}, {0}});
+    auto rblocki = Contract(mps[N-i], *rblocks[i-1], {{2}, {0}});
     auto temp_rblocki = Contract(*rblocki, mpo[N-i], {{1, 2}, {1, 3}});
     delete rblocki;
     rblocki = temp_rblocki;
-    temp_rblocki = Contract(*rblocki, Dag(*mps[N-i]), {{3, 1}, {1, 2}});
+    temp_rblocki = Contract(*rblocki, Dag(mps[N-i]), {{3, 1}, {1, 2}});
     delete rblocki;
     rblocki = temp_rblocki;
     rblocks[i] = rblocki;
@@ -146,8 +148,10 @@ std::pair<std::vector<TenType *>, std::vector<TenType *>> InitBlocks(
 
 template <typename TenType>
 double TwoSiteSweep(
-    std::vector<TenType *> &mps, const MPO<TenType> &mpo,
-    std::vector<TenType *> &lblocks, std::vector<TenType *> &rblocks,
+    MPS<TenType> &mps,
+    const MPO<TenType> &mpo,
+    std::vector<TenType *> &lblocks,
+    std::vector<TenType *> &rblocks,
     const SweepParams &sweep_params) {
   auto N = mps.size();
   double e0;
@@ -164,9 +168,12 @@ double TwoSiteSweep(
 template <typename TenType>
 double TwoSiteUpdate(
     const long i,
-    std::vector<TenType *> &mps, const MPO<TenType> &mpo,
-    std::vector<TenType *> &lblocks, std::vector<TenType *> &rblocks,
-    const SweepParams &sweep_params, const char dir) {
+    MPS<TenType> &mps,
+    const MPO<TenType> &mpo,
+    std::vector<TenType *> &lblocks,
+    std::vector<TenType *> &rblocks,
+    const SweepParams &sweep_params,
+    const char dir) {
   Timer update_timer("update");
   update_timer.Restart();
 
@@ -270,7 +277,7 @@ double TwoSiteUpdate(
   eff_ham[2] = const_cast<TenType *>(&mpo[rsite_idx]);
   eff_ham[3] = rblocks[rblock_len];
   auto init_state = Contract(
-                        *mps[lsite_idx], *mps[rsite_idx],
+                        mps[lsite_idx], mps[rsite_idx],
                         init_state_ctrct_axes);
 
   Timer lancz_timer("Lancz");
@@ -296,7 +303,7 @@ double TwoSiteUpdate(
   auto svd_res = Svd(
       *lancz_res.gs_vec,
       svd_ldims, svd_rdims,
-      Div(*mps[lsite_idx]), Div(*mps[rsite_idx]),
+      Div(mps[lsite_idx]), Div(mps[rsite_idx]),
       sweep_params.Cutoff,
       sweep_params.Dmin, sweep_params.Dmax);
 
@@ -326,26 +333,26 @@ double TwoSiteUpdate(
       new_blk_timer.Restart();
 #endif
 
-      delete mps[lsite_idx];
-      mps[lsite_idx] = svd_res.u;
-      delete mps[rsite_idx];
-      mps[rsite_idx] = Contract(*svd_res.s, *svd_res.v, {{1}, {0}});
+      delete mps(lsite_idx);
+      mps(lsite_idx) = svd_res.u;
+      delete mps(rsite_idx);
+      mps(rsite_idx) = Contract(*svd_res.s, *svd_res.v, {{1}, {0}});
       delete svd_res.s;
       delete svd_res.v;
 
       if (i == 0) {
-        new_lblock = Contract(*mps[i], mpo[i], {{0}, {0}});
+        new_lblock = Contract(mps[i], mpo[i], {{0}, {0}});
         auto temp_new_lblock = Contract(
-                                   *new_lblock, Dag(*mps[i]),
+                                   *new_lblock, Dag(mps[i]),
                                    {{2}, {0}});
         delete new_lblock;
         new_lblock = temp_new_lblock;
       } else if (i != N-2) {
-        new_lblock = Contract(*lblocks[i], *mps[i], {{0}, {0}});
+        new_lblock = Contract(*lblocks[i], mps[i], {{0}, {0}});
         auto temp_new_lblock = Contract(*new_lblock, mpo[i], {{0, 2}, {0, 1}});
         delete new_lblock;
         new_lblock = temp_new_lblock;
-        temp_new_lblock = Contract(*new_lblock, Dag(*mps[i]), {{0, 2}, {0, 1}});
+        temp_new_lblock = Contract(*new_lblock, Dag(mps[i]), {{0, 2}, {0, 1}});
         delete new_lblock;
         new_lblock = temp_new_lblock;
       } else {
@@ -387,24 +394,24 @@ double TwoSiteUpdate(
       new_blk_timer.Restart();
 #endif
 
-      delete mps[lsite_idx];
-      mps[lsite_idx] = Contract(*svd_res.u, *svd_res.s, us_ctrct_axes);
+      delete mps(lsite_idx);
+      mps(lsite_idx) = Contract(*svd_res.u, *svd_res.s, us_ctrct_axes);
       delete svd_res.u;
       delete svd_res.s;
-      delete mps[rsite_idx];
-      mps[rsite_idx] = svd_res.v;
+      delete mps(rsite_idx);
+      mps(rsite_idx) = svd_res.v;
 
       if (i == N-1) {
-        new_rblock = Contract(*mps[i], mpo[i], {{1}, {0}});
-        auto temp_new_rblock = Contract(*new_rblock, Dag(*mps[i]), {{2}, {1}});
+        new_rblock = Contract(mps[i], mpo[i], {{1}, {0}});
+        auto temp_new_rblock = Contract(*new_rblock, Dag(mps[i]), {{2}, {1}});
         delete new_rblock;
         new_rblock = temp_new_rblock;
       } else if (i != 1) {
-        new_rblock = Contract(*mps[i], *eff_ham[3], {{2}, {0}});
+        new_rblock = Contract(mps[i], *eff_ham[3], {{2}, {0}});
         auto temp_new_rblock = Contract(*new_rblock, mpo[i], {{1, 2}, {1, 3}});
         delete new_rblock;
         new_rblock = temp_new_rblock;
-        temp_new_rblock = Contract(*new_rblock, Dag(*mps[i]), {{3, 1}, {1, 2}});
+        temp_new_rblock = Contract(*new_rblock, Dag(mps[i]), {{3, 1}, {1, 2}});
         delete new_rblock;
         new_rblock = temp_new_rblock;
       } else {

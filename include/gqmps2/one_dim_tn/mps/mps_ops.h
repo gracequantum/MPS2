@@ -63,6 +63,14 @@ inline void MpsFree(std::vector<TenType *> &mps) {
 }
 
 
+template <typename MPST>
+inline void MpsFree(MPST &mps) {
+  for (int i = 0; i < mps.size(); ++i) {
+    mps.dealloc(i);
+  }
+}
+
+
 // MPS operations
 // MPS I/O.
 template <typename TenType>
@@ -98,7 +106,7 @@ void LoadMps(std::vector<TenType *> &mps) {
 // MPS initialization.
 template <typename TenType>
 void RandomInitMps(
-    std::vector<TenType *> &mps,
+    MPS<TenType> &mps,
     const Index &pb,
     const QN &tot_div,
     const QN &zero_div,
@@ -108,36 +116,36 @@ void RandomInitMps(
 
   // Left to center.
   rvb = GenHeadRightVirtBond(pb, tot_div, dmax);
-  mps[0] = new TenType({pb, rvb});
-  mps[0]->Random(tot_div);
-  assert(Div(*mps[0]) == tot_div);
+  mps(0) = new TenType({pb, rvb});
+  mps(0)->Random(tot_div);
+  assert(Div(mps[0]) == tot_div);
   auto N = mps.size();
   for (std::size_t i = 1; i < N/2; ++i) {
     lvb = InverseIndex(rvb);
     rvb = GenBodyRightVirtBond(lvb, pb, zero_div, dmax);
-    mps[i] = new TenType({lvb, pb, rvb});
-    mps[i]->Random(zero_div);
-    assert(Div(*mps[i]) == zero_div);
+    mps(i) = new TenType({lvb, pb, rvb});
+    mps(i)->Random(zero_div);
+    assert(Div(mps[i]) == zero_div);
   }
   auto cent_bond = rvb;
 
   // Right to center.
   lvb = GenTailLeftVirtBond(pb, zero_div, dmax);
-  mps[N-1] = new TenType({lvb, pb});
-  mps[N-1]->Random(zero_div);
-  assert(Div(*mps[N-1]) == zero_div);
+  mps(N-1) = new TenType({lvb, pb});
+  mps(N-1)->Random(zero_div);
+  assert(Div(mps[N-1]) == zero_div);
   for (std::size_t i = N-2; i > N/2; --i) {
     rvb = InverseIndex(lvb);
     lvb = GenBodyLeftVirtBond(rvb, pb, zero_div, dmax);
-    mps[i] = new TenType({lvb, pb, rvb});
-    mps[i]->Random(zero_div);
-    assert(Div(*mps[i]) == zero_div);
+    mps(i) = new TenType({lvb, pb, rvb});
+    mps(i)->Random(zero_div);
+    assert(Div(mps[i]) == zero_div);
   }
 
   rvb = InverseIndex(lvb);
   lvb = InverseIndex(cent_bond);
-  mps[N/2] = new TenType({lvb, pb, rvb});
-  mps[N/2]->Random(zero_div);
+  mps(N/2) = new TenType({lvb, pb, rvb});
+  mps(N/2)->Random(zero_div);
   assert(Div(*mps[N/2]) == zero_div);
 }
 
@@ -151,51 +159,51 @@ void RandomInitMps(
  * @param zero_div left side quantum number of mps
  * @param dmax bond dimension
  */
-template <typename TenType>
-void RandomInitMps(
-  std::vector<TenType *> &mps,
-  const std::vector<Index> &pb_vector,
-  const QN &tot_div,
-  const QN &zero_div,
-  const long dmax) {
-  MpsFree(mps);
-  Index lvb, rvb;
+//template <typename TenType>
+//void RandomInitMps(
+  //std::vector<TenType *> &mps,
+  //const std::vector<Index> &pb_vector,
+  //const QN &tot_div,
+  //const QN &zero_div,
+  //const long dmax) {
+  //MpsFree(mps);
+  //Index lvb, rvb;
 
-  assert(pb_vector.size()==mps.size());
-  // Left to center.
-  rvb = GenHeadRightVirtBond(pb_vector.front(), tot_div, dmax);
-  mps[0] = new TenType({pb_vector.front(), rvb});
-  mps[0]->Random(tot_div);
-  assert(Div(*mps[0]) == tot_div);
-  auto N = mps.size();
-  for (std::size_t i = 1; i < N/2; ++i) {
-    lvb = InverseIndex(rvb);
-    rvb = GenBodyRightVirtBond(lvb, pb_vector[i], zero_div, dmax);
-    mps[i] = new TenType({lvb, pb_vector[i], rvb});
-    mps[i]->Random(zero_div);
-    assert(Div(*mps[i]) == zero_div);
-  }
-  auto cent_bond = rvb;
+  //assert(pb_vector.size()==mps.size());
+  //// Left to center.
+  //rvb = GenHeadRightVirtBond(pb_vector.front(), tot_div, dmax);
+  //mps[0] = new TenType({pb_vector.front(), rvb});
+  //mps[0]->Random(tot_div);
+  //assert(Div(*mps[0]) == tot_div);
+  //auto N = mps.size();
+  //for (std::size_t i = 1; i < N/2; ++i) {
+    //lvb = InverseIndex(rvb);
+    //rvb = GenBodyRightVirtBond(lvb, pb_vector[i], zero_div, dmax);
+    //mps[i] = new TenType({lvb, pb_vector[i], rvb});
+    //mps[i]->Random(zero_div);
+    //assert(Div(*mps[i]) == zero_div);
+  //}
+  //auto cent_bond = rvb;
 
-  // Right to center.
-  lvb = GenTailLeftVirtBond(pb_vector.back(), zero_div, dmax);
-  mps[N-1] = new TenType({lvb, pb_vector.back()});
-  mps[N-1]->Random(zero_div);
-  assert(Div(*mps[N-1]) == zero_div);
-  for (std::size_t i = N-2; i > N/2; --i) {
-    rvb = InverseIndex(lvb);
-    lvb = GenBodyLeftVirtBond(rvb, pb_vector[i], zero_div, dmax);
-    mps[i] = new TenType({lvb, pb_vector[i], rvb});
-    mps[i]->Random(zero_div);
-    assert(Div(*mps[i]) == zero_div);
-  }
+  //// Right to center.
+  //lvb = GenTailLeftVirtBond(pb_vector.back(), zero_div, dmax);
+  //mps[N-1] = new TenType({lvb, pb_vector.back()});
+  //mps[N-1]->Random(zero_div);
+  //assert(Div(*mps[N-1]) == zero_div);
+  //for (std::size_t i = N-2; i > N/2; --i) {
+    //rvb = InverseIndex(lvb);
+    //lvb = GenBodyLeftVirtBond(rvb, pb_vector[i], zero_div, dmax);
+    //mps[i] = new TenType({lvb, pb_vector[i], rvb});
+    //mps[i]->Random(zero_div);
+    //assert(Div(*mps[i]) == zero_div);
+  //}
 
-  rvb = InverseIndex(lvb);
-  lvb = InverseIndex(cent_bond);
-  mps[N/2] = new TenType({lvb, pb_vector[N/2], rvb});
-  mps[N/2]->Random(zero_div);
-  assert(Div(*mps[N/2]) == zero_div);
-}
+  //rvb = InverseIndex(lvb);
+  //lvb = InverseIndex(cent_bond);
+  //mps[N/2] = new TenType({lvb, pb_vector[N/2], rvb});
+  //mps[N/2]->Random(zero_div);
+  //assert(Div(*mps[N/2]) == zero_div);
+//}
 
 
 

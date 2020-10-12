@@ -88,11 +88,11 @@ add_unittest(test_lanczos_solver
   "test_algorithm/test_lanczos_solver.cc"
   "" "" "${MATH_LIB_LINK_FLAGS}" ""
 )
-## Two-site update finite vMPS
-#add_unittest(test_two_site_algo
-  #"test_algorithm/test_two_site_update_finite_vmps.cc"
-  #"" "" "${MATH_LIB_LINK_FLAGS}" ""
-#)
+# Two-site update finite vMPS
+add_unittest(test_two_site_algo
+  "test_algorithm/test_two_site_update_finite_vmps.cc"
+  "" "" "${MATH_LIB_LINK_FLAGS}" ""
+)
 
 ## Test simulation case parameters parser.
 add_unittest(test_case_params_parser

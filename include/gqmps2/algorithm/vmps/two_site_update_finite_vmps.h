@@ -16,6 +16,8 @@
 
 
 #include "gqmps2/algorithm/lanczos_solver.h"    // LanczParams
+#include "gqmps2/one_dim_tn/mpo.h"    // MPO
+#include "gqmps2/one_dim_tn/mps/mps.h"    // MPS
 
 #include <vector>     // vector
 
@@ -49,14 +51,14 @@ struct SweepParams {
 
 template <typename TenType>
 double TwoSiteAlgorithm(
-    std::vector<TenType *> &,
-    const std::vector<TenType *> &,
+    MPS<TenType> &,
+    const MPO<TenType> &,
     const SweepParams &
 );
 
 template <typename TenType>
 double TwoSiteAlgorithm(
-    std::vector<TenType *> &,
+    MPS<TenType> &,
     const std::vector<TenType *> &,
     const SweepParams &,
     std::vector<double>
@@ -66,7 +68,7 @@ double TwoSiteAlgorithm(
 
 // Implementation details
 #include "gqmps2/algorithm/vmps/two_site_update_finite_vmps_impl.h"
-#include "gqmps2/algorithm/vmps/two_site_update_finite_vmps_with_noise_impl.h"
+//#include "gqmps2/algorithm/vmps/two_site_update_finite_vmps_with_noise_impl.h"
 
 
 #endif /* ifndef GQMPS2_ALGORITHM_VMPS_TWO_SITE_UPDATE_FINITE_VMPS_H */
