@@ -146,7 +146,7 @@ void RandomInitMps(
   lvb = InverseIndex(cent_bond);
   mps(N/2) = new TenType({lvb, pb, rvb});
   mps(N/2)->Random(zero_div);
-  assert(Div(*mps[N/2]) == zero_div);
+  assert(Div(mps[N/2]) == zero_div);
 }
 
 
