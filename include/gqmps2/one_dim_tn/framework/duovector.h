@@ -51,7 +51,9 @@ public:
   */
   DuoVector(const DuoVector &duovec) : raw_data_(duovec.size(), nullptr) {
     for (size_t i = 0; i < duovec.size(); ++i) {
-      raw_data_[i] = new ElemT(duovec[i]);
+      if (duovec(i) != nullptr) {
+        raw_data_[i] = new ElemT(duovec[i]);
+      }
     }
   }
 
@@ -64,7 +66,9 @@ public:
     ~DuoVector();
     raw_data_ = std::vector<ElemT *>(rhs.size(), nullptr);
     for (size_t i = 0; i < rhs[i]; ++i) {
-      raw_data_[i] = new ElemT(rhs[i]);
+      if (rhs(i) != nullptr) {
+        raw_data_[i] = new ElemT(rhs[i]);
+      }
     }
     return *this;
   }
