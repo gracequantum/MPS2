@@ -2,16 +2,15 @@
 /*
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
 * Creation Date: 2019-09-29 22:11
-* 
-* Description: GraceQ/MPS2 project. Implementation details for MPS operations.
+*
+* Description: GraceQ/MPS2 project. MPS initializations.
 */
-#include "gqmps2/one_dim_tn/mps/mps.h"    // MPS
-#include "gqmps2/consts.h"
-#include "gqmps2/utilities.h"     // IsPathExist, CreatPath
-#include "gqten/gqten.h"
+#ifndef GQMPS2_ONE_DIM_TN_MPS_MPS_INIT_H
+#define GQMPS2_ONE_DIM_TN_MPS_MPS_INIT_H
 
-#include <algorithm>
-#include <cmath>
+
+#include "gqmps2/one_dim_tn/mps/mps.h"    // MPS
+#include "gqten/gqten.h"
 
 #include <assert.h>
 
@@ -37,29 +36,10 @@ Index GenBodyLeftVirtBond(const Index &, const Index &, const QN &, const long);
 
 void DimCut(std::vector<QNSector> &, const long, const long);
 
-// For MPS centralization.
-template <typename MpsType>
-void LeftNormalizeMps(MpsType &, const long, const long);
-
-template <typename MpsType>
-void LeftNormalizeMpsTen(MpsType &, const long);
-
-template <typename MpsType>
-void RightNormalizeMps(MpsType &, const long, const long);
-
-template <typename MpsType>
-void RightNormalizeMpsTen(MpsType &, const long);
-
 
 // Helpers
 inline bool GreaterQNSectorDim(const QNSector &qnsct1, const QNSector &qnsct2) {
   return qnsct1.dim > qnsct2.dim;
-}
-
-
-template <typename TenType>
-inline void MpsFree(std::vector<TenType *> &mps) {
-  for (auto &pmps_ten : mps) { delete pmps_ten; }
 }
 
 
@@ -71,39 +51,7 @@ inline void MpsFree(MPST &mps) {
 }
 
 
-// MPS operations
-// MPS I/O.
-template <typename TenType>
-void DumpMps(const std::vector<TenType *> &mps) {
-  if (!IsPathExist(kMpsPath)) { CreatPath(kMpsPath); }
-  auto N = mps.size();
-  std::string file;
-  for (std::size_t i = 0; i < N; ++i) {
-    file = kMpsPath + "/" +
-           kMpsTenBaseName + std::to_string(i) + "." + kGQTenFileSuffix;
-    std::ofstream ofs(file, std::ofstream::binary);
-    bfwrite(ofs, *mps[i]);
-    ofs.close();
-  }
-}
-
-
-template <typename TenType>
-void LoadMps(std::vector<TenType *> &mps) {
-  auto N = mps.size();
-  std::string file;
-  for (std::size_t i = 0; i < N; ++i) {
-    file = kMpsPath + "/" +
-           kMpsTenBaseName + std::to_string(i) + "." + kGQTenFileSuffix;
-    std::ifstream ifs(file, std::ifstream::binary);
-    mps[i] = new TenType();
-    bfread(ifs, *mps[i]);
-    ifs.close();
-  }
-}
-
-
-// MPS initialization.
+// MPS initializations.
 template <typename TenType>
 void RandomInitMps(
     MPS<TenType> &mps,
@@ -147,6 +95,9 @@ void RandomInitMps(
   mps(N/2) = new TenType({lvb, pb, rvb});
   mps(N/2)->Random(zero_div);
   assert(Div(mps[N/2]) == zero_div);
+
+  // Centralize MPS.
+  mps.Centralize(0);
 }
 
 
@@ -324,7 +275,7 @@ inline void DimCut(
 
 template <typename TenType>
 void DirectStateInitMps(
-    std::vector<TenType *> &mps, const std::vector<long> &stat_labs,
+    MPS<TenType> &mps, const std::vector<long> &stat_labs,
     const Index &pb_out, const QN &zero_div) {
   auto N = mps.size();
   assert(N == stat_labs.size());
@@ -340,24 +291,27 @@ void DirectStateInitMps(
   auto stat_lab = stat_labs[0];
   auto rvb_qn = div - pb_out.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn;
   rvb = Index({QNSector(rvb_qn, 1)}, OUT);
-  mps[0] = new TenType({pb_out, rvb});
-  (*mps[0])({stat_lab, 0}) = 1;
+  mps(0) = new TenType({pb_out, rvb});
+  (mps[0])({stat_lab, 0}) = 1;
 
   for (std::size_t i = 1; i < N-1; ++i) {
-    lvb = InverseIndex(rvb); 
+    lvb = InverseIndex(rvb);
     stat_lab = stat_labs[i];
-    rvb_qn = zero_div - 
+    rvb_qn = zero_div -
              pb_out.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn +
              lvb.CoorInterOffsetAndQnsct(0).qnsct.qn;
     rvb = Index({QNSector(rvb_qn, 1)}, OUT);
-    mps[i] = new TenType({lvb, pb_out, rvb});
-    (*mps[i])({0, stat_lab, 0}) = 1;
+    mps(i) = new TenType({lvb, pb_out, rvb});
+    (mps[i])({0, stat_lab, 0}) = 1;
   }
 
   lvb = InverseIndex(rvb);
-  mps[N-1] = new TenType({lvb, pb_out});
+  mps(N-1) = new TenType({lvb, pb_out});
   stat_lab = stat_labs[N-1];
-  (*mps[N-1])({0, stat_lab}) = 1;
+  (mps[N-1])({0, stat_lab}) = 1;
+
+  // Centralize MPS.
+  mps.Centralize(0);
 }
 
 /** Initialize MPS from a series of integer numbers,  for the non-uniform hilbert space cases
@@ -368,44 +322,44 @@ void DirectStateInitMps(
  * @param pb_out_vector label the local hilbert space (physical bond) in order, with size N
  * @param zero_div left start quantum number
  */
-template <typename TenType>
-void DirectStateInitMps(
-        std::vector<TenType *> &mps, const std::vector<long> &stat_labs,
-        const std::vector<Index> &pb_out_vector, const QN &zero_div) {
-  auto N = mps.size();
-  assert(N == stat_labs.size());
-  assert(N == pb_out_vector.size());
-  MpsFree(mps);
-  Index lvb, rvb;
+//template <typename TenType>
+//void DirectStateInitMps(
+        //std::vector<TenType *> &mps, const std::vector<long> &stat_labs,
+        //const std::vector<Index> &pb_out_vector, const QN &zero_div) {
+  //auto N = mps.size();
+  //assert(N == stat_labs.size());
+  //assert(N == pb_out_vector.size());
+  //MpsFree(mps);
+  //Index lvb, rvb;
 
-  // Calculate total quantum number.
-  auto div = pb_out_vector.front().CoorInterOffsetAndQnsct(stat_labs[0]).qnsct.qn;
-  for (std::size_t i = 1; i < N; ++i) {
-    div += pb_out_vector[i].CoorInterOffsetAndQnsct(stat_labs[i]).qnsct.qn;
-  }
+  //// Calculate total quantum number.
+  //auto div = pb_out_vector.front().CoorInterOffsetAndQnsct(stat_labs[0]).qnsct.qn;
+  //for (std::size_t i = 1; i < N; ++i) {
+    //div += pb_out_vector[i].CoorInterOffsetAndQnsct(stat_labs[i]).qnsct.qn;
+  //}
 
-  auto stat_lab = stat_labs[0];
-  auto rvb_qn = div - pb_out_vector.front().CoorInterOffsetAndQnsct(stat_lab).qnsct.qn;
-  rvb = Index({QNSector(rvb_qn, 1)}, OUT);
-  mps[0] = new TenType({pb_out_vector.front(), rvb});
-  (*mps[0])({stat_lab, 0}) = 1;
+  //auto stat_lab = stat_labs[0];
+  //auto rvb_qn = div - pb_out_vector.front().CoorInterOffsetAndQnsct(stat_lab).qnsct.qn;
+  //rvb = Index({QNSector(rvb_qn, 1)}, OUT);
+  //mps[0] = new TenType({pb_out_vector.front(), rvb});
+  //(*mps[0])({stat_lab, 0}) = 1;
 
-  for (std::size_t i = 1; i < N-1; ++i) {
-    lvb = InverseIndex(rvb);
-    stat_lab = stat_labs[i];
-    rvb_qn = zero_div -
-             pb_out_vector[i].CoorInterOffsetAndQnsct(stat_lab).qnsct.qn +
-             lvb.CoorInterOffsetAndQnsct(0).qnsct.qn;
-    rvb = Index({QNSector(rvb_qn, 1)}, OUT);
-    mps[i] = new TenType({lvb, pb_out_vector[i], rvb});
-    (*mps[i])({0, stat_lab, 0}) = 1;
-  }
+  //for (std::size_t i = 1; i < N-1; ++i) {
+    //lvb = InverseIndex(rvb);
+    //stat_lab = stat_labs[i];
+    //rvb_qn = zero_div -
+             //pb_out_vector[i].CoorInterOffsetAndQnsct(stat_lab).qnsct.qn +
+             //lvb.CoorInterOffsetAndQnsct(0).qnsct.qn;
+    //rvb = Index({QNSector(rvb_qn, 1)}, OUT);
+    //mps[i] = new TenType({lvb, pb_out_vector[i], rvb});
+    //(*mps[i])({0, stat_lab, 0}) = 1;
+  //}
 
-  lvb = InverseIndex(rvb);
-  mps[N-1] = new TenType({lvb, pb_out_vector.back()});
-  stat_lab = stat_labs[N-1];
-  (*mps[N-1])({0, stat_lab}) = 1;
-}
+  //lvb = InverseIndex(rvb);
+  //mps[N-1] = new TenType({lvb, pb_out_vector.back()});
+  //stat_lab = stat_labs[N-1];
+  //(*mps[N-1])({0, stat_lab}) = 1;
+//}
 
 
 
@@ -413,13 +367,14 @@ void DirectStateInitMps(
 
 template <typename TenType>
 void ExtendDirectRandomInitMps(
-    std::vector<TenType *> &mps,
+    MPS<TenType> &mps,
     const std::vector<std::vector<long>> &stat_labs_set,
     const Index &pb, const QN &zero_div, const long enlarged_dim) {
   auto fusion_stats_num = stat_labs_set.size();
   assert(fusion_stats_num >= 1);
   auto N = mps.size();
   assert(N == stat_labs_set[0].size());
+  MpsFree(mps);
   Index lvb, rvb;
   std::vector<QNSector> rvb_qnscts;
 
@@ -437,8 +392,8 @@ void ExtendDirectRandomInitMps(
   }
   rvb = Index(rvb_qnscts, OUT);
   rvb_qnscts.clear();
-  mps[0] = new TenType({pb, rvb});
-  mps[0]->Random(div);
+  mps(0) = new TenType({pb, rvb});
+  mps[0].Random(div);
 
   // Deal with MPS middle local tensors.
   for (std::size_t i = 1; i < N-1; ++i) {
@@ -451,19 +406,18 @@ void ExtendDirectRandomInitMps(
       rvb_qnscts.push_back(QNSector(rvb_qn, enlarged_dim));
     }
     rvb = Index(rvb_qnscts, OUT);
-    mps[i] = new TenType({lvb, pb, rvb});
+    mps(i) = new TenType({lvb, pb, rvb});
     rvb_qnscts.clear();
-    mps[i]->Random(zero_div);
+    mps[i].Random(zero_div);
   }
 
   // Deal with MPS tail local tensor.
   lvb = InverseIndex(rvb);
-  mps[N-1] = new TenType({lvb, pb});
-  mps[N-1]->Random(zero_div);
+  mps(N-1) = new TenType({lvb, pb});
+  mps[N-1].Random(zero_div);
 
   // Centralize MPS.
-  auto temp_mps = MPS<TenType>(mps, -1);
-  RightNormalizeMps(temp_mps, temp_mps.N-1, 1);
+  mps.Centralize(0);
 }
 
 
@@ -476,162 +430,61 @@ void ExtendDirectRandomInitMps(
  * @param zero_div the leftmost U1 quantum number
  * @param enlarged_dim stat_labs_set.size()
  */
-template <typename TenType>
-void ExtendDirectRandomInitMps(
-  std::vector<TenType *> &mps,
-  const std::vector<std::vector<long>> &stat_labs_set,
-  const std::vector<Index> &pb_vector, const QN &zero_div, const long enlarged_dim) {
-  auto fusion_stats_num = stat_labs_set.size();
-  assert(fusion_stats_num >= 1);
-  auto N = mps.size();
-  assert(N == stat_labs_set[0].size());
-  Index lvb, rvb;
-  std::vector<QNSector> rvb_qnscts;
+//template <typename TenType>
+//void ExtendDirectRandomInitMps(
+  //std::vector<TenType *> &mps,
+  //const std::vector<std::vector<long>> &stat_labs_set,
+  //const std::vector<Index> &pb_vector, const QN &zero_div, const long enlarged_dim) {
+  //auto fusion_stats_num = stat_labs_set.size();
+  //assert(fusion_stats_num >= 1);
+  //auto N = mps.size();
+  //assert(N == stat_labs_set[0].size());
+  //Index lvb, rvb;
+  //std::vector<QNSector> rvb_qnscts;
 
-  // Calculate total quantum number.
-  auto pb = pb_vector.front();
-  auto div = pb.CoorInterOffsetAndQnsct(stat_labs_set[0][0]).qnsct.qn;
-  for (std::size_t i = 1; i < N; ++i) {
-    div += pb_vector[i].CoorInterOffsetAndQnsct(stat_labs_set[0][i]).qnsct.qn;
-  }
+  //// Calculate total quantum number.
+  //auto pb = pb_vector.front();
+  //auto div = pb.CoorInterOffsetAndQnsct(stat_labs_set[0][0]).qnsct.qn;
+  //for (std::size_t i = 1; i < N; ++i) {
+    //div += pb_vector[i].CoorInterOffsetAndQnsct(stat_labs_set[0][i]).qnsct.qn;
+  //}
 
-  // Deal with MPS head local tensor.
-  for (std::size_t i = 0; i < fusion_stats_num; ++i) {
-    auto stat_lab = stat_labs_set[i][0];
-    auto rvb_qn = div - pb.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn;
-    rvb_qnscts.push_back(QNSector(rvb_qn, enlarged_dim));
-  }
-  rvb = Index(rvb_qnscts, OUT);
-  rvb_qnscts.clear();
-  mps[0] = new TenType({pb, rvb});
-  mps[0]->Random(div);
+  //// Deal with MPS head local tensor.
+  //for (std::size_t i = 0; i < fusion_stats_num; ++i) {
+    //auto stat_lab = stat_labs_set[i][0];
+    //auto rvb_qn = div - pb.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn;
+    //rvb_qnscts.push_back(QNSector(rvb_qn, enlarged_dim));
+  //}
+  //rvb = Index(rvb_qnscts, OUT);
+  //rvb_qnscts.clear();
+  //mps[0] = new TenType({pb, rvb});
+  //mps[0]->Random(div);
 
-  // Deal with MPS middle local tensors.
-  for (std::size_t i = 1; i < N-1; ++i) {
-    auto pb = pb_vector[i];
-    lvb = InverseIndex(rvb);
-    for (std::size_t j = 0; j < fusion_stats_num; ++j) {
-      auto stat_lab = stat_labs_set[j][i];
-      auto rvb_qn = zero_div -
-                    pb.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn +
-                    lvb.CoorInterOffsetAndQnsct(j*enlarged_dim).qnsct.qn;
-      rvb_qnscts.push_back(QNSector(rvb_qn, enlarged_dim));
-    }
-    rvb = Index(rvb_qnscts, OUT);
-    mps[i] = new TenType({lvb, pb, rvb});
-    rvb_qnscts.clear();
-    mps[i]->Random(zero_div);
-  }
+  //// Deal with MPS middle local tensors.
+  //for (std::size_t i = 1; i < N-1; ++i) {
+    //auto pb = pb_vector[i];
+    //lvb = InverseIndex(rvb);
+    //for (std::size_t j = 0; j < fusion_stats_num; ++j) {
+      //auto stat_lab = stat_labs_set[j][i];
+      //auto rvb_qn = zero_div -
+                    //pb.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn +
+                    //lvb.CoorInterOffsetAndQnsct(j*enlarged_dim).qnsct.qn;
+      //rvb_qnscts.push_back(QNSector(rvb_qn, enlarged_dim));
+    //}
+    //rvb = Index(rvb_qnscts, OUT);
+    //mps[i] = new TenType({lvb, pb, rvb});
+    //rvb_qnscts.clear();
+    //mps[i]->Random(zero_div);
+  //}
 
-  // Deal with MPS tail local tensor.
-  lvb = InverseIndex(rvb);
-  mps[N-1] = new TenType({lvb, pb_vector.back()});
-  mps[N-1]->Random(zero_div);
+  //// Deal with MPS tail local tensor.
+  //lvb = InverseIndex(rvb);
+  //mps[N-1] = new TenType({lvb, pb_vector.back()});
+  //mps[N-1]->Random(zero_div);
 
-  // Centralize MPS.
-  auto temp_mps = MPS<TenType>(mps, -1);
-  RightNormalizeMps(temp_mps, temp_mps.N-1, 1);
-}
-
-
-
-
-
-// MPS centralization.
-template <typename MpsType>
-void CentralizeMps(MpsType &mps, const long target_center) {
-  auto origin_center = mps.center;
-  if (origin_center < 0) {
-    auto end = mps.N-1;
-    if (target_center != 0) { LeftNormalizeMps(mps, 0, target_center-1); }
-    if (target_center != end) { RightNormalizeMps(mps, end, target_center+1); }
-    mps.center = target_center;
-  } else {
-    if (target_center > origin_center) {
-      LeftNormalizeMps(mps, origin_center, target_center-1);
-      mps.center = target_center;
-    } else if (target_center < origin_center) {
-      RightNormalizeMps(mps, origin_center, target_center+1);
-      mps.center = target_center;
-    }
-  }
-}
-
-
-template <typename MpsType>
-void LeftNormalizeMps(MpsType &mps, const long from, const long to) {
-  assert(to >= from);
-  for (long i = from; i <= to; ++i) {
-    LeftNormalizeMpsTen(mps, i);
-  }
-}
-
-
-template <typename MpsType>
-void RightNormalizeMps(MpsType &mps, const long from, const long to) {
-  assert(to <= from);
-  for (long i = from; i >= to; --i) {
-    RightNormalizeMpsTen(mps, i);
-  }
-}
-
-
-template <typename MpsType>
-void LeftNormalizeMpsTen(MpsType &mps, const long site) {
-  assert(site < mps.N-1);
-  long ldims, rdims;
-  if (site == 0) {
-    ldims = 1;
-    rdims = 1;
-  } else {
-    ldims = 2;
-    rdims = 1;
-  }
-  auto svd_res = Svd(
-      *mps.tens[site],
-      ldims, rdims,
-      Div(*mps.tens[site]), Div(*mps.tens[site+1]));
-  delete mps.tens[site];
-  mps.tens[site] = svd_res.u;
-  auto temp_ten = Contract(*svd_res.s, *svd_res.v, {{1}, {0}});
-  delete svd_res.s;
-  delete svd_res.v;
-  auto next_ten = Contract(*temp_ten, *mps.tens[site+1], {{1}, {0}});
-  delete temp_ten;
-  delete mps.tens[site+1];
-  mps.tens[site+1] = next_ten;
-}
-
-
-template <typename MpsType>
-void RightNormalizeMpsTen(MpsType &mps, const long site) {
-  assert(site > 0);
-  long ldims, rdims;
-  if (site == mps.N-1) {
-    ldims = 1;
-    rdims = 1;
-  } else {
-    ldims = 1;
-    rdims = 2;
-  }
-  auto svd_res = Svd(
-      *mps.tens[site],
-      ldims, rdims,
-      Div(*mps.tens[site-1]), Div(*mps.tens[site]));
-  delete mps.tens[site];
-  mps.tens[site] = svd_res.v;
-  auto temp_ten = Contract(*svd_res.u, *svd_res.s, {{1}, {0}});
-  delete svd_res.u;
-  delete svd_res.s;
-  std::vector<long> ta_ctrct_axes;
-  if ((site-1) == 0) {
-    ta_ctrct_axes = {1};
-  } else {
-    ta_ctrct_axes = {2};
-  }
-  auto prev_ten = Contract(*mps.tens[site-1], *temp_ten, {ta_ctrct_axes, {0}});
-  delete temp_ten;
-  delete mps.tens[site-1];
-  mps.tens[site-1] = prev_ten;
-}
-} /* gqmps2 */ 
+  //// Centralize MPS.
+  //auto temp_mps = MPS<TenType>(mps, -1);
+  //RightNormalizeMps(temp_mps, temp_mps.N-1, 1);
+//}
+} /* gqmps2 */
+#endif /* ifndef GQMPS2_ONE_DIM_TN_MPS_MPS_INIT_H */
