@@ -6,9 +6,10 @@
 * Description: GraceQ/MPS2 project. Implementation details for two-site algorithm.
 */
 #include "gqmps2/algorithm/vmps/two_site_update_finite_vmps.h"
-#include "gqmps2/consts.h"
 #include "gqmps2/one_dim_tn/mpo.h"    // MPO
 #include "gqmps2/utilities.h"         // ReadGQTensorFromFile, WriteGQTensorTOFile, IsPathExist, CreatPath
+#include "gqmps2/one_dim_tn/framework/ten_vec.h"    // TenVec
+#include "gqmps2/consts.h"
 #include "gqten/gqten.h"
 
 #include <iostream>
@@ -69,7 +70,11 @@ double TwoSiteAlgorithm(
     CreatPath(kRuntimeTempPath);
   }
 
-  auto l_and_r_blocks = InitBlocks(mps, mpo, sweep_params);
+  assert(mps.size() == mpo.size());
+  auto N = mps.size();
+  TenVec<TenType> lblocks(N-1);
+  TenVec<TenType> rblocks(N-1);
+  InitBlocks(mps, mpo, sweep_params, lblocks, rblocks);
 
   std::cout << "\n";
   double e0;
@@ -79,7 +84,7 @@ double TwoSiteAlgorithm(
     sweep_timer.Restart();
     e0 = TwoSiteSweep(
         mps, mpo,
-        l_and_r_blocks.first, l_and_r_blocks.second,
+        lblocks, rblocks,
         sweep_params);
     sweep_timer.PrintElapsed();
     std::cout << "\n";
@@ -89,60 +94,58 @@ double TwoSiteAlgorithm(
 
 
 template<typename TenType>
-std::pair<std::vector<TenType *>, std::vector<TenType *>> InitBlocks(
+void InitBlocks(
     const MPS<TenType> &mps,
     const MPO<TenType> &mpo,
-    const SweepParams &sweep_params) {
-  assert(mps.size() == mpo.size());
-  auto N = mps.size();
-  std::vector<TenType *> rblocks(N-1);
-  std::vector<TenType *> lblocks(N-1);
+    const SweepParams &sweep_params,
+    TenVec<TenType> &lblocks,
+    TenVec<TenType> &rblocks
+) {
 
   if (sweep_params.Workflow == kTwoSiteAlgoWorkflowContinue) {
-    return std::make_pair(lblocks, rblocks);
+    return;
   }
 
   // Generate blocks.
+  auto N = mps.size();
   // Right blocks.
   auto rblock0 = new TenType();
-  rblocks[0] = rblock0;
+  rblocks(0) = rblock0;
   auto rblock1 = Contract(mps[N-1], mpo.back(), {{1}, {0}});
   auto temp_rblock1 = Contract(*rblock1, Dag(mps[N-1]), {{2}, {1}});
   delete rblock1;
   rblock1 = temp_rblock1;
-  rblocks[1] = rblock1;
+  rblocks(1) = rblock1;
   std::string file;
   if (sweep_params.FileIO) {
     file = GenBlockFileName("r", 0);
     WriteGQTensorTOFile(*rblock0, file);
-    delete rblocks[0];
+    rblocks.dealloc(0);
     file = GenBlockFileName("r", 1);
     WriteGQTensorTOFile(*rblock1, file);
   }
   for (size_t i = 2; i < N-1; ++i) {
-    auto rblocki = Contract(mps[N-i], *rblocks[i-1], {{2}, {0}});
+    auto rblocki = Contract(mps[N-i], rblocks[i-1], {{2}, {0}});
     auto temp_rblocki = Contract(*rblocki, mpo[N-i], {{1, 2}, {1, 3}});
     delete rblocki;
     rblocki = temp_rblocki;
     temp_rblocki = Contract(*rblocki, Dag(mps[N-i]), {{3, 1}, {1, 2}});
     delete rblocki;
     rblocki = temp_rblocki;
-    rblocks[i] = rblocki;
+    rblocks(i) = rblocki;
     if (sweep_params.FileIO) {
       auto file = GenBlockFileName("r", i);
       WriteGQTensorTOFile(*rblocki, file);
-      delete rblocks[i-1];
+      rblocks.dealloc(i-1);
     }
   }
-  if (sweep_params.FileIO) { delete rblocks[N-2]; }
+  if (sweep_params.FileIO) { rblocks.dealloc(N-2); }
 
   // Left blocks.
   if (sweep_params.FileIO) {
     auto file = GenBlockFileName("l", 0);
     WriteGQTensorTOFile(TenType(), file);
   }
-
-  return std::make_pair(lblocks, rblocks);
 }
 
 
@@ -150,8 +153,8 @@ template <typename TenType>
 double TwoSiteSweep(
     MPS<TenType> &mps,
     const MPO<TenType> &mpo,
-    std::vector<TenType *> &lblocks,
-    std::vector<TenType *> &rblocks,
+    TenVec<TenType> &lblocks,
+    TenVec<TenType> &rblocks,
     const SweepParams &sweep_params) {
   auto N = mps.size();
   double e0;
@@ -170,8 +173,8 @@ double TwoSiteUpdate(
     const long i,
     MPS<TenType> &mps,
     const MPO<TenType> &mpo,
-    std::vector<TenType *> &lblocks,
-    std::vector<TenType *> &rblocks,
+    TenVec<TenType> &lblocks,
+    TenVec<TenType> &rblocks,
     const SweepParams &sweep_params,
     const char dir) {
   Timer update_timer("update");
@@ -247,14 +250,14 @@ double TwoSiteUpdate(
     switch (dir) {
       case 'r':
         rblock_file = GenBlockFileName("r", rblock_len);
-        ReadGQTensorFromFile(rblocks[rblock_len], rblock_file);
+        ReadGQTensorFromFile(rblocks(rblock_len), rblock_file);
         if (rblock_len != 0) {
           RemoveFile(rblock_file);
         }
         break;
       case 'l':
         lblock_file = GenBlockFileName("l", lblock_len);
-        ReadGQTensorFromFile(lblocks[lblock_len], lblock_file);
+        ReadGQTensorFromFile(lblocks(lblock_len), lblock_file);
         if (lblock_len != 0) {
           RemoveFile(lblock_file);
         }
@@ -271,11 +274,11 @@ double TwoSiteUpdate(
 
   // Lanczos
   std::vector<TenType *>eff_ham(4);
-  eff_ham[0] = lblocks[lblock_len];
+  eff_ham[0] = lblocks(lblock_len);
   // Safe const casts for MPO local tensors.
   eff_ham[1] = const_cast<TenType *>(&mpo[lsite_idx]);
   eff_ham[2] = const_cast<TenType *>(&mpo[rsite_idx]);
-  eff_ham[3] = rblocks[rblock_len];
+  eff_ham[3] = rblocks(rblock_len);
   auto init_state = Contract(
                         mps[lsite_idx], mps[rsite_idx],
                         init_state_ctrct_axes);
@@ -348,7 +351,7 @@ double TwoSiteUpdate(
         delete new_lblock;
         new_lblock = temp_new_lblock;
       } else if (i != N-2) {
-        new_lblock = Contract(*lblocks[i], mps[i], {{0}, {0}});
+        new_lblock = Contract(lblocks[i], mps[i], {{0}, {0}});
         auto temp_new_lblock = Contract(*new_lblock, mpo[i], {{0, 2}, {0, 1}});
         delete new_lblock;
         new_lblock = temp_new_lblock;
@@ -367,19 +370,20 @@ double TwoSiteUpdate(
       if (sweep_params.FileIO) {
         if (update_block) {
           auto target_blk_len = i+1;
-          lblocks[target_blk_len] = new_lblock;
+          lblocks(target_blk_len) = new_lblock;
           auto target_blk_file = GenBlockFileName("l", target_blk_len);
           WriteGQTensorTOFile(*new_lblock, target_blk_file);
-          delete eff_ham[0];
-          delete eff_ham[3];
+
+          lblocks.dealloc(lblock_len);
+          rblocks.dealloc(rblock_len);
         } else {
-          delete eff_ham[0];
+          lblocks.dealloc(lblock_len);
         }
       } else {
         if (update_block) {
           auto target_blk_len = i+1;
-          delete lblocks[target_blk_len];
-          lblocks[target_blk_len] = new_lblock;
+          lblocks.dealloc(target_blk_len);
+          lblocks(target_blk_len) = new_lblock;
         }
       }
 
@@ -426,19 +430,20 @@ double TwoSiteUpdate(
       if (sweep_params.FileIO) {
         if (update_block) {
           auto target_blk_len = N-i;
-          rblocks[target_blk_len] = new_rblock;
+          rblocks(target_blk_len) = new_rblock;
           auto target_blk_file = GenBlockFileName("r", target_blk_len);
           WriteGQTensorTOFile(*new_rblock, target_blk_file);
-          delete eff_ham[0];
-          delete eff_ham[3];
+
+          lblocks.dealloc(lblock_len);
+          rblocks.dealloc(rblock_len);
         } else {
-          delete eff_ham[3];
+          rblocks.dealloc(rblock_len);
         }
       } else {
         if (update_block) {
           auto target_blk_len = N-i;
-          delete rblocks[target_blk_len];
-          rblocks[target_blk_len] = new_rblock;
+          rblocks.dealloc(target_blk_len);
+          rblocks(target_blk_len) = new_rblock;
         }
       }
 
