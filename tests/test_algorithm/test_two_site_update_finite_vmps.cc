@@ -86,12 +86,12 @@ struct TestTwoSiteAlgorithmSpinSystem : public testing::Test {
   DGQTensor  dsz  = DGQTensor({pb_in, pb_out});
   DGQTensor  dsp  = DGQTensor({pb_in, pb_out});
   DGQTensor  dsm  = DGQTensor({pb_in, pb_out});
-  DMPS dmps = DMPS(N);
+  DMPS dmps = DMPS(dsite_vec_6);
 
   ZGQTensor  zsz  = ZGQTensor({pb_in, pb_out});
   ZGQTensor  zsp  = ZGQTensor({pb_in, pb_out});
   ZGQTensor  zsm  = ZGQTensor({pb_in, pb_out});
-  ZMPS zmps = ZMPS(N);
+  ZMPS zmps = ZMPS(zsite_vec_6);
 
   void SetUp(void) {
     dsz({0, 0}) = 0.5;
@@ -120,7 +120,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DIsing) {
                           true,
                           kTwoSiteAlgoWorkflowInitial,
                           LanczosParams(1.0E-7));
-  RandomInitMps(dmps, pb_out, qn0, qn0, 2);
+  RandomInitMps(dmps, qn0, qn0, 2);
   RunTestTwoSiteAlgorithmCase(dmps, dmpo, sweep_params, -0.25*(N-1), 1.0E-10);
 
   // No file I/O case.
@@ -131,7 +131,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DIsing) {
                      kTwoSiteAlgoWorkflowInitial,
                      LanczosParams(1.0E-7));
 
-  RandomInitMps(dmps, pb_out, qn0, qn0, 2);
+  RandomInitMps(dmps, qn0, qn0, 2);
   RunTestTwoSiteAlgorithmCase(dmps, dmpo, sweep_params, -0.25*(N-1), 1.0E-10);
 
   // Complex Hamiltonian.
@@ -146,7 +146,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DIsing) {
                      true,
                      kTwoSiteAlgoWorkflowInitial,
                      LanczosParams(1.0E-7));
-  RandomInitMps(zmps, pb_out, qn0, qn0, 2);
+  RandomInitMps(zmps, qn0, qn0, 2);
   RunTestTwoSiteAlgorithmCase(zmps, zmpo, sweep_params, -0.25*(N-1), 1.0E-10);
 }
 
@@ -166,7 +166,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DHeisenberg) {
                      true,
                      kTwoSiteAlgoWorkflowInitial,
                      LanczosParams(1.0E-7));
-  RandomInitMps(dmps, pb_out, qn0, qn0, 4);
+  RandomInitMps(dmps, qn0, qn0, 4);
   RunTestTwoSiteAlgorithmCase(
       dmps, dmpo, sweep_params,
       -2.493577133888, 1.0E-12);
@@ -203,7 +203,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DHeisenberg) {
                      true,
                      kTwoSiteAlgoWorkflowInitial,
                      LanczosParams(1.0E-7));
-  RandomInitMps(zmps, pb_out, qn0, qn0, 4);
+  RandomInitMps(zmps, qn0, qn0, 4);
   RunTestTwoSiteAlgorithmCase(
       zmps, zmpo, sweep_params,
       -2.493577133888, 1.0E-12);
@@ -213,12 +213,12 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DHeisenberg) {
 TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DHeisenberg) {
   auto dmpo_gen = MPOGenerator<GQTEN_Double>(dsite_vec_6, qn0);
   std::vector<std::pair<int, int>> nn_pairs = {
-      std::make_pair(0, 1), 
-      std::make_pair(0, 2), 
-      std::make_pair(1, 3), 
-      std::make_pair(2, 3), 
-      std::make_pair(2, 4), 
-      std::make_pair(3, 5), 
+      std::make_pair(0, 1),
+      std::make_pair(0, 2),
+      std::make_pair(1, 3),
+      std::make_pair(2, 3),
+      std::make_pair(2, 4),
+      std::make_pair(3, 5),
       std::make_pair(4, 5)
   };
   for (auto &p : nn_pairs) {
@@ -234,7 +234,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DHeisenberg) {
                      true,
                      kTwoSiteAlgoWorkflowInitial,
                      LanczosParams(1.0E-7));
-  RandomInitMps(dmps, pb_out, qn0, qn0, 4);
+  RandomInitMps(dmps, qn0, qn0, 4);
   RunTestTwoSiteAlgorithmCase(
       dmps, dmpo, sweep_params,
       -3.129385241572, 1.0E-12);
@@ -242,7 +242,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DHeisenberg) {
   // Test direct product state initialization.
   std::vector<long> stat_labs;
   for (int i = 0; i < N; ++i) { stat_labs.push_back(i % 2); }
-  DirectStateInitMps(dmps, stat_labs, pb_out, qn0);
+  DirectStateInitMps(dmps, stat_labs, qn0);
 
   sweep_params = SweepParams(
                      4,
@@ -269,7 +269,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DHeisenberg) {
                      true,
                      kTwoSiteAlgoWorkflowInitial,
                      LanczosParams(1.0E-7));
-  DirectStateInitMps(zmps, stat_labs, pb_out, qn0);
+  DirectStateInitMps(zmps, stat_labs, qn0);
   RunTestTwoSiteAlgorithmCase(
       zmps, zmpo, sweep_params,
       -3.129385241572, 1.0E-12);
@@ -306,9 +306,8 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DKitaevSimpleCase) {
     stat_labs1.push_back(i%2);
     stat_labs2.push_back((i+1)%2);
   }
-  auto dmps_8sites = DMPS(N1);
-  ExtendDirectRandomInitMps(
-      dmps_8sites, {stat_labs1, stat_labs2}, pb_out, qn0, 2);
+  auto dmps_8sites = DMPS(dsite_vec);
+  ExtendDirectRandomInitMps(dmps_8sites, {stat_labs1, stat_labs2}, qn0, 2);
   RunTestTwoSiteAlgorithmCase(
       dmps_8sites, dmpo, sweep_params,
       -1.0, 1.0E-12);
@@ -327,9 +326,8 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DKitaevSimpleCase) {
     }
   }
   auto zmpo = zmpo_gen.Gen();
-  auto zmps_8sites = ZMPS(N1);
-  ExtendDirectRandomInitMps(
-      zmps_8sites, {stat_labs1, stat_labs2}, pb_out, qn0, 2);
+  auto zmps_8sites = ZMPS(zsite_vec);
+  ExtendDirectRandomInitMps(zmps_8sites, {stat_labs1, stat_labs2}, qn0, 2);
   RunTestTwoSiteAlgorithmCase(
       zmps_8sites, zmpo, sweep_params,
       -1.0, 1.0E-12);
@@ -423,7 +421,7 @@ TEST(TestTwoSiteAlgorithmNoSymmetrySpinSystem, 2DKitaevComplexCase) {
   }
   auto mpo = mpo_gen.Gen();
 
-  MPS<Tensor> mps(N);
+  MPS<Tensor> mps(site_vec);
   std::vector<long> stat_labs(N);
   auto was_up = false;
   for (int i = 0; i < N; ++i) {
@@ -436,7 +434,7 @@ TEST(TestTwoSiteAlgorithmNoSymmetrySpinSystem, 2DKitaevComplexCase) {
       was_up = true;
     }
   }
-  DirectStateInitMps(mps, stat_labs, idx_out, zero_div);
+  DirectStateInitMps(mps, stat_labs, zero_div);
 
   auto sweep_params = SweepParams(
                           4,
@@ -470,7 +468,7 @@ struct TestTwoSiteAlgorithmTjSystem2U1Symm : public testing::Test {
   DGQTensor dcdagup = DGQTensor({pb_in, pb_out});
   DGQTensor dcdn    = DGQTensor({pb_in, pb_out});
   DGQTensor dcdagdn = DGQTensor({pb_in, pb_out});
-  DMPS dmps   = DMPS(N);
+  DMPS dmps   = DMPS(dsite_vec_4);
 
   ZGQTensor zf      = ZGQTensor({pb_in, pb_out});
   ZGQTensor zsz     = ZGQTensor({pb_in, pb_out});
@@ -480,7 +478,7 @@ struct TestTwoSiteAlgorithmTjSystem2U1Symm : public testing::Test {
   ZGQTensor zcdagup = ZGQTensor({pb_in, pb_out});
   ZGQTensor zcdn    = ZGQTensor({pb_in, pb_out});
   ZGQTensor zcdagdn = ZGQTensor({pb_in, pb_out});
-  ZMPS zmps   = ZMPS(N);
+  ZMPS zmps   = ZMPS(zsite_vec_4);
 
   void SetUp(void) {
     df({0, 0})  = -1;
@@ -532,7 +530,7 @@ TEST_F(TestTwoSiteAlgorithmTjSystem2U1Symm, 1DCase) {
                       );
   auto total_div = QN({QNNameVal("N", N-2), QNNameVal("Sz", 0)});
   auto zero_div = QN({QNNameVal("N", 0), QNNameVal("Sz", 0)});
-  RandomInitMps(dmps, pb_out, total_div, zero_div, 5);
+  RandomInitMps(dmps, total_div, zero_div, 5);
   RunTestTwoSiteAlgorithmCase(
       dmps, dmpo, sweep_params,
       -6.947478526233, 1.0E-10
@@ -550,7 +548,7 @@ TEST_F(TestTwoSiteAlgorithmTjSystem2U1Symm, 1DCase) {
     zmpo_gen.AddTerm(J/2, zsm, i, zsp, i+1);
   }
   auto zmpo = zmpo_gen.Gen();
-  RandomInitMps(zmps, pb_out, total_div, zero_div, 5);
+  RandomInitMps(zmps, total_div, zero_div, 5);
   RunTestTwoSiteAlgorithmCase(
       zmps, zmpo, sweep_params,
       -6.947478526233, 1.0E-10
@@ -586,14 +584,14 @@ TEST_F(TestTwoSiteAlgorithmTjSystem2U1Symm, 2DCase) {
 
   auto total_div = QN({QNNameVal("N", N-2), QNNameVal("Sz", 0)});
   auto zero_div = QN({QNNameVal("N", 0), QNNameVal("Sz", 0)});
-  RandomInitMps(dmps, pb_out, total_div, zero_div, 5);
+  RandomInitMps(dmps, total_div, zero_div, 5);
   RunTestTwoSiteAlgorithmCase(
       dmps, dmpo, sweep_params,
       -8.868563739680, 1.0E-10
   );
 
   // Direct product state initialization.
-  DirectStateInitMps(dmps, {2, 0, 1, 2}, pb_out, zero_div);
+  DirectStateInitMps(dmps, {2, 0, 1, 2}, zero_div);
   RunTestTwoSiteAlgorithmCase(
       dmps, dmpo, sweep_params,
       -8.868563739680, 1.0E-10
@@ -611,7 +609,7 @@ TEST_F(TestTwoSiteAlgorithmTjSystem2U1Symm, 2DCase) {
     zmpo_gen.AddTerm(J/2, zsm, p.first, zsp, p.second);
   }
   auto zmpo = zmpo_gen.Gen();
-  DirectStateInitMps(zmps, {2, 0, 1, 2}, pb_out, zero_div);
+  DirectStateInitMps(zmps, {2, 0, 1, 2}, zero_div);
   RunTestTwoSiteAlgorithmCase(
       zmps, zmpo, sweep_params,
       -8.868563739680, 1.0E-10
@@ -728,8 +726,8 @@ TEST_F(TestTwoSiteAlgorithmTjSystem1U1Symm, RashbaTermCase) {
     }
   }
   auto mpo = mpo_gen.Gen();
-  auto mps = ZMPS(Ntot);
-  DirectStateInitMps(mps, {0, 1, 0, 2, 0, 1}, pb_out, qn0);
+  auto mps = ZMPS(site_vec);
+  DirectStateInitMps(mps, {0, 1, 0, 2, 0, 1}, qn0);
   auto sweep_params = SweepParams(
                           8,
                           30, 30, 1.0E-4,
@@ -772,7 +770,7 @@ struct TestTwoSiteAlgorithmHubbardSystem : public testing::Test {
   DGQTensor dadagup  = DGQTensor({pb_in, pb_out});
   DGQTensor dnadn    = DGQTensor({pb_in, pb_out});
   DGQTensor dfadagdn = DGQTensor({pb_in, pb_out});    // f*a^+_dn
-  DMPS dmps    = DMPS(N);
+  DMPS dmps    = DMPS(dsite_vec);
 
   ZGQTensor zf       = ZGQTensor({pb_in, pb_out});
   ZGQTensor znupdn   = ZGQTensor({pb_in, pb_out});    // n_up*n_dn
@@ -784,7 +782,7 @@ struct TestTwoSiteAlgorithmHubbardSystem : public testing::Test {
   ZGQTensor zadagup  = ZGQTensor({pb_in, pb_out});
   ZGQTensor znadn    = ZGQTensor({pb_in, pb_out});
   ZGQTensor zfadagdn = ZGQTensor({pb_in, pb_out});    // f*a^+_dn
-  ZMPS zmps    = ZMPS(N);
+  ZMPS zmps    = ZMPS(zsite_vec);
 
   void SetUp(void) {
     df({0, 0})  = 1;
@@ -872,7 +870,7 @@ TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
           dmpo_gen.AddTerm(1, -t1*dadagdn, temp_s0, dfadn, s2, df);
           dmpo_gen.AddTerm(1, dnaupf, temp_s0, -t1*dadagup, s2, df);
           dmpo_gen.AddTerm(1, dnadn, temp_s0, -t1*dfadagdn, s2, df);
-        } 
+        }
         if (i != Nx-1) {
           auto s2 = coors2idxSquare(i+1, j+1, Nx, Ny);
           auto temp_s0 = s0;
@@ -882,7 +880,7 @@ TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
           dmpo_gen.AddTerm(1, -t1*dadagdn, temp_s0, dfadn, s2, df);
           dmpo_gen.AddTerm(1, dnaupf, temp_s0, -t1*dadagup, s2, df);
           dmpo_gen.AddTerm(1, dnadn, temp_s0, -t1*dfadagdn, s2, df);
-        } 
+        }
       }
     }
   }
@@ -897,7 +895,7 @@ TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
   auto qn0 = QN({QNNameVal("Nup", 0), QNNameVal("Ndn", 0)});
   std::vector<long> stat_labs(N);
   for (int i = 0; i < N; ++i) { stat_labs[i] = (i % 2 == 0 ? 1 : 2); }
-  DirectStateInitMps(dmps, stat_labs, pb_out, qn0);
+  DirectStateInitMps(dmps, stat_labs, qn0);
   RunTestTwoSiteAlgorithmCase(
       dmps, dmpo, sweep_params,
       -2.828427124746, 1.0E-10);
@@ -951,7 +949,7 @@ TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
     }
   }
   auto zmpo = zmpo_gen.Gen();
-  DirectStateInitMps(zmps, stat_labs, pb_out, qn0);
+  DirectStateInitMps(zmps, stat_labs, qn0);
   RunTestTwoSiteAlgorithmCase(
       zmps, zmpo, sweep_params,
       -2.828427124746, 1.0E-10);

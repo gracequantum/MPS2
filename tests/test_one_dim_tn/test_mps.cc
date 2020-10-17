@@ -36,7 +36,9 @@ struct TestMPS : public testing::Test {
   Tensor t3 = Tensor({vb012_in, pb_out, vb01_out});
   Tensor t4 = Tensor({vb01_in, pb_out});
 
-  MPS<Tensor> mps = MPS<Tensor>(5);
+  SiteVec<Tensor> site_vec = SiteVec<Tensor>(5, pb_out);
+
+  MPS<Tensor> mps = MPS<Tensor>(site_vec);
 
   void SetUp(void) {
     t0.Random(qn0);
@@ -217,7 +219,7 @@ TEST_F(TestMPS, TestElemAccess) {
 
 
 TEST_F(TestMPS, TestIO) {
-  MPS<Tensor> mps2(5);
+  MPS<Tensor> mps2(SiteVec<Tensor>(5, pb_out));
   mps.Dump();
   mps2.Load();
   for (size_t i = 0; i < 5; ++i) {

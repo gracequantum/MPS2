@@ -16,6 +16,7 @@
 
 
 #include "gqmps2/one_dim_tn/framework/ten_vec.h"    // TenVec
+#include "gqmps2/site_vec.h"    // SiteVec
 #include "gqmps2/consts.h"    // kMpsPath
 #include "gqmps2/utilities.h"     // IsPathExist, CreatPath
 #include "gqten/gqten.h"    // Svd, Contract
@@ -63,13 +64,14 @@ public:
   /**
   Create a empty MPS using its size.
 
-  @param size The size of the MPS.
+  @param site_vec The sites information of the system.
   */
   MPS(
-      const size_t size
-  ) : TenVec<LocalTenT>(size),
+      const SiteVec<LocalTenT> &site_vec
+  ) : TenVec<LocalTenT>(site_vec.size),
       center_(kUncentralizedCenterIdx),
-      tens_cano_type_(size, MPSTenCanoType::NONE) {}
+      tens_cano_type_(site_vec.size, MPSTenCanoType::NONE),
+      site_vec_(site_vec) {}
 
   // MPS local tensor access.
   /**
@@ -138,6 +140,13 @@ public:
     return tens_cano_type_[idx];
   }
 
+  /**
+  Get sites information.
+  */
+  SiteVec<LocalTenT> GetSitesInfo(void) const {
+    return site_vec_; 
+  }
+
   // HDD I/O
   /**
   Dump MPS to HDD.
@@ -169,6 +178,7 @@ public:
 private:
   int center_;
   std::vector<MPSTenCanoType> tens_cano_type_;
+  SiteVec<LocalTenT> site_vec_;
 
   void LeftCanonicalize_(const size_t);
   void LeftCanonicalizeTen_(const size_t);

@@ -58,20 +58,21 @@ add_unittest(test_ten_vec
   "test_one_dim_tn/test_ten_vec.cc"
   "" "" "${MATH_LIB_LINK_FLAGS}" ""
 )
+
 # Test MPS class
 add_unittest(test_mps
   "test_one_dim_tn/test_mps.cc"
   "" "" "${MATH_LIB_LINK_FLAGS}" ""
 )
-# Test MPO class
-add_unittest(test_mpo test_one_dim_tn/test_mpo.cc "" "" "" "")
 # Test MPS measurement.
 add_unittest(test_mps_measu
   "test_one_dim_tn/test_mps_measu.cc"
   "" "" "${MATH_LIB_LINK_FLAGS}" ""
 )
 
-## Test MPO generation.
+# Test MPO class
+add_unittest(test_mpo test_one_dim_tn/test_mpo.cc "" "" "" "")
+# Test MPO generation.
 add_unittest(test_mpogen_coef_op_alg
     "test_mpogen/test_mpogen_coef_op_alg.cc"
     "" "" "" ""

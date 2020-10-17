@@ -55,44 +55,46 @@ inline void MpsFree(MPST &mps) {
 template <typename TenType>
 void RandomInitMps(
     MPS<TenType> &mps,
-    const Index &pb,
     const QN &tot_div,
     const QN &zero_div,
-    const long dmax) {
+    const long dmax
+) {
   MpsFree(mps);
+  auto sites_info = mps.GetSitesInfo();
+  auto pb_out_set = sites_info.sites;
   Index lvb, rvb;
 
   // Left to center.
-  rvb = GenHeadRightVirtBond(pb, tot_div, dmax);
-  mps(0) = new TenType({pb, rvb});
+  rvb = GenHeadRightVirtBond(pb_out_set[0], tot_div, dmax);
+  mps(0) = new TenType({pb_out_set[0], rvb});
   mps(0)->Random(tot_div);
   assert(Div(mps[0]) == tot_div);
   auto N = mps.size();
   for (std::size_t i = 1; i < N/2; ++i) {
     lvb = InverseIndex(rvb);
-    rvb = GenBodyRightVirtBond(lvb, pb, zero_div, dmax);
-    mps(i) = new TenType({lvb, pb, rvb});
+    rvb = GenBodyRightVirtBond(lvb, pb_out_set[i], zero_div, dmax);
+    mps(i) = new TenType({lvb, pb_out_set[i], rvb});
     mps(i)->Random(zero_div);
     assert(Div(mps[i]) == zero_div);
   }
   auto cent_bond = rvb;
 
   // Right to center.
-  lvb = GenTailLeftVirtBond(pb, zero_div, dmax);
-  mps(N-1) = new TenType({lvb, pb});
+  lvb = GenTailLeftVirtBond(pb_out_set[N-1], zero_div, dmax);
+  mps(N-1) = new TenType({lvb, pb_out_set[N-1]});
   mps(N-1)->Random(zero_div);
   assert(Div(mps[N-1]) == zero_div);
   for (std::size_t i = N-2; i > N/2; --i) {
     rvb = InverseIndex(lvb);
-    lvb = GenBodyLeftVirtBond(rvb, pb, zero_div, dmax);
-    mps(i) = new TenType({lvb, pb, rvb});
+    lvb = GenBodyLeftVirtBond(rvb, pb_out_set[i], zero_div, dmax);
+    mps(i) = new TenType({lvb, pb_out_set[i], rvb});
     mps(i)->Random(zero_div);
     assert(Div(mps[i]) == zero_div);
   }
 
   rvb = InverseIndex(lvb);
   lvb = InverseIndex(cent_bond);
-  mps(N/2) = new TenType({lvb, pb, rvb});
+  mps(N/2) = new TenType({lvb, pb_out_set[N/2], rvb});
   mps(N/2)->Random(zero_div);
   assert(Div(mps[N/2]) == zero_div);
 
@@ -275,38 +277,42 @@ inline void DimCut(
 
 template <typename TenType>
 void DirectStateInitMps(
-    MPS<TenType> &mps, const std::vector<long> &stat_labs,
-    const Index &pb_out, const QN &zero_div) {
+    MPS<TenType> &mps,
+    const std::vector<long> &stat_labs,
+    const QN &zero_div
+) {
   auto N = mps.size();
   assert(N == stat_labs.size());
   MpsFree(mps);
+  auto sites_info = mps.GetSitesInfo();
+  auto pb_out_set = sites_info.sites;
   Index lvb, rvb;
 
   // Calculate total quantum number.
-  auto div = pb_out.CoorInterOffsetAndQnsct(stat_labs[0]).qnsct.qn;
+  auto div = pb_out_set[0].CoorInterOffsetAndQnsct(stat_labs[0]).qnsct.qn;
   for (std::size_t i = 1; i < N; ++i) {
-    div += pb_out.CoorInterOffsetAndQnsct(stat_labs[i]).qnsct.qn;
+    div += pb_out_set[i].CoorInterOffsetAndQnsct(stat_labs[i]).qnsct.qn;
   }
 
   auto stat_lab = stat_labs[0];
-  auto rvb_qn = div - pb_out.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn;
+  auto rvb_qn = div - pb_out_set[0].CoorInterOffsetAndQnsct(stat_lab).qnsct.qn;
   rvb = Index({QNSector(rvb_qn, 1)}, OUT);
-  mps(0) = new TenType({pb_out, rvb});
+  mps(0) = new TenType({pb_out_set[0], rvb});
   (mps[0])({stat_lab, 0}) = 1;
 
   for (std::size_t i = 1; i < N-1; ++i) {
     lvb = InverseIndex(rvb);
     stat_lab = stat_labs[i];
     rvb_qn = zero_div -
-             pb_out.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn +
+             pb_out_set[i].CoorInterOffsetAndQnsct(stat_lab).qnsct.qn +
              lvb.CoorInterOffsetAndQnsct(0).qnsct.qn;
     rvb = Index({QNSector(rvb_qn, 1)}, OUT);
-    mps(i) = new TenType({lvb, pb_out, rvb});
+    mps(i) = new TenType({lvb, pb_out_set[i], rvb});
     (mps[i])({0, stat_lab, 0}) = 1;
   }
 
   lvb = InverseIndex(rvb);
-  mps(N-1) = new TenType({lvb, pb_out});
+  mps(N-1) = new TenType({lvb, pb_out_set[N-1]});
   stat_lab = stat_labs[N-1];
   (mps[N-1])({0, stat_lab}) = 1;
 
@@ -369,30 +375,38 @@ template <typename TenType>
 void ExtendDirectRandomInitMps(
     MPS<TenType> &mps,
     const std::vector<std::vector<long>> &stat_labs_set,
-    const Index &pb, const QN &zero_div, const long enlarged_dim) {
+    const QN &zero_div,
+    const long enlarged_dim
+) {
   auto fusion_stats_num = stat_labs_set.size();
   assert(fusion_stats_num >= 1);
   auto N = mps.size();
   assert(N == stat_labs_set[0].size());
   MpsFree(mps);
+  auto sites_info = mps.GetSitesInfo();
+  auto pb_out_set = sites_info.sites;
   Index lvb, rvb;
   std::vector<QNSector> rvb_qnscts;
 
   // Calculate total quantum number.
-  auto div = pb.CoorInterOffsetAndQnsct(stat_labs_set[0][0]).qnsct.qn;
+  auto div = pb_out_set[0].CoorInterOffsetAndQnsct(
+                 stat_labs_set[0][0]
+              ).qnsct.qn;
   for (std::size_t i = 1; i < N; ++i) {
-    div += pb.CoorInterOffsetAndQnsct(stat_labs_set[0][i]).qnsct.qn;
+    div += pb_out_set[i].CoorInterOffsetAndQnsct(stat_labs_set[0][i]).qnsct.qn;
   }
 
   // Deal with MPS head local tensor.
   for (std::size_t i = 0; i < fusion_stats_num; ++i) {
     auto stat_lab = stat_labs_set[i][0];
-    auto rvb_qn = div - pb.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn;
+    auto rvb_qn = div - pb_out_set[0].CoorInterOffsetAndQnsct(
+                      stat_lab
+                  ).qnsct.qn;
     rvb_qnscts.push_back(QNSector(rvb_qn, enlarged_dim));
   }
   rvb = Index(rvb_qnscts, OUT);
   rvb_qnscts.clear();
-  mps(0) = new TenType({pb, rvb});
+  mps(0) = new TenType({pb_out_set[0], rvb});
   mps[0].Random(div);
 
   // Deal with MPS middle local tensors.
@@ -401,19 +415,19 @@ void ExtendDirectRandomInitMps(
     for (std::size_t j = 0; j < fusion_stats_num; ++j) {
       auto stat_lab = stat_labs_set[j][i];
       auto rvb_qn = zero_div -
-                    pb.CoorInterOffsetAndQnsct(stat_lab).qnsct.qn +
+                    pb_out_set[i].CoorInterOffsetAndQnsct(stat_lab).qnsct.qn +
                     lvb.CoorInterOffsetAndQnsct(j*enlarged_dim).qnsct.qn;
       rvb_qnscts.push_back(QNSector(rvb_qn, enlarged_dim));
     }
     rvb = Index(rvb_qnscts, OUT);
-    mps(i) = new TenType({lvb, pb, rvb});
+    mps(i) = new TenType({lvb, pb_out_set[i], rvb});
     rvb_qnscts.clear();
     mps[i].Random(zero_div);
   }
 
   // Deal with MPS tail local tensor.
   lvb = InverseIndex(rvb);
-  mps(N-1) = new TenType({lvb, pb});
+  mps(N-1) = new TenType({lvb, pb_out_set[N-1]});
   mps[N-1].Random(zero_div);
 
   // Centralize MPS.
