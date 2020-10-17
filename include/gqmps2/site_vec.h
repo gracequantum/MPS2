@@ -105,6 +105,20 @@ public:
   SiteVec(const SiteVec &site_vec) :
       size(site_vec.size), sites(site_vec.sites), id_ops(site_vec.id_ops) {}
 
+  /**
+  Copy a SiteVec.
+
+  @param rhs A SiteVec instance.
+
+  @since version 0.2.0
+  */
+  SiteVec<TenT> &operator=(const SiteVec &rhs) {
+    size = rhs.size;
+    sites = rhs.sites;
+    id_ops = rhs.id_ops;
+    return *this;
+  }
+
   int size;                     ///< The size of the SiteVec, i.e. the size of the system.
   IndexVec sites;               ///< Local Hilbert spaces represented by a vector of Index with OUT direction.
   std::vector<TenT> id_ops;     ///< Identity operators on each site.
