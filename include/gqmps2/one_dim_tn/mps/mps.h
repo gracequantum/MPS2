@@ -55,10 +55,10 @@ std::string GenMPSTenName(const std::string &mps_path, const size_t idx) {
 /**
 The matrix product state (MPS) class.
 
-@tparam ElemT Type of the MPS local tensors.
+@tparam LocalTenT Type of the MPS local tensors.
 */
-template <typename ElemT>
-class MPS : public TenVec<ElemT> {
+template <typename LocalTenT>
+class MPS : public TenVec<LocalTenT> {
 public:
   /**
   Create a empty MPS using its size.
@@ -67,7 +67,7 @@ public:
   */
   MPS(
       const size_t size
-  ) : TenVec<ElemT>(size),
+  ) : TenVec<LocalTenT>(size),
       center_(kUncentralizedCenterIdx),
       tens_cano_type_(size, MPSTenCanoType::NONE) {}
 
@@ -77,10 +77,10 @@ public:
 
   @param idx Index of the MPS local tensor.
   */
-  ElemT &operator[](const size_t idx) {
+  LocalTenT &operator[](const size_t idx) {
     tens_cano_type_[idx] = MPSTenCanoType::NONE;
     center_ = kUncentralizedCenterIdx;
-    return DuoVector<ElemT>::operator[](idx);
+    return DuoVector<LocalTenT>::operator[](idx);
   }
 
   /**
@@ -88,8 +88,8 @@ public:
 
   @param idx Index of the MPS local tensor.
   */
-  const ElemT &operator[](const size_t idx) const {
-    return DuoVector<ElemT>::operator[](idx); 
+  const LocalTenT &operator[](const size_t idx) const {
+    return DuoVector<LocalTenT>::operator[](idx); 
   }
 
   /**
@@ -98,10 +98,10 @@ public:
 
   @param idx Index of the MPS local tensor.
   */
-  ElemT * &operator()(const size_t idx) {
+  LocalTenT * &operator()(const size_t idx) {
     tens_cano_type_[idx] = MPSTenCanoType::NONE;
     center_ = kUncentralizedCenterIdx; 
-    return DuoVector<ElemT>::operator()(idx);
+    return DuoVector<LocalTenT>::operator()(idx);
   }
 
   /**
@@ -109,8 +109,8 @@ public:
 
   @param idx Index of the MPS local tensor.
   */
-  const ElemT *operator()(const size_t idx) const {
-    return DuoVector<ElemT>::operator()(idx);
+  const LocalTenT *operator()(const size_t idx) const {
+    return DuoVector<LocalTenT>::operator()(idx);
   }
 
   // MPS global operations.
@@ -182,8 +182,8 @@ Centralize the MPS.
 
 @param target_center The new center of the MPS.
 */
-template <typename ElemT>
-void MPS<ElemT>::Centralize(const int target_center) {
+template <typename LocalTenT>
+void MPS<LocalTenT>::Centralize(const int target_center) {
   assert(target_center >= 0);
   auto mps_tail_idx = this->size() - 1; 
   if (target_center != 0) { LeftCanonicalize_(target_center - 1); }
@@ -194,8 +194,8 @@ void MPS<ElemT>::Centralize(const int target_center) {
 }
 
 
-template <typename ElemT>
-void MPS<ElemT>::LeftCanonicalize_(const size_t stop_idx) {
+template <typename LocalTenT>
+void MPS<LocalTenT>::LeftCanonicalize_(const size_t stop_idx) {
   size_t start_idx;
   for (size_t i = 0; i <= stop_idx; ++i) {
     start_idx = i;
@@ -206,8 +206,8 @@ void MPS<ElemT>::LeftCanonicalize_(const size_t stop_idx) {
 }
 
 
-template <typename ElemT>
-void MPS<ElemT>::LeftCanonicalizeTen_(const size_t site_idx) {
+template <typename LocalTenT>
+void MPS<LocalTenT>::LeftCanonicalizeTen_(const size_t site_idx) {
   assert(site_idx < this->size() - 1);
   long ldims, rdims;
   if (site_idx == 0) {
@@ -237,8 +237,8 @@ void MPS<ElemT>::LeftCanonicalizeTen_(const size_t site_idx) {
 }
 
 
-template <typename ElemT>
-void MPS<ElemT>::RightCanonicalize_(const size_t stop_idx) {
+template <typename LocalTenT>
+void MPS<LocalTenT>::RightCanonicalize_(const size_t stop_idx) {
   auto mps_tail_idx = this->size() - 1;
   size_t start_idx;
   for (size_t i = mps_tail_idx; i >= stop_idx; --i) {
@@ -250,8 +250,8 @@ void MPS<ElemT>::RightCanonicalize_(const size_t stop_idx) {
 }
 
 
-template <typename ElemT>
-void MPS<ElemT>::RightCanonicalizeTen_(const size_t site_idx) {
+template <typename LocalTenT>
+void MPS<LocalTenT>::RightCanonicalizeTen_(const size_t site_idx) {
   assert(site_idx > 0);
   long ldims, rdims;
   if (site_idx == this->size() - 1) {
