@@ -6,7 +6,7 @@
 * Description: GraceQ/MPS2 project. Implementation details for two-site algorithm.
 */
 #include "gqmps2/algorithm/vmps/two_site_update_finite_vmps.h"
-#include "gqmps2/one_dim_tn/mpo.h"    // MPO
+#include "gqmps2/one_dim_tn/mpo/mpo.h"    // MPO
 #include "gqmps2/utilities.h"         // ReadGQTensorFromFile, WriteGQTensorTOFile, IsPathExist, CreatPath
 #include "gqmps2/one_dim_tn/framework/ten_vec.h"    // TenVec
 #include "gqmps2/consts.h"

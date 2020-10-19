@@ -6,8 +6,8 @@
 * Description: GraceQ/MPS2 project. Implantation details for MPO generator.
 */
 #include "gqmps2/consts.h"     // kNullIntVec
-#include "gqmps2/mpogen/mpogen.h"
-#include "gqmps2/mpogen/symb_alg/coef_op_alg.h"
+#include "gqmps2/one_dim_tn/mpo/mpogen/mpogen.h"
+#include "gqmps2/one_dim_tn/mpo/mpogen/symb_alg/coef_op_alg.h"
 #include "gqten/gqten.h"
 
 #include <iostream>

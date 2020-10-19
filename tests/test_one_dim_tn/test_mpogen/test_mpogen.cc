@@ -7,8 +7,8 @@
 */
 #include "gqmps2/gqmps2.h"
 #include "gqten/gqten.h"
-#include "gqmps2/mpogen/symb_alg/coef_op_alg.h"
-#include "../testing_utils.h"
+#include "gqmps2/one_dim_tn/mpo/mpogen/symb_alg/coef_op_alg.h"
+#include "../../testing_utils.h"
 
 #include "gtest/gtest.h"
 

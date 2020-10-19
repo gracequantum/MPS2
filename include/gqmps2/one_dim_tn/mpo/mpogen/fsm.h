@@ -5,11 +5,11 @@
 * 
 * Description: GraceQ/MPS2 project. Finite state machine used by MPO generator.
 */
-#ifndef GQMPS2_MPOGEN_FSM
-#define GQMPS2_MPOGEN_FSM
+#ifndef GQMPS2_ONE_DIM_TN_MPO_MPOGEN_FSM
+#define GQMPS2_ONE_DIM_TN_MPO_MPOGEN_FSM
 
 
-#include "gqmps2/mpogen/symb_alg/coef_op_alg.h"
+#include "gqmps2/one_dim_tn/mpo/mpogen/symb_alg/coef_op_alg.h"
 
 #include <vector>
 
@@ -278,4 +278,4 @@ public:
 private:
   ConvObjVec conv_obj_hub_;
 };
-#endif /* ifndef GQMPS2_MPOGEN_FSM */
+#endif /* ifndef GQMPS2_ONE_DIM_TN_MPO_MPOGEN_FSM */

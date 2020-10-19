@@ -5,8 +5,8 @@
 * 
 * Description: GraceQ/MPS2 project. Data structure of a special sparse matrix.
 */
-#ifndef GQMPS2_MPOGEN_SPARSE_MAT_H
-#define GQMPS2_MPOGEN_SPARSE_MAT_H
+#ifndef GQMPS2_ONE_DIM_TN_MPO_MPOGEN_SPARSE_MAT_H
+#define GQMPS2_ONE_DIM_TN_MPO_MPOGEN_SPARSE_MAT_H
 
 
 #include <iostream>
@@ -218,4 +218,4 @@ private:
 
 template<typename ElemType>
 ElemType SparMat<ElemType>::nullelem = ElemType();
-#endif /* ifndef GQMPS2_MPOGEN_SPARSE_MAT_H */
+#endif /* ifndef GQMPS2_ONE_DIM_TN_MPO_MPOGEN_SPARSE_MAT_H */

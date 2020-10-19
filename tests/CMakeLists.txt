@@ -71,15 +71,21 @@ add_unittest(test_mps_measu
 )
 
 # Test MPO class
-add_unittest(test_mpo test_one_dim_tn/test_mpo.cc "" "" "" "")
-# Test MPO generation.
-add_unittest(test_mpogen_coef_op_alg
-    "test_mpogen/test_mpogen_coef_op_alg.cc"
+add_unittest(test_mpo
+    "test_one_dim_tn/test_mpo.cc"
     "" "" "" ""
 )
-add_unittest(test_mpogen_fsm "test_mpogen/test_mpogen_fsm.cc" "" "" "" "")
+# Test MPO generation.
+add_unittest(test_mpogen_coef_op_alg
+    "test_one_dim_tn/test_mpogen/test_mpogen_coef_op_alg.cc"
+    "" "" "" ""
+)
+add_unittest(test_mpogen_fsm
+    "test_one_dim_tn/test_mpogen/test_mpogen_fsm.cc"
+    "" "" "" ""
+)
 add_unittest(test_mpogen
-  "test_mpogen/test_mpogen.cc"
+  "test_one_dim_tn/test_mpogen/test_mpogen.cc"
   "" "" "${MATH_LIB_LINK_FLAGS}" ""
 )
 

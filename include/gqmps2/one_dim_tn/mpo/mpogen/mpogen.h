@@ -11,15 +11,15 @@
 @file mpogen.h
 @brief MPO generator for generic quantum many-body systems.
 */
-#ifndef GQMPS2_MPOGEN_MPOGEN_H
-#define GQMPS2_MPOGEN_MPOGEN_H
+#ifndef GQMPS2_ONE_DIM_TN_MPO_MPOGEN_MPOGEN_H
+#define GQMPS2_ONE_DIM_TN_MPO_MPOGEN_MPOGEN_H
 
 
 #include "gqmps2/consts.h"       // kNullIntVec
 #include "gqmps2/site_vec.h"     // SiteVec
-#include "gqmps2/one_dim_tn/mpo.h"    // MPO
-#include "gqmps2/mpogen/fsm.h"
-#include "gqmps2/mpogen/symb_alg/coef_op_alg.h"
+#include "gqmps2/one_dim_tn/mpo/mpo.h"    // MPO
+#include "gqmps2/one_dim_tn/mpo/mpogen/fsm.h"
+#include "gqmps2/one_dim_tn/mpo/mpogen/symb_alg/coef_op_alg.h"
 #include "gqten/gqten.h"
 
 
@@ -114,7 +114,7 @@ private:
 
 
 // Implementation details
-#include "gqmps2/mpogen/mpogen_impl.h"
+#include "gqmps2/one_dim_tn/mpo/mpogen/mpogen_impl.h"
 
 
-#endif /* ifndef GQMPS2_MPOGEN_MPOGEN_H */
+#endif /* ifndef GQMPS2_ONE_DIM_TN_MPO_MPOGEN_MPOGEN_H */

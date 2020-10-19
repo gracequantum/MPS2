@@ -3,10 +3,10 @@
 /*
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
 * Creation Date: 2020-08-06 16:40
-* 
+*
 * Description: GraceQ/MPS2 project. Unittests for MPO .
 */
-#include "gqmps2/one_dim_tn/mpo.h"
+#include "gqmps2/one_dim_tn/mpo/mpo.h"
 #include "gqten/gqten.h"
 
 #include "gtest/gtest.h"
@@ -61,24 +61,4 @@ TEST_F(TestMPO, TestElemAccess) {
 
   mpo[1] = ten3;
   EXPECT_EQ(mpo[1], ten3);
-}
-
-
-TEST_F(TestMPO, TestSharedCopy) {
-  MPO<Tensor> mpo1(3);
-  MPO<Tensor> mpo2(mpo1);
-
-  mpo1[0] = ten1;
-  EXPECT_EQ(mpo2[0], ten1);
-
-  mpo2[1] = ten2;
-  EXPECT_EQ(mpo1[1], ten2);
-
-  mpo2[0] = ten3;
-  EXPECT_EQ(mpo1[0], ten3);
-
-  auto mpo3 = mpo2;
-  EXPECT_EQ(mpo3[0], ten3);
-  EXPECT_EQ(mpo3[1], ten2);
-  EXPECT_EQ(mpo3[2], Tensor());
 }

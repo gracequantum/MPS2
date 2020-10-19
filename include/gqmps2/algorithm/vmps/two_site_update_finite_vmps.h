@@ -16,7 +16,7 @@
 
 
 #include "gqmps2/algorithm/lanczos_solver.h"    // LanczParams
-#include "gqmps2/one_dim_tn/mpo.h"    // MPO
+#include "gqmps2/one_dim_tn/mpo/mpo.h"    // MPO
 #include "gqmps2/one_dim_tn/mps/mps.h"    // MPS
 
 #include <vector>     // vector

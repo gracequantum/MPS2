@@ -5,10 +5,10 @@
 * 
 * Description: GraceQ/MPS2 project. Algebra of MPO's coefficient and operator.
 */
-#ifndef GQMPS2_MPOGEN_COEF_OP_ALG_H
-#define GQMPS2_MPOGEN_COEF_OP_ALG_H
+#ifndef GQMPS2_ONE_DIM_TN_MPO_MPOGEN_COEF_OP_ALG_H
+#define GQMPS2_ONE_DIM_TN_MPO_MPOGEN_COEF_OP_ALG_H
 
-#include "gqmps2/mpogen/symb_alg/sparse_mat.h"
+#include "gqmps2/one_dim_tn/mpo/mpogen/symb_alg/sparse_mat.h"
 
 #include <vector>
 #include <algorithm>
@@ -779,4 +779,4 @@ VecT ConcatenateTwoVec(const VecT &va, const VecT &vb) {
   res.insert(res.end(), vb.begin(), vb.end());
   return res;
 }
-#endif /* ifndef GQMPS2_MPOGEN_COEF_OP_ALG_H */
+#endif /* ifndef GQMPS2_ONE_DIM_TN_MPO_MPOGEN_COEF_OP_ALG_H */
