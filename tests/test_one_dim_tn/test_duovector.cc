@@ -72,6 +72,12 @@ TEST(TestDuoVector, TestElemAccess) {
   intduovec[0] = 3;
   EXPECT_EQ(intduovec[0], 3);
 
+  EXPECT_EQ(intduovec.front(), 3);
+  EXPECT_EQ(intduovec.back(), 3);
+  intduovec.front() = 6;
+  EXPECT_EQ(intduovec.front(), 6);
+  EXPECT_EQ(intduovec.back(), 6);
+
   auto pelem = intduovec.cdata()[0];
   intduovec[0] = 5;
   EXPECT_EQ(intduovec.cdata()[0], pelem);

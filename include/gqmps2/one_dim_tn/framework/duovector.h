@@ -140,6 +140,22 @@ public:
   ElemT * &operator()(const size_t idx) { return raw_data_[idx]; }
 
   /**
+  Access the first element.
+  */
+  ElemT &front(void) { return *raw_data_.front(); }
+
+  /// @copydoc DuoVector::front()
+  const ElemT &front(void) const { return *raw_data_.front(); }
+
+  /**
+  Access the last element.
+  */
+  ElemT &back(void) { return *raw_data_.back(); }
+
+  /// @copydoc DuoVector::back()
+  const ElemT &back(void) const { return *raw_data_.back(); }
+
+  /**
   Read-only raw data access.
   */
   const std::vector<const ElemT *> cdata(void) const {
