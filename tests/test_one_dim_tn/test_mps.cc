@@ -33,10 +33,10 @@ struct TestMPS : public testing::Test {
   QNT qn1 = QNT({QNCard("N", U1QNVal(1))});
   QNT qn2 = QNT({QNCard("N", U1QNVal(2))});
   IndexT pb_out = IndexT({QNSctT(qn0, 1), QNSctT(qn1, 1)}, OUT);
-  IndexT vb01_out = IndexT({QNSctT(qn0, 3), QNSctT(qn1, 3)}, OUT);
+  IndexT vb01_out = IndexT({QNSctT(qn0, 1), QNSctT(qn1, 1)}, OUT);
   IndexT vb01_in = InverseIndex(vb01_out);
   IndexT vb012_out = IndexT(
-                        {QNSctT(qn0, 3), QNSctT(qn1, 3), QNSctT(qn2, 3)},
+                        {QNSctT(qn0, 1), QNSctT(qn1, 2), QNSctT(qn2, 1)},
                         OUT
                     );
   IndexT vb012_in = InverseIndex(vb012_out);
@@ -51,8 +51,8 @@ struct TestMPS : public testing::Test {
   MPST mps = MPST(site_vec);
 
   void SetUp(void) {
-    t0.Random(qn0);
-    t1.Random(qn0);
+    t0.Random(qn1);
+    t1.Random(qn1);
     t2.Random(qn0);
     t3.Random(qn0);
     t4.Random(qn0);
@@ -237,4 +237,13 @@ TEST_F(TestMPS, TestIO) {
   for (size_t i = 0; i < 5; ++i) {
     EXPECT_EQ(mps2[i], mps[i]);
   }
+}
+
+
+TEST_F(TestMPS, TestTruncate) {
+  TruncateMPS(mps, 0, 1, 3);
+  CheckMPSCenter(mps, 0);
+
+  TruncateMPS(mps, 0, 2, 2);
+  CheckMPSCenter(mps, 0);
 }

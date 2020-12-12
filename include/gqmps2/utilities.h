@@ -22,6 +22,10 @@ namespace gqmps2 {
 using namespace gqten;
 
 
+/// The features in this namespace will be natively supported by GraceQ/tensor.
+namespace mock_gqten {
+
+
 template <typename TenElemT, typename QNT>
 void SVD(
     const GQTensor<TenElemT, QNT> *pt,
@@ -50,6 +54,7 @@ void SVD(
       pu, ps, pvt, &actual_trunc_err, &actual_bond_dim
   );
 }
+} /* mock_gqten */ 
 
 
 template <typename TenType>

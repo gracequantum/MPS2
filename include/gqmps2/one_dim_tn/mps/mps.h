@@ -22,6 +22,7 @@
 #include "gqten/gqten.h"    // SVD, Contract
 
 #include <vector>     // vector
+#include <iomanip>    // fix, scientific, setw
 
 #include <assert.h>     // assert
 
@@ -229,7 +230,7 @@ void MPS<TenElemT, QNT>::LeftCanonicalizeTen_(const size_t site_idx) {
   }
   LocalTenT s, vt;
   auto pu = new LocalTenT;
-  SVD((*this)(site_idx), ldims, Div((*this)[site_idx]), pu, &s, &vt);
+  mock_gqten::SVD((*this)(site_idx), ldims, Div((*this)[site_idx]), pu, &s, &vt);
   delete (*this)(site_idx);
   (*this)(site_idx) = pu;
 
@@ -265,7 +266,7 @@ void MPS<TenElemT, QNT>::RightCanonicalizeTen_(const size_t site_idx) {
   LocalTenT u, s;
   auto pvt = new LocalTenT;
   auto qndiv = Div((*this)[site_idx]);
-  SVD((*this)(site_idx), ldims, qndiv - qndiv, &u, &s, pvt);
+  mock_gqten::SVD((*this)(site_idx), ldims, qndiv - qndiv, &u, &s, pvt);
   delete (*this)(site_idx);
   (*this)(site_idx) = pvt;
 
@@ -287,6 +288,63 @@ void MPS<TenElemT, QNT>::RightCanonicalizeTen_(const size_t site_idx) {
 
   tens_cano_type_[site_idx] = MPSTenCanoType::RIGHT;
   tens_cano_type_[site_idx - 1] = MPSTenCanoType::NONE;
+}
+
+
+// Non-member function for MPS
+/**
+Truncate the MPS. First centralize the MPS to left-end, then truncate each site
+using SVD from left to right, finally recentralize the MPS to left-end.
+
+@param mps To-be truncated MPS.
+@param trunc_err The target truncation error.
+@param Dmin The 
+*/
+template <typename TenElemT, typename QNT>
+void TruncateMPS(
+    MPS<TenElemT, QNT> &mps,
+    const GQTEN_Double trunc_err,
+    const size_t Dmin,
+    const size_t Dmax
+) {
+  auto mps_size = mps.size();
+  assert(mps_size >= 2);
+
+  mps.Centralize(0);
+
+  using LocalTenT = GQTensor<TenElemT, QNT>;
+  GQTEN_Double actual_trunc_err;
+  size_t D;
+  for (size_t i = 0; i < mps_size - 1; ++i) {
+    size_t ldims;
+    if (i == 0) {
+      ldims = 1;
+    } else {
+      ldims = 2;
+    }
+    LocalTenT s, vt;
+    auto pu = new LocalTenT;
+    SVD(
+        mps(i),
+        ldims, Div(mps[i]), trunc_err, Dmin, Dmax,
+        pu, &s, &vt, &actual_trunc_err, &D
+    );
+    std::cout << "Truncate MPS bond " << std::setw(4) << i
+              << " TruncErr = " << std::setprecision(2) << std::scientific << actual_trunc_err << std::fixed
+              << " D = " << std::setw(5) << D;
+    std::cout << std::scientific << std::endl;
+    delete mps(i);
+    mps(i) = pu;
+
+    LocalTenT temp_ten;
+    Contract(&s, &vt, {{1}, {0}}, &temp_ten);
+    auto pnext_ten = new LocalTenT;
+    Contract(&temp_ten, mps(i + 1), {{1}, {0}}, pnext_ten);
+    delete mps(i + 1);
+    mps(i + 1) = pnext_ten;
+  }
+
+  mps.Centralize(0);
 }
 } /* gqmps2 */
 #endif /* ifndef GQMPS2_ONE_DIM_TN_MPS_MPS_H */
