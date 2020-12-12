@@ -19,7 +19,7 @@
 #include "gqmps2/site_vec.h"    // SiteVec
 #include "gqmps2/consts.h"    // kMpsPath
 #include "gqmps2/utilities.h"     // IsPathExist, CreatPath
-#include "gqten/gqten.h"    // Svd, Contract
+#include "gqten/gqten.h"    // SVD, Contract
 
 #include <vector>     // vector
 
@@ -56,18 +56,20 @@ std::string GenMPSTenName(const std::string &mps_path, const size_t idx) {
 /**
 The matrix product state (MPS) class.
 
-@tparam LocalTenT Type of the MPS local tensors.
+@tparam TenElemT Element type of the local tensors.
+@tparam QNT Quantum number type of the system.
 */
-template <typename LocalTenT>
-class MPS : public TenVec<LocalTenT> {
+template <typename TenElemT, typename QNT>
+class MPS : public TenVec<GQTensor<TenElemT, QNT>> {
 public:
+  using LocalTenT = GQTensor<TenElemT, QNT>;
   /**
   Create a empty MPS using its size.
 
   @param site_vec The sites information of the system.
   */
   MPS(
-      const SiteVec<LocalTenT> &site_vec
+      const SiteVec<TenElemT, QNT> &site_vec
   ) : TenVec<LocalTenT>(site_vec.size),
       center_(kUncentralizedCenterIdx),
       tens_cano_type_(site_vec.size, MPSTenCanoType::NONE),
@@ -143,8 +145,8 @@ public:
   /**
   Get sites information.
   */
-  SiteVec<LocalTenT> GetSitesInfo(void) const {
-    return site_vec_; 
+  SiteVec<TenElemT, QNT> GetSitesInfo(void) const {
+    return site_vec_;
   }
 
   // HDD I/O
@@ -178,7 +180,7 @@ public:
 private:
   int center_;
   std::vector<MPSTenCanoType> tens_cano_type_;
-  SiteVec<LocalTenT> site_vec_;
+  SiteVec<TenElemT, QNT> site_vec_;
 
   void LeftCanonicalize_(const size_t);
   void LeftCanonicalizeTen_(const size_t);
@@ -192,8 +194,8 @@ Centralize the MPS.
 
 @param target_center The new center of the MPS.
 */
-template <typename LocalTenT>
-void MPS<LocalTenT>::Centralize(const int target_center) {
+template <typename TenElemT, typename QNT>
+void MPS<TenElemT, QNT>::Centralize(const int target_center) {
   assert(target_center >= 0);
   auto mps_tail_idx = this->size() - 1; 
   if (target_center != 0) { LeftCanonicalize_(target_center - 1); }
@@ -204,8 +206,8 @@ void MPS<LocalTenT>::Centralize(const int target_center) {
 }
 
 
-template <typename LocalTenT>
-void MPS<LocalTenT>::LeftCanonicalize_(const size_t stop_idx) {
+template <typename TenElemT, typename QNT>
+void MPS<TenElemT, QNT>::LeftCanonicalize_(const size_t stop_idx) {
   size_t start_idx;
   for (size_t i = 0; i <= stop_idx; ++i) {
     start_idx = i;
@@ -216,39 +218,35 @@ void MPS<LocalTenT>::LeftCanonicalize_(const size_t stop_idx) {
 }
 
 
-template <typename LocalTenT>
-void MPS<LocalTenT>::LeftCanonicalizeTen_(const size_t site_idx) {
+template <typename TenElemT, typename QNT>
+void MPS<TenElemT, QNT>::LeftCanonicalizeTen_(const size_t site_idx) {
   assert(site_idx < this->size() - 1);
-  long ldims, rdims;
+  size_t ldims;
   if (site_idx == 0) {
     ldims = 1;
-    rdims = 1;
   } else {
     ldims = 2;
-    rdims = 1;
   }
-  auto svd_res = Svd(
-      (*this)[site_idx],
-      ldims, rdims,
-      Div((*this)[site_idx]), Div((*this)[site_idx+1])
-  );
+  LocalTenT s, vt;
+  auto pu = new LocalTenT;
+  SVD((*this)(site_idx), ldims, Div((*this)[site_idx]), pu, &s, &vt);
   delete (*this)(site_idx);
-  (*this)(site_idx) = svd_res.u;
-  auto temp_ten = Contract(*svd_res.s, *svd_res.v, {{1}, {0}});
-  delete svd_res.s;
-  delete svd_res.v;
-  auto next_ten = Contract(*temp_ten, (*this)[site_idx+1], {{1}, {0}});
-  delete temp_ten;
+  (*this)(site_idx) = pu;
+
+  LocalTenT temp_ten;
+  Contract(&s, &vt, {{1}, {0}}, &temp_ten);
+  auto pnext_ten = new LocalTenT;
+  Contract(&temp_ten, (*this)(site_idx+1), {{1}, {0}}, pnext_ten);
   delete (*this)(site_idx + 1);
-  (*this)(site_idx + 1) = next_ten;
+  (*this)(site_idx + 1) = pnext_ten;
 
   tens_cano_type_[site_idx] = MPSTenCanoType::LEFT;
   tens_cano_type_[site_idx + 1] = MPSTenCanoType::NONE;
 }
 
 
-template <typename LocalTenT>
-void MPS<LocalTenT>::RightCanonicalize_(const size_t stop_idx) {
+template <typename TenElemT, typename QNT>
+void MPS<TenElemT, QNT>::RightCanonicalize_(const size_t stop_idx) {
   auto mps_tail_idx = this->size() - 1;
   size_t start_idx;
   for (size_t i = mps_tail_idx; i >= stop_idx; --i) {
@@ -260,40 +258,32 @@ void MPS<LocalTenT>::RightCanonicalize_(const size_t stop_idx) {
 }
 
 
-template <typename LocalTenT>
-void MPS<LocalTenT>::RightCanonicalizeTen_(const size_t site_idx) {
+template <typename TenElemT, typename QNT>
+void MPS<TenElemT, QNT>::RightCanonicalizeTen_(const size_t site_idx) {
   assert(site_idx > 0);
-  long ldims, rdims;
-  if (site_idx == this->size() - 1) {
-    ldims = 1;
-    rdims = 1;
-  } else {
-    ldims = 1;
-    rdims = 2;
-  }
-  auto svd_res = Svd(
-      (*this)[site_idx],
-      ldims, rdims,
-      Div((*this)[site_idx - 1]), Div((*this)[site_idx])
-  );
+  size_t ldims = 1;
+  LocalTenT u, s;
+  auto pvt = new LocalTenT;
+  auto qndiv = Div((*this)[site_idx]);
+  SVD((*this)(site_idx), ldims, qndiv - qndiv, &u, &s, pvt);
   delete (*this)(site_idx);
-  (*this)(site_idx) = svd_res.v;
-  auto temp_ten = Contract(*svd_res.u, *svd_res.s, {{1}, {0}});
-  delete svd_res.u;
-  delete svd_res.s;
-  std::vector<long> ta_ctrct_axes;
+  (*this)(site_idx) = pvt;
+
+  LocalTenT temp_ten;
+  Contract(&u, &s, {{1}, {0}}, &temp_ten);
+  std::vector<size_t> ta_ctrct_axes;
   if ((site_idx - 1) == 0) {
     ta_ctrct_axes = {1};
   } else {
     ta_ctrct_axes = {2};
   }
-  auto prev_ten = Contract(
-                      (*this)[site_idx - 1], *temp_ten,
-                      {ta_ctrct_axes, {0}}
-                  );
-  delete temp_ten;
+  std::vector<std::vector<size_t>> ctrct_axes;
+  ctrct_axes.emplace_back(ta_ctrct_axes);
+  ctrct_axes.push_back({0});
+  auto pprev_ten = new LocalTenT;
+  Contract((*this)(site_idx - 1), &temp_ten, ctrct_axes, pprev_ten);
   delete (*this)(site_idx - 1);
-  (*this)(site_idx - 1) = prev_ten;
+  (*this)(site_idx - 1) = pprev_ten;
 
   tens_cano_type_[site_idx] = MPSTenCanoType::RIGHT;
   tens_cano_type_[site_idx - 1] = MPSTenCanoType::NONE;

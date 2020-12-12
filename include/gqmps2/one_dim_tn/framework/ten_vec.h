@@ -50,7 +50,7 @@ public:
   void LoadTen(const size_t idx, const std::string &file) {
     this->alloc(idx);
     std::ifstream ifs(file, std::ifstream::binary);
-    bfread(ifs, (*this)[idx]);
+    ifs >> (*this)[idx];
     ifs.close();
   }
 
@@ -62,7 +62,7 @@ public:
   */
   void DumpTen(const size_t idx, const std::string &file) const {
     std::ofstream ofs(file, std::ofstream::binary);
-    bfwrite(ofs, (*this)[idx]);
+    ofs << (*this)[idx];
     ofs.close();
   }
 };

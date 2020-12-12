@@ -15,30 +15,40 @@
 using namespace gqmps2;
 using namespace gqten;
 
+using U1QN = QN<U1QNVal>;
+using QNT = U1QN;
+using IndexT = Index<U1QN>;
+using QNSctT = QNSector<U1QN>;
+using QNSctVecT = QNSectorVec<U1QN>;
+
+using DGQTensor = GQTensor<GQTEN_Double, U1QN>;
 using Tensor = DGQTensor;
+
+using SiteVecT = SiteVec<GQTEN_Double, U1QN>;
+using MPST = MPS<GQTEN_Double, U1QN>;
 
 
 struct TestMPS : public testing::Test {
-  QN qn0 = QN({QNNameVal("N", 0)});
-  QN qn1 = QN({QNNameVal("N", 1)});
-  QN qn2 = QN({QNNameVal("N", 2)});
-  Index pb_out = Index({QNSector(qn0, 1), QNSector(qn1, 1)}, OUT);
-  Index vb01_out = Index({QNSector(qn0, 3), QNSector(qn1, 3)}, OUT);
-  Index vb01_in = InverseIndex(vb01_out);
-  Index vb012_out = Index(
-                        {QNSector(qn0, 3), QNSector(qn1, 3), QNSector(qn2, 3)},
+  QNT qn0 = QNT({QNCard("N", U1QNVal(0))});
+  QNT qn1 = QNT({QNCard("N", U1QNVal(1))});
+  QNT qn2 = QNT({QNCard("N", U1QNVal(2))});
+  IndexT pb_out = IndexT({QNSctT(qn0, 1), QNSctT(qn1, 1)}, OUT);
+  IndexT vb01_out = IndexT({QNSctT(qn0, 3), QNSctT(qn1, 3)}, OUT);
+  IndexT vb01_in = InverseIndex(vb01_out);
+  IndexT vb012_out = IndexT(
+                        {QNSctT(qn0, 3), QNSctT(qn1, 3), QNSctT(qn2, 3)},
                         OUT
                     );
-  Index vb012_in = InverseIndex(vb012_out);
+  IndexT vb012_in = InverseIndex(vb012_out);
   Tensor t0 = Tensor({pb_out, vb01_out});
   Tensor t1 = Tensor({vb01_in, pb_out, vb012_out});
   Tensor t2 = Tensor({vb012_in, pb_out, vb012_out});
   Tensor t3 = Tensor({vb012_in, pb_out, vb01_out});
   Tensor t4 = Tensor({vb01_in, pb_out});
 
-  SiteVec<Tensor> site_vec = SiteVec<Tensor>(5, pb_out);
+  SiteVecT site_vec = SiteVecT(5, pb_out);
 
-  MPS<Tensor> mps = MPS<Tensor>(site_vec);
+  MPST mps = MPST(site_vec);
 
   void SetUp(void) {
     t0.Random(qn0);
@@ -58,21 +68,20 @@ struct TestMPS : public testing::Test {
 // Helpers for testing MPS centralization.
 template <typename TenT>
 void CheckIsIdTen(const TenT &t) {
-  auto shape = t.shape;
+  auto shape = t.GetShape();
   EXPECT_EQ(shape.size(), 2);
   EXPECT_EQ(shape[0], shape[1]);
-  for (long i = 0; i < shape[0]; ++i) {
-    EXPECT_NEAR(t.Elem({i, i}), 1.0, 1E-15);
+  for (size_t i = 0; i < shape[0]; ++i) {
+    EXPECT_NEAR(t(i, i), 1.0, 1E-15);
   }
 }
 
 
-template <typename ElemT>
 void CheckMPSTenCanonical(
-    const MPS<ElemT> &mps,
+    const MPST &mps,
     const size_t i,
     const int center) {
-  std::vector<std::vector<long>> ctrct_leg_idxs;
+  std::vector<std::vector<size_t>> ctrct_leg_idxs;
   if (i < center) {
     if (i == 0) {
       ctrct_leg_idxs = {{0}, {0}};
@@ -95,8 +104,7 @@ void CheckMPSTenCanonical(
 }
 
 
-template <typename ElemT>
-void CheckMPSCenter(const MPS<ElemT> &mps, const int center) {
+void CheckMPSCenter(const MPST &mps, const int center) {
   EXPECT_EQ(mps.GetCenter(), center);
   
   auto mps_size = mps.size();
@@ -117,15 +125,13 @@ void CheckMPSCenter(const MPS<ElemT> &mps, const int center) {
 }
 
 
-template <typename ElemT>
-void RunTestMPSCentralizeCase(MPS<ElemT> &mps, const int center) {
+void RunTestMPSCentralizeCase(MPST &mps, const int center) {
     mps.Centralize(center);
     CheckMPSCenter(mps, center);
 }
 
 
-template <typename ElemT>
-void RunTestMPSCentralizeCase(MPS<ElemT> &mps) {
+void RunTestMPSCentralizeCase(MPST &mps) {
   for (int i = 0; i < mps.size(); ++i) {
     RunTestMPSCentralizeCase(mps, i);
   }
@@ -156,10 +162,10 @@ TEST_F(TestMPS, TestCentralize) {
 
 TEST_F(TestMPS, TestCopyAndMove) {
   mps.Centralize(2);
-  const MPS<Tensor> &crmps = mps;
+  const MPST &crmps = mps;
 
-  MPS<Tensor> mps_copy(mps);
-  const MPS<Tensor> &crmps_copy = mps_copy;
+  MPST mps_copy(mps);
+  const MPST &crmps_copy = mps_copy;
   EXPECT_EQ(mps_copy.GetCenter(), mps.GetCenter());
   for (size_t i = 0; i < mps.size(); ++i) {
     EXPECT_EQ(mps_copy.GetTenCanoType(i), mps.GetTenCanoType(i));
@@ -167,8 +173,8 @@ TEST_F(TestMPS, TestCopyAndMove) {
     EXPECT_NE(crmps_copy(i), crmps(i));
   }
 
-  MPS<Tensor> mps_copy2 = mps;
-  const MPS<Tensor> &crmps_copy2 = mps_copy2;
+  MPST mps_copy2 = mps;
+  const MPST &crmps_copy2 = mps_copy2;
   EXPECT_EQ(mps_copy2.GetCenter(), mps.GetCenter());
   for (size_t i = 0; i < mps.size(); ++i) {
     EXPECT_EQ(mps_copy2.GetTenCanoType(i), mps.GetTenCanoType(i));
@@ -177,8 +183,8 @@ TEST_F(TestMPS, TestCopyAndMove) {
   }
 
   auto craw_data_copy = mps_copy.cdata();
-  MPS<Tensor> mps_move(std::move(mps_copy));
-  const MPS<Tensor> &crmps_move = mps_move;
+  MPST mps_move(std::move(mps_copy));
+  const MPST &crmps_move = mps_move;
   EXPECT_EQ(mps_move.GetCenter(), mps.GetCenter());
   for (size_t i = 0; i < mps.size(); ++i) {
     EXPECT_EQ(mps_move.GetTenCanoType(i), mps.GetTenCanoType(i));
@@ -187,8 +193,8 @@ TEST_F(TestMPS, TestCopyAndMove) {
   }
 
   auto craw_data_copy2 = mps_copy2.cdata();
-  MPS<Tensor> mps_move2 = std::move(mps_copy2);
-  const MPS<Tensor> &crmps_move2 = mps_move2;
+  MPST mps_move2 = std::move(mps_copy2);
+  const MPST &crmps_move2 = mps_move2;
   EXPECT_EQ(mps_move2.GetCenter(), mps.GetCenter());
   for (size_t i = 0; i < mps.size(); ++i) {
     EXPECT_EQ(mps_move2.GetTenCanoType(i), mps.GetTenCanoType(i));
@@ -201,17 +207,17 @@ TEST_F(TestMPS, TestCopyAndMove) {
 TEST_F(TestMPS, TestElemAccess) {
   mps.Centralize(2);
 
-  const MPS<Tensor> &crmps = mps;
+  const MPST &crmps = mps;
   Tensor ten = crmps[1];
   EXPECT_EQ(mps.GetTenCanoType(1), MPSTenCanoType::LEFT);
   ten = mps[1];
   EXPECT_EQ(mps.GetTenCanoType(1), MPSTenCanoType::NONE);
   EXPECT_EQ(crmps.GetTenCanoType(1), MPSTenCanoType::NONE);
 
-  const MPS<Tensor> *cpmps = &mps;
+  const MPST *cpmps = &mps;
   ten = (*cpmps)[3];
   EXPECT_EQ(mps.GetTenCanoType(3), MPSTenCanoType::RIGHT);
-  MPS<Tensor> *pmps = &mps;
+  MPST *pmps = &mps;
   ten = (*pmps)[3];
   EXPECT_EQ(mps.GetTenCanoType(3), MPSTenCanoType::NONE);
   EXPECT_EQ(crmps.GetTenCanoType(3), MPSTenCanoType::NONE);
@@ -219,7 +225,7 @@ TEST_F(TestMPS, TestElemAccess) {
 
 
 TEST_F(TestMPS, TestIO) {
-  MPS<Tensor> mps2(SiteVec<Tensor>(5, pb_out));
+  MPST mps2(SiteVecT(5, pb_out));
   mps.Dump();
   mps2.Load();
   for (size_t i = 0; i < 5; ++i) {

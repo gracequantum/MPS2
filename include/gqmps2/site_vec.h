@@ -33,9 +33,9 @@ using namespace gqten;
 
 
 // Helpers
-inline
-Index SetIndexDirOut(const Index &idx) {
-  if (idx.dir == OUT) {
+template <typename QNT>
+inline Index<QNT> SetIndexDirOut(const Index<QNT> &idx) {
+  if (idx.GetDir() == GQTenIndexDirType::OUT) {
     return idx;
   } else {
     return InverseIndex(idx);
@@ -43,11 +43,11 @@ Index SetIndexDirOut(const Index &idx) {
 }
 
 
-template <typename TenT>
-TenT GenIdOp(const Index &idx_out) {
+template <typename TenElemT, typename QNT>
+GQTensor<TenElemT, QNT> GenIdOp(const Index<QNT> &idx_out) {
   auto idx_in = InverseIndex(idx_out);
-  TenT id_op({idx_in, idx_out});
-  for (int i = 0; i < idx_out.dim; ++i) { id_op({i, i}) = 1.0; }
+  GQTensor<TenElemT, QNT> id_op({idx_in, idx_out});
+  for (int i = 0; i < idx_out.dim(); ++i) { id_op(i, i) = 1.0; }
   return id_op;
 }
 
@@ -59,9 +59,10 @@ Vector of the local Hilbert spaces of the system.
 
 @since version 0.2.0
 */
-template <typename TenT>
+template <typename TenElemT, typename QNT>
 class SiteVec {
 public:
+  using TenT = GQTensor<TenElemT, QNT>;
   /**
   Create a system with N identical sites.
 
@@ -71,10 +72,10 @@ public:
 
   @since version 0.2.0
   */
-  SiteVec(const int N, const Index &local_hilbert_space) {
+  SiteVec(const int N, const Index<QNT> &local_hilbert_space) {
     assert(N > 0);
     size = N;
-    sites = IndexVec(N, SetIndexDirOut(local_hilbert_space));
+    sites = IndexVec<QNT>(N, SetIndexDirOut(local_hilbert_space));
     GenIdOpsVec_();
   }
 
@@ -85,7 +86,7 @@ public:
 
   @since version 0.2.0
   */
-  SiteVec(const IndexVec &local_hilbert_spaces) {
+  SiteVec(const IndexVec<QNT> &local_hilbert_spaces) {
     size = local_hilbert_spaces.size();
     assert(size > 0);
     sites.reserve(size);
@@ -112,7 +113,7 @@ public:
 
   @since version 0.2.0
   */
-  SiteVec<TenT> &operator=(const SiteVec &rhs) {
+  SiteVec<TenElemT, QNT> &operator=(const SiteVec &rhs) {
     size = rhs.size;
     sites = rhs.sites;
     id_ops = rhs.id_ops;
@@ -120,7 +121,7 @@ public:
   }
 
   int size;                     ///< The size of the SiteVec, i.e. the size of the system.
-  IndexVec sites;               ///< Local Hilbert spaces represented by a vector of Index with OUT direction.
+  IndexVec<QNT> sites;          ///< Local Hilbert spaces represented by a vector of Index with OUT direction.
   std::vector<TenT> id_ops;     ///< Identity operators on each site.
 
 private:
@@ -131,11 +132,11 @@ private:
 };
 
 
-template <typename TenT>
-void SiteVec<TenT>::GenIdOpsVec_(void) {
+template <typename TenElemT, typename QNT>
+void SiteVec<TenElemT, QNT>::GenIdOpsVec_(void) {
   id_ops.reserve(size);
   for (int i = 0; i < size; ++i) {
-    id_ops.emplace_back(GenIdOp<TenT>(sites[i]));
+    id_ops.emplace_back(GenIdOp<TenElemT, QNT>(sites[i]));
   }
 }
 } /* gqmps2 */

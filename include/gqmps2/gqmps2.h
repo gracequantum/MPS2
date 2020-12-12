@@ -17,14 +17,14 @@
 
 #include "gqmps2/case_params_parser.h"          // CaseParamsParserBasic
 #include "gqmps2/site_vec.h"                    // SiteVec
-#include "gqmps2/one_dim_tn/mpo/mpogen/mpogen.h"               // MPOGenerator
-#include "gqmps2/algorithm/lanczos_solver.h"    // LanczosParams
+//#include "gqmps2/one_dim_tn/mpo/mpogen/mpogen.h"               // MPOGenerator
+//#include "gqmps2/algorithm/lanczos_solver.h"    // LanczosParams
 // MPS class and its initializations and measurements
 #include "gqmps2/one_dim_tn/mps/mps.h"
 #include "gqmps2/one_dim_tn/mps/mps_init.h"
-#include "gqmps2/one_dim_tn/mps/mps_measu.h"
+//#include "gqmps2/one_dim_tn/mps/mps_measu.h"
 // Algorithms
-#include "gqmps2/algorithm/vmps/two_site_update_finite_vmps.h"
+//#include "gqmps2/algorithm/vmps/two_site_update_finite_vmps.h"
 
 
 #endif /* ifndef GQMPS2_GQMPS2_H */

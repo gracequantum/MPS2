@@ -14,14 +14,24 @@
 using namespace gqmps2;
 using namespace gqten;
 
+using U1QN = QN<U1QNVal>;
+using QNT = U1QN;
+using IndexT = Index<U1QN>;
+using QNSctT = QNSector<U1QN>;
+using QNSctVecT = QNSectorVec<U1QN>;
+
+using DGQTensor = GQTensor<GQTEN_Double, U1QN>;
 using Tensor = DGQTensor;
 
 
 TEST(TestTenVec, TestIO) {
-  QN qn0 = QN({QNNameVal("N", 0)});
-  QN qn1 = QN({QNNameVal("N", 1)});
-  QN qnm1 = QN({QNNameVal("N", -1)});
-  Index idx_out = Index({QNSector(qn0, 2), QNSector(qn1, 2)}, OUT);
+  QNT qn0 = QNT({QNCard("N",  U1QNVal( 0))});
+  QNT qn1 = QNT({QNCard("N",  U1QNVal( 1))});
+  QNT qnm1 = QNT({QNCard("N", U1QNVal(-1))});
+  IndexT idx_out = IndexT(
+                       {QNSctT(qn0, 2), QNSctT(qn1, 2)},
+                       GQTenIndexDirType::OUT
+                   );
   auto idx_in = InverseIndex(idx_out);
   Tensor ten0({idx_in, idx_out});
   Tensor ten1({idx_in, idx_out});

@@ -6,6 +6,7 @@
 #  Description: GraceQ/MPS2 project. CMake file to control unittest.
 # 
 if(NOT GQMPS2_BUILD_GQTEN_USE_EXTERNAL_HPTT_LIB)
+  set(hptt_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external/gqten/external/hptt/include")
   set(hptt_LIBRARY "${CMAKE_BINARY_DIR}/external/gqten/external/hptt/libhptt.a")
 endif()
 # Set MKL compile flags and link flags.
@@ -20,7 +21,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 endif()
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(MATH_LIB_COMPILE_FLAGS -m64 -I$ENV{MKLROOT}/include)
-  set(MATH_LIB_LINK_FLAGS $ENV{MKLROOT}/lib/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/libmkl_intel_thread.a $ENV{MKLROOT}/lib/libmkl_core.a -liomp5 -lpthread -lm -ldl)
+  set(MATH_LIB_LINK_FLAGS -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_intel_thread.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -liomp5 -lpthread -lm -ldl)
 endif()
 
 
@@ -32,9 +33,9 @@ macro(add_unittest
     target_include_directories(${TEST_NAME}
       PRIVATE ${GQMPS2_HEADER_PATH}
       PRIVATE ${GQMPS2_TENSOR_LIB_HEADER_PATH}
-      PRIVATE ${CFLAGS})
+      PRIVATE ${CFLAGS}
+      PRIVATE ${hptt_INCLUDE_DIR})
     target_link_libraries(${TEST_NAME}
-      gqten
       GTest::GTest GTest::Main
       ${hptt_LIBRARY}
       ${LINK_LIBS} "${LINK_LIB_FLAGS}")

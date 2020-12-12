@@ -5,7 +5,7 @@
 * 
 * Description: GraceQ/MPS2 project. Unittests for SiteVec .
 */
-#include "gqmps2/gqmps2.h"
+#include "gqmps2/site_vec.h"
 #include "gqten/gqten.h"
 
 #include "gtest/gtest.h"
@@ -15,53 +15,58 @@ using namespace gqmps2;
 using namespace gqten;
 
 
-using Tensor = DGQTensor;
+using QNT = QN<U1QNVal>;
+using QNSctT = QNSector<QNT>;
+using IndexT = Index<QNT>;
+using Tensor = GQTensor<GQTEN_Double, QNT>;
 
 
 template <typename TenT>
 void TestIsIdOp(const TenT &ten) {
-  EXPECT_EQ(ten.indexes.size(), 2);
-  EXPECT_EQ(ten.shape[0], ten.shape[1]);
-  EXPECT_EQ(ten.indexes[0].dir, IN);
-  EXPECT_EQ(InverseIndex(ten.indexes[0]), ten.indexes[1]);
+  EXPECT_EQ(ten.GetIndexes().size(), 2);
+  EXPECT_EQ(ten.GetShape()[0], ten.GetShape()[1]);
+  EXPECT_EQ(ten.GetIndexes()[0].GetDir(), IN);
+  EXPECT_EQ(InverseIndex(ten.GetIndexes()[0]), ten.GetIndexes()[1]);
 
-  auto dim = ten.shape[0];
+  auto dim = ten.GetShape()[0];
   for (int i = 0; i < dim; ++i) {
     for (int j = 0; j < dim; ++j) {
       if (i == j) {
-        EXPECT_EQ(ten.Elem({i, j}), 1.0);
+        EXPECT_EQ(ten(i, j), 1.0);
       } else {
-        EXPECT_EQ(ten.Elem({i, j}), 0.0);
+        EXPECT_EQ(ten(i, j), 0.0);
       }
     }
   }
 }
 
 
+template <typename TenElemT, typename QNT>
 void RunTestSiteVecBasicFeatures(
     const int N,
-    const Index &local_hilbert_space
+    const Index<QNT> &local_hilbert_space
 ) {
-  SiteVec<Tensor> site_vec(N, local_hilbert_space);
+  SiteVec<TenElemT, QNT> site_vec(N, local_hilbert_space);
   EXPECT_EQ(site_vec.size, N);
-  Index site;
-  if (local_hilbert_space.dir == OUT) {
+  Index<QNT> site;
+  if (local_hilbert_space.GetDir() == OUT) {
     site = local_hilbert_space;
   } else {
     site = InverseIndex(local_hilbert_space);
   }
-  EXPECT_EQ(site_vec.sites, IndexVec(N, site));
+  EXPECT_EQ(site_vec.sites, IndexVec<QNT>(N, site));
   for (int i = 0; i < site_vec.size; ++i) {
     TestIsIdOp(site_vec.id_ops[i]);
   }
 }
 
 
-void RunTestSiteVecBasicFeatures(const IndexVec &local_hilbert_spaces) {
-  SiteVec<Tensor> site_vec(local_hilbert_spaces);
+template <typename TenElemT, typename QNT>
+void RunTestSiteVecBasicFeatures(const IndexVec<QNT> &local_hilbert_spaces) {
+  SiteVec<TenElemT, QNT> site_vec(local_hilbert_spaces);
   EXPECT_EQ(site_vec.size, local_hilbert_spaces.size());
   for (int i = 0; i < site_vec.size; ++i) {
-    if (local_hilbert_spaces[i].dir == OUT) {
+    if (local_hilbert_spaces[i].GetDir() == OUT) {
       EXPECT_EQ(site_vec.sites[i], local_hilbert_spaces[i]);
     } else {
       EXPECT_EQ(site_vec.sites[i], InverseIndex(local_hilbert_spaces[i]));
@@ -72,24 +77,26 @@ void RunTestSiteVecBasicFeatures(const IndexVec &local_hilbert_spaces) {
 
 
 TEST(TestSiteVec, TestBasicFeatures) {
-  Index pb_out1 = Index({
-                      QNSector(QN({QNNameVal("N", 0)}), 1),
-                      QNSector(QN({QNNameVal("N", 1)}), 1)},
+  IndexT pb_out1 = IndexT({
+                          QNSctT(QNT({QNCard("N", U1QNVal(0))}), 1),
+                          QNSctT(QNT({QNCard("N", U1QNVal(1))}), 1)
+                      },
+                      OUT
+                   );
+  IndexT pb_in1 = InverseIndex(pb_out1);
+  IndexT pb_out2 = IndexT({
+                          QNSctT(QNT({QNCard("N", U1QNVal(1))}), 3)
+                      },
                       OUT
                   );
-  Index pb_in1 = InverseIndex(pb_out1);
-  Index pb_out2 = Index({
-                      QNSector(QN({QNNameVal("N", 1)}), 3)},
-                      OUT
-                  );
-  Index pb_in2 = InverseIndex(pb_out2);
-  RunTestSiteVecBasicFeatures(1, pb_out1);
-  RunTestSiteVecBasicFeatures(1, pb_in1);
-  RunTestSiteVecBasicFeatures(3, pb_out1);
-  RunTestSiteVecBasicFeatures(3, pb_in1);
+  IndexT pb_in2 = InverseIndex(pb_out2);
+  RunTestSiteVecBasicFeatures<GQTEN_Double, QNT>(1, pb_out1);
+  RunTestSiteVecBasicFeatures<GQTEN_Double, QNT>(1, pb_in1);
+  RunTestSiteVecBasicFeatures<GQTEN_Double, QNT>(3, pb_out1);
+  RunTestSiteVecBasicFeatures<GQTEN_Double, QNT>(3, pb_in1);
 
-  RunTestSiteVecBasicFeatures({pb_out1});
-  RunTestSiteVecBasicFeatures({pb_out2, pb_out2});
-  RunTestSiteVecBasicFeatures({pb_out1, pb_out2, pb_out1});
-  RunTestSiteVecBasicFeatures({pb_in2, pb_out1, pb_out1, pb_in1, pb_out2});
+  RunTestSiteVecBasicFeatures<GQTEN_Double, QNT>({pb_out1});
+  RunTestSiteVecBasicFeatures<GQTEN_Double, QNT>({pb_out2, pb_out2});
+  RunTestSiteVecBasicFeatures<GQTEN_Double, QNT>({pb_out1, pb_out2, pb_out1});
+  RunTestSiteVecBasicFeatures<GQTEN_Double, QNT>({pb_in2, pb_out1, pb_out1, pb_in1, pb_out2});
 }

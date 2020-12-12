@@ -22,6 +22,36 @@ namespace gqmps2 {
 using namespace gqten;
 
 
+template <typename TenElemT, typename QNT>
+void SVD(
+    const GQTensor<TenElemT, QNT> *pt,
+    const size_t ldims,
+    const QNT &lqndiv,
+    GQTensor<TenElemT, QNT> *pu,
+    GQTensor<GQTEN_Double, QNT> *ps,
+    GQTensor<TenElemT, QNT> *pvt
+) {
+  auto t_shape = pt->GetShape();
+  size_t lsize = 1;
+  size_t rsize = 1;
+  for (size_t i = 0; i < pt->Rank(); ++i) {
+    if (i < ldims) {
+      lsize *= t_shape[i];
+    } else {
+      rsize *= t_shape[i];
+    }
+  }
+  auto D = ((lsize >= rsize) ? lsize : rsize);
+  GQTEN_Double actual_trunc_err;
+  size_t actual_bond_dim;
+  SVD(
+      pt,
+      ldims, lqndiv, 0, D, D,
+      pu, ps, pvt, &actual_trunc_err, &actual_bond_dim
+  );
+}
+
+
 template <typename TenType>
 inline void WriteGQTensorTOFile(const TenType &t, const std::string &file) {
   std::ofstream ofs(file, std::ofstream::binary);
