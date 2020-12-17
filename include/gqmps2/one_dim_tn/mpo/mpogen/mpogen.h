@@ -37,24 +37,26 @@ interaction term.
 
 @since version 0.0.0
 */
-template <typename TenElemType>
+template <typename TenElemT, typename QNT>
 class MPOGenerator {
 public:
-  using TenElemVec = std::vector<TenElemType>;
-  using GQTensorT = GQTensor<TenElemType>;
+  using TenElemVec = std::vector<TenElemT>;
+  using IndexT = Index<QNT>;
+  using QNSctT = QNSector<QNT>;
+  using GQTensorT = GQTensor<TenElemT, QNT>;
   using GQTensorVec = std::vector<GQTensorT>;
   using PGQTensorVec = std::vector<GQTensorT *>;
 
-  MPOGenerator(const SiteVec<GQTensorT> &, const QN &);
+  MPOGenerator(const SiteVec<TenElemT, QNT> &, const QNT &);
 
   void AddTerm(
-      const TenElemType,
+      const TenElemT,
       const GQTensorVec &,
       const std::vector<int> &
   );
 
   void AddTerm(
-      const TenElemType,
+      const TenElemT,
       const GQTensorVec &,
       const std::vector<int> &,
       const GQTensorVec &,
@@ -62,7 +64,7 @@ public:
   );
 
   void AddTerm(
-    const TenElemType,
+    const TenElemT,
     const GQTensorT &,
     const int,
     const GQTensorT &op2 = GQTensorT(),
@@ -76,41 +78,46 @@ public:
   MPO<GQTensorT> Gen(void);
 
 private:
-  long N_;
-  SiteVec<GQTensorT> site_vec_;
-  std::vector<Index> pb_in_vector_;
-  std::vector<Index> pb_out_vector_;
-  QN zero_div_;
+  size_t N_;
+  SiteVec<TenElemT, QNT> site_vec_;
+  std::vector<IndexT> pb_in_vector_;
+  std::vector<IndexT> pb_out_vector_;
+  QNT zero_div_;
   std::vector<GQTensorT> id_op_vector_;
   FSM fsm_;
-  LabelConvertor<TenElemType> coef_label_convertor_;
+  LabelConvertor<TenElemT> coef_label_convertor_;
   LabelConvertor<GQTensorT> op_label_convertor_;
 
   std::vector<size_t> SortSparOpReprMatColsByQN_(
-      SparOpReprMat &, Index &, const GQTensorVec &);
+      SparOpReprMat &, IndexT &, const GQTensorVec &
+  );
 
-  QN CalcTgtRvbQN_(
+  QNT CalcTgtRvbQN_(
     const size_t, const size_t, const OpRepr &,
-    const GQTensorVec &, const Index &);
+    const GQTensorVec &, const IndexT &
+  );
 
   GQTensorT HeadMpoTenRepr2MpoTen_(
       const SparOpReprMat &,
-      const Index &,
-      const TenElemVec &, const GQTensorVec &);
+      const IndexT &,
+      const TenElemVec &, const GQTensorVec &
+  );
 
   GQTensorT TailMpoTenRepr2MpoTen_(
       const SparOpReprMat &,
-      const Index &,
-      const TenElemVec &, const GQTensorVec &);
+      const IndexT &,
+      const TenElemVec &, const GQTensorVec &
+  );
 
   GQTensorT CentMpoTenRepr2MpoTen_(
       const SparOpReprMat &,
-      const Index &,
-      const Index &,
+      const IndexT &,
+      const IndexT &,
       const TenElemVec &,
-      const GQTensorVec &, const long);
+      const GQTensorVec &, const size_t
+  );
 };
-} /* gqmps2 */ 
+} /* gqmps2 */
 
 
 // Implementation details

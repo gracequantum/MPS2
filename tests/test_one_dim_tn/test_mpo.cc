@@ -15,13 +15,20 @@
 using namespace gqmps2;
 using namespace gqten;
 
+using U1QN = QN<U1QNVal>;
+using QNT = U1QN;
+using IndexT = Index<U1QN>;
+using QNSctT = QNSector<U1QN>;
+using QNSctVecT = QNSectorVec<U1QN>;
+
+using DGQTensor = GQTensor<GQTEN_Double, U1QN>;
 using Tensor = DGQTensor;
 
 
 struct TestMPO : public testing::Test {
-  QN qn = QN({QNNameVal("N", 0)}); 
-  Index idx_out = Index({QNSector(qn, 3)}, OUT);
-  Index idx_in  = Index({QNSector(qn, 4)}, IN);
+  QNT qn = QNT({QNCard("N", U1QNVal(0))}); 
+  IndexT idx_out = IndexT({QNSctT(qn, 3)}, OUT);
+  IndexT idx_in  = IndexT({QNSctT(qn, 4)}, IN);
   Tensor ten1 = Tensor({idx_out});
   Tensor ten2 = Tensor({idx_in, idx_out});
   Tensor ten3 = Tensor({idx_in, idx_out, idx_out});

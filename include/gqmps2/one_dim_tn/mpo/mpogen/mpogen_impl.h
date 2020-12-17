@@ -27,18 +27,14 @@ using namespace gqten;
 
 
 // Forward declarations.
-template <typename TenElemType>
-void AddOpToHeadMpoTen(
-    GQTensor<TenElemType> *, const GQTensor<TenElemType> &, const long);
+template <typename TenT>
+void AddOpToHeadMpoTen(TenT *, const TenT &, const size_t);
 
-template <typename TenElemType>
-void AddOpToTailMpoTen(
-    GQTensor<TenElemType> *, const GQTensor<TenElemType> &, const long);
+template <typename TenT>
+void AddOpToTailMpoTen(TenT *, const TenT &, const size_t);
 
-template <typename TenElemType>
-void AddOpToCentMpoTen(
-    GQTensor<TenElemType> *, const GQTensor<TenElemType> &,
-    const long, const long);
+template <typename TenT>
+void AddOpToCentMpoTen(TenT *, const TenT &, const size_t, const size_t);
 
 
 /**
@@ -51,10 +47,10 @@ which is described by a SiteVec.
 
 @since version 0.2.0
 */
-template <typename TenElemType>
-MPOGenerator<TenElemType>::MPOGenerator(
-    const SiteVec<GQTensorT> & site_vec,
-    const QN & zero_div
+template <typename TenElemT, typename QNT>
+MPOGenerator<TenElemT, QNT>::MPOGenerator(
+    const SiteVec<TenElemT, QNT> & site_vec,
+    const QNT & zero_div
 ) : N_(site_vec.size),
     site_vec_(site_vec),
     zero_div_(zero_div),
@@ -73,7 +69,7 @@ MPOGenerator<TenElemType>::MPOGenerator(
   }
   fsm_.ReplaceIdOpLabels(id_op_label_vector);
 
-  coef_label_convertor_ = LabelConvertor<TenElemType>(TenElemType(1));
+  coef_label_convertor_ = LabelConvertor<TenElemT>(TenElemT(1));
 }
 
 
@@ -87,16 +83,16 @@ that the indexes of the operators have to be ascending sorted.
 
 @since version 0.2.0
 */
-template <typename TenElemType>
-void MPOGenerator<TenElemType>::AddTerm(
-    const TenElemType coef,
+template <typename TenElemT, typename QNT>
+void MPOGenerator<TenElemT, QNT>::AddTerm(
+    const TenElemT coef,
     const GQTensorVec &local_ops,
     const std::vector<int> &local_ops_idxs
 ) {
   assert(local_ops.size() == local_ops_idxs.size());
   assert(std::is_sorted(local_ops_idxs.cbegin(), local_ops_idxs.cend()));
   assert(local_ops_idxs.back() < N_);
-  if (coef == TenElemType(0)) { return; }   // If coef is zero, do nothing.
+  if (coef == TenElemT(0)) { return; }   // If coef is zero, do nothing.
 
   auto coef_label = coef_label_convertor_.Convert(coef);
   int ntrvl_ops_idxs_head = local_ops_idxs.front();
@@ -144,9 +140,9 @@ the MPO generator. The indexes of the operators have to be ascending sorted.
 
 @since version 0.2.0
 */
-template <typename TenElemType>
-void MPOGenerator<TenElemType>::AddTerm(
-    const TenElemType coef,
+template <typename TenElemT, typename QNT>
+void MPOGenerator<TenElemT, QNT>::AddTerm(
+    const TenElemT coef,
     const GQTensorVec &phys_ops,
     const std::vector<int> &phys_ops_idxs,
     const GQTensorVec &inst_ops,
@@ -214,9 +210,9 @@ Add one-body or two-body interaction term.
 
 @since version 0.2.0
 */
-template <typename TenElemType>
-void MPOGenerator<TenElemType>::AddTerm(
-    const TenElemType coef,
+template <typename TenElemT, typename QNT>
+void MPOGenerator<TenElemT, QNT>::AddTerm(
+    const TenElemT coef,
     const GQTensorT &op1,
     const int op1_idx,
     const GQTensorT &op2,
@@ -247,9 +243,9 @@ void MPOGenerator<TenElemType>::AddTerm(
 }
 
 
-template <typename TenElemType>
-MPO<typename MPOGenerator<TenElemType>::GQTensorT>
-MPOGenerator<TenElemType>::Gen(void) {
+template <typename TenElemT, typename QNT>
+MPO<typename MPOGenerator<TenElemT, QNT>::GQTensorT>
+MPOGenerator<TenElemT, QNT>::Gen(void) {
   auto fsm_comp_mat_repr = fsm_.GenCompressedMatRepr();
   auto label_coef_mapping = coef_label_convertor_.GetLabelObjMapping();
   auto label_op_mapping = op_label_convertor_.GetLabelObjMapping();
@@ -260,9 +256,9 @@ MPOGenerator<TenElemType>::Gen(void) {
   }
 
   MPO<GQTensorT> mpo(N_);
-  Index trans_vb({QNSector(zero_div_, 1)}, OUT);
+  IndexT trans_vb({QNSctT(zero_div_, 1)}, OUT);
   std::vector<size_t> transposed_idxs;
-  for (long i = 0; i < N_; ++i) {
+  for (size_t i = 0; i < N_; ++i) {
     if (i == 0) {
       transposed_idxs = SortSparOpReprMatColsByQN_(
                             fsm_comp_mat_repr[i], trans_vb, label_op_mapping);
@@ -289,10 +285,11 @@ MPOGenerator<TenElemType>::Gen(void) {
 }
 
 
-template< typename TenElemType>
-QN MPOGenerator<TenElemType>::CalcTgtRvbQN_(
+template< typename TenElemT, typename QNT>
+QNT MPOGenerator<TenElemT, QNT>::CalcTgtRvbQN_(
     const size_t x, const size_t y, const OpRepr &op_repr,
-    const GQTensorVec &label_op_mapping, const Index &trans_vb) {
+    const GQTensorVec &label_op_mapping, const IndexT &trans_vb
+) {
   auto lvb = InverseIndex(trans_vb);
   auto coor_off_set_and_qnsct = lvb.CoorInterOffsetAndQnsct(x);
   auto lvb_qn = coor_off_set_and_qnsct.qnsct.qn;
@@ -301,23 +298,24 @@ QN MPOGenerator<TenElemType>::CalcTgtRvbQN_(
 }
 
 
-template <typename TenElemType>
-std::vector<size_t> MPOGenerator<TenElemType>::SortSparOpReprMatColsByQN_(
-    SparOpReprMat &op_repr_mat, Index &trans_vb,
+template <typename TenElemT, typename QNT>
+std::vector<size_t> MPOGenerator<TenElemT, QNT>::SortSparOpReprMatColsByQN_(
+    SparOpReprMat &op_repr_mat, IndexT &trans_vb,
     const GQTensorVec &label_op_mapping) {
-  std::vector<QNSector> rvb_qnscts;
+  std::vector<QNSctT> rvb_qnscts;
   std::vector<size_t> transposed_idxs;
   for (size_t y = 0; y < op_repr_mat.cols; ++y) {
     bool has_ntrvl_op = false;
-    QN col_rvb_qn;
+    QNT col_rvb_qn;
     for (size_t x = 0; x < op_repr_mat.rows; ++x) {
       auto elem = op_repr_mat(x, y);
       if (elem != kNullOpRepr) {
         auto rvb_qn = CalcTgtRvbQN_(
-                          x, y, elem, label_op_mapping, trans_vb);  
+                          x, y, elem, label_op_mapping, trans_vb
+                      );
         if (!has_ntrvl_op) {
           col_rvb_qn = rvb_qn;
-          has_ntrvl_op = true; 
+          has_ntrvl_op = true;
           bool has_qn = false;
           size_t offset = 0;
           for (auto &qnsct : rvb_qnscts) {
@@ -332,7 +330,7 @@ std::vector<size_t> MPOGenerator<TenElemType>::SortSparOpReprMatColsByQN_(
             }
           }
           if (!has_qn) {
-            rvb_qnscts.push_back(QNSector(rvb_qn, 1));
+            rvb_qnscts.push_back(QNSctT(rvb_qn, 1));
             auto beg_it = transposed_idxs.begin();
             transposed_idxs.insert(beg_it+offset, y);
           }
@@ -343,17 +341,18 @@ std::vector<size_t> MPOGenerator<TenElemType>::SortSparOpReprMatColsByQN_(
     }
   }
   op_repr_mat.TransposeCols(transposed_idxs);
-  trans_vb = Index(rvb_qnscts, OUT);
+  trans_vb = IndexT(rvb_qnscts, OUT);
   return transposed_idxs;
 }
 
 
-template <typename TenElemType>
-typename MPOGenerator<TenElemType>::GQTensorT
-MPOGenerator<TenElemType>::HeadMpoTenRepr2MpoTen_(
+template <typename TenElemT, typename QNT>
+typename MPOGenerator<TenElemT, QNT>::GQTensorT
+MPOGenerator<TenElemT, QNT>::HeadMpoTenRepr2MpoTen_(
     const SparOpReprMat &op_repr_mat,
-    const Index &rvb,
-    const TenElemVec &label_coef_mapping, const GQTensorVec &label_op_mapping) {
+    const IndexT &rvb,
+    const TenElemVec &label_coef_mapping, const GQTensorVec &label_op_mapping
+) {
   auto mpo_ten = GQTensorT({pb_in_vector_.front(), rvb, pb_out_vector_.front()});
   for (size_t y = 0; y < op_repr_mat.cols; ++y) {
     auto elem = op_repr_mat(0, y);
@@ -366,13 +365,13 @@ MPOGenerator<TenElemType>::HeadMpoTenRepr2MpoTen_(
 }
 
 
-template <typename TenElemType>
-typename MPOGenerator<TenElemType>::GQTensorT
-MPOGenerator<TenElemType>::TailMpoTenRepr2MpoTen_(
+template <typename TenElemT, typename QNT>
+typename MPOGenerator<TenElemT, QNT>::GQTensorT
+MPOGenerator<TenElemT, QNT>::TailMpoTenRepr2MpoTen_(
     const SparOpReprMat &op_repr_mat,
-    const Index &lvb,
+    const IndexT &lvb,
     const TenElemVec &label_coef_mapping, const GQTensorVec &label_op_mapping) {
-  auto mpo_ten = GQTensor<TenElemType>({pb_in_vector_.back(), lvb, pb_out_vector_.back()});
+  auto mpo_ten = GQTensorT({pb_in_vector_.back(), lvb, pb_out_vector_.back()});
   for (size_t x = 0; x < op_repr_mat.rows; ++x) {
     auto elem = op_repr_mat(x, 0);
     if (elem != kNullOpRepr) {
@@ -384,15 +383,16 @@ MPOGenerator<TenElemType>::TailMpoTenRepr2MpoTen_(
 }
 
 
-template <typename TenElemType>
-typename MPOGenerator<TenElemType>::GQTensorT
-MPOGenerator<TenElemType>::CentMpoTenRepr2MpoTen_(
+template <typename TenElemT, typename QNT>
+typename MPOGenerator<TenElemT, QNT>::GQTensorT
+MPOGenerator<TenElemT, QNT>::CentMpoTenRepr2MpoTen_(
     const SparOpReprMat &op_repr_mat,
-    const Index &lvb,
-    const Index &rvb,
+    const IndexT &lvb,
+    const IndexT &rvb,
     const TenElemVec &label_coef_mapping, const GQTensorVec &label_op_mapping,
-    const long site) {
-  auto mpo_ten = GQTensor<TenElemType>({lvb, pb_in_vector_[site], pb_out_vector_[site], rvb});
+    const size_t site
+) {
+  auto mpo_ten = GQTensorT({lvb, pb_in_vector_[site], pb_out_vector_[site], rvb});
   for (size_t x = 0; x < op_repr_mat.rows; ++x) {
     for (size_t y = 0; y < op_repr_mat.cols; ++y) {
       auto elem = op_repr_mat(x, y);
@@ -406,43 +406,42 @@ MPOGenerator<TenElemType>::CentMpoTenRepr2MpoTen_(
 }
 
 
-template <typename TenElemType>
-void AddOpToHeadMpoTen(
-    GQTensor<TenElemType> *pmpo_ten, const GQTensor<TenElemType> &rop, const long rvb_coor) {
-  for (long bpb_coor = 0; bpb_coor < rop.indexes[0].dim; ++bpb_coor) {
-    for (long tpb_coor = 0; tpb_coor < rop.indexes[1].dim; ++tpb_coor) {
-      auto elem = rop.Elem({bpb_coor, tpb_coor});
+template <typename TenT>
+void AddOpToHeadMpoTen(TenT *pmpo_ten, const TenT &rop, const size_t rvb_coor) {
+  for (size_t bpb_coor = 0; bpb_coor < rop.indexes[0].dim; ++bpb_coor) {
+    for (size_t tpb_coor = 0; tpb_coor < rop.indexes[1].dim; ++tpb_coor) {
+      auto elem = rop.GetElem({bpb_coor, tpb_coor});
       if (elem != 0.0) {
-        (*pmpo_ten)({bpb_coor, rvb_coor, tpb_coor}) = elem;
+        (*pmpo_ten)(bpb_coor, rvb_coor, tpb_coor) = elem;
       }
     }
   }
 }
 
 
-template <typename TenElemType>
-void AddOpToTailMpoTen(
-    GQTensor<TenElemType> *pmpo_ten, const GQTensor<TenElemType> &rop, const long lvb_coor) {
-  for (long bpb_coor = 0; bpb_coor < rop.indexes[0].dim; ++bpb_coor) {
-    for (long tpb_coor = 0; tpb_coor < rop.indexes[1].dim; ++tpb_coor) {
-      auto elem = rop.Elem({bpb_coor, tpb_coor});
+template <typename TenT>
+void AddOpToTailMpoTen(TenT *pmpo_ten, const TenT &rop, const size_t lvb_coor) {
+  for (size_t bpb_coor = 0; bpb_coor < rop.indexes[0].dim; ++bpb_coor) {
+    for (size_t tpb_coor = 0; tpb_coor < rop.indexes[1].dim; ++tpb_coor) {
+      auto elem = rop.GetElem({bpb_coor, tpb_coor});
       if (elem != 0.0) {
-        (*pmpo_ten)({bpb_coor, lvb_coor, tpb_coor}) = elem;
+        (*pmpo_ten)(bpb_coor, lvb_coor, tpb_coor) = elem;
       }
     }
   }
 }
 
 
-template <typename TenElemType>
+template <typename TenT>
 void AddOpToCentMpoTen(
-    GQTensor<TenElemType> *pmpo_ten, const GQTensor<TenElemType> &rop,
-    const long lvb_coor, const long rvb_coor) {
-  for (long bpb_coor = 0; bpb_coor < rop.indexes[0].dim; ++bpb_coor) {
-    for (long tpb_coor = 0; tpb_coor < rop.indexes[1].dim; ++tpb_coor) {
-      auto elem = rop.Elem({bpb_coor, tpb_coor});
+    TenT *pmpo_ten, const TenT &rop,
+    const size_t lvb_coor, const size_t rvb_coor
+) {
+  for (size_t bpb_coor = 0; bpb_coor < rop.indexes[0].dim; ++bpb_coor) {
+    for (size_t tpb_coor = 0; tpb_coor < rop.indexes[1].dim; ++tpb_coor) {
+      auto elem = rop.GetElem({bpb_coor, tpb_coor});
       if (elem != 0.0) {
-        (*pmpo_ten)({lvb_coor, bpb_coor, tpb_coor, rvb_coor}) = elem;
+        (*pmpo_ten)(lvb_coor, bpb_coor, tpb_coor, rvb_coor) = elem;
       }
     }
   }

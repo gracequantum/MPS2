@@ -2,7 +2,7 @@
 /*
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
 * Creation Date: 2019-05-14 10:26
-* 
+*
 * Description: GraceQ/mps2 project. Unittests for MPO generation, focus on the most generic AddTerm API.
 */
 #include "gqmps2/gqmps2.h"
@@ -16,17 +16,28 @@
 using namespace gqmps2;
 using namespace gqten;
 
-using DSiteVec = SiteVec<DGQTensor>;
-using ZSiteVec = SiteVec<ZGQTensor>;
-using DMPOGenerator = MPOGenerator<GQTEN_Double>;
-using ZMPOGenerator = MPOGenerator<GQTEN_Complex>;
+using U1QN = QN<U1QNVal>;
+using QNT = U1QN;
+using IndexT = Index<U1QN>;
+using QNSctT = QNSector<U1QN>;
+using QNSctVecT = QNSectorVec<U1QN>;
+
+using DGQTensor = GQTensor<GQTEN_Double, U1QN>;
+using ZGQTensor = GQTensor<GQTEN_Complex, U1QN>;
+
+using DSiteVec = SiteVec<GQTEN_Double, QNT>;
+using ZSiteVec = SiteVec<GQTEN_Complex, QNT>;
+using DMPOGenerator = MPOGenerator<GQTEN_Double, QNT>;
+using ZMPOGenerator = MPOGenerator<GQTEN_Complex, QNT>;
 
 
 struct TestMpoGenerator : public testing::Test {
-  Index phys_idx_out = Index({
-                           QNSector(QN({QNNameVal("Sz", -1)}), 1),
-                           QNSector(QN({QNNameVal("Sz",  1)}), 1)}, OUT);
-  Index phys_idx_in = InverseIndex(phys_idx_out);
+  IndexT phys_idx_out = IndexT({
+                            QNSctT(QNT({QNCard("Sz", U1QNVal(-1))}), 1),
+                            QNSctT(QNT({QNCard("Sz", U1QNVal( 1))}), 1)},
+                            GQTenIndexDirType::OUT
+                        );
+  IndexT phys_idx_in = InverseIndex(phys_idx_out);
   DSiteVec dsite_vec_2 = DSiteVec(2, phys_idx_out);
   DSiteVec dsite_vec_3 = DSiteVec(3, phys_idx_out);
   DSiteVec dsite_vec_4 = DSiteVec(4, phys_idx_out);
@@ -41,7 +52,7 @@ struct TestMpoGenerator : public testing::Test {
   ZGQTensor zsy = ZGQTensor({phys_idx_in, phys_idx_out});
   DGQTensor did = DGQTensor({phys_idx_in, phys_idx_out});
   ZGQTensor zid = ZGQTensor({phys_idx_in, phys_idx_out});
-  QN qn0 = QN({QNNameVal("Sz", 0)});
+  QNT qn0 = QNT({QNCard("Sz", U1QNVal(0))});
 
   void SetUp(void) {
     dsz({0, 0}) = -0.5;
