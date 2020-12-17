@@ -293,8 +293,9 @@ void MPS<TenElemT, QNT>::RightCanonicalizeTen_(const size_t site_idx) {
 
 // Non-member function for MPS
 /**
-Truncate the MPS. First centralize the MPS to left-end, then truncate each site
-using SVD from left to right, finally recentralize the MPS to left-end.
+Truncate the MPS. First centralize the MPS to left-end and normalize the left-end
+MPS local tensor, then truncate each site using SVD from left to right. The S
+tensor generated from each SVD step will be normalized.
 
 @param mps To-be truncated MPS.
 @param trunc_err The target truncation error.
@@ -311,6 +312,7 @@ void TruncateMPS(
   assert(mps_size >= 2);
 
   mps.Centralize(0);
+  mps[0].Normalize();
 
   using LocalTenT = GQTensor<TenElemT, QNT>;
   GQTEN_Double actual_trunc_err;
@@ -333,6 +335,7 @@ void TruncateMPS(
               << " TruncErr = " << std::setprecision(2) << std::scientific << actual_trunc_err << std::fixed
               << " D = " << std::setw(5) << D;
     std::cout << std::scientific << std::endl;
+    s.Normalize();
     delete mps(i);
     mps(i) = pu;
 
@@ -343,8 +346,6 @@ void TruncateMPS(
     delete mps(i + 1);
     mps(i + 1) = pnext_ten;
   }
-
-  mps.Centralize(0);
 }
 } /* gqmps2 */
 #endif /* ifndef GQMPS2_ONE_DIM_TN_MPS_MPS_H */

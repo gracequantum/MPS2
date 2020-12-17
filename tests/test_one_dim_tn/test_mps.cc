@@ -242,8 +242,6 @@ TEST_F(TestMPS, TestIO) {
 
 TEST_F(TestMPS, TestTruncate) {
   TruncateMPS(mps, 0, 1, 3);
-  CheckMPSCenter(mps, 0);
 
   TruncateMPS(mps, 0, 2, 2);
-  CheckMPSCenter(mps, 0);
 }
