@@ -20,9 +20,7 @@
 //#include "gqmps2/one_dim_tn/mpo/mpogen/mpogen.h"               // MPOGenerator
 //#include "gqmps2/algorithm/lanczos_solver.h"    // LanczosParams
 // MPS class and its initializations and measurements
-#include "gqmps2/one_dim_tn/mps/mps.h"
-#include "gqmps2/one_dim_tn/mps/mps_init.h"
-//#include "gqmps2/one_dim_tn/mps/mps_measu.h"
+#include "gqmps2/one_dim_tn/mps_all.h"
 // Algorithms
 //#include "gqmps2/algorithm/vmps/two_site_update_finite_vmps.h"
 
