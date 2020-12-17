@@ -5,7 +5,7 @@
 * 
 * Description: GraceQ/MPS2 project. Unittest for MPS measurements.
 */
-#include "gqmps2/gqmps2.h"
+#include "gqmps2/one_dim_tn/mps_all.h"
 #include "gqten/gqten.h"
 
 #include "gtest/gtest.h"
@@ -13,10 +13,20 @@
 
 using namespace gqmps2;
 using namespace gqten;
-using DSiteVec = SiteVec<DGQTensor>;
-using ZSiteVec = SiteVec<ZGQTensor>;
-using DMPS = MPS<DGQTensor>;
-using ZMPS = MPS<ZGQTensor>;
+
+using U1QN = QN<U1QNVal>;
+using QNT = U1QN;
+using IndexT = Index<U1QN>;
+using QNSctT = QNSector<U1QN>;
+using QNSctVecT = QNSectorVec<U1QN>;
+
+using DGQTensor = GQTensor<GQTEN_Double, U1QN>;
+using ZGQTensor = GQTensor<GQTEN_Complex, U1QN>;
+
+using DSiteVec = SiteVec<GQTEN_Double, U1QN>;
+using ZSiteVec = SiteVec<GQTEN_Complex, U1QN>;
+using DMPS = MPS<GQTEN_Double, U1QN>;
+using ZMPS = MPS<GQTEN_Complex, U1QN>;
 
 
 inline void ExpectDoubleEq(const double lhs, const double rhs) {
@@ -33,21 +43,23 @@ inline void ExpectDoubleEq(const GQTEN_Complex lhs, const GQTEN_Complex rhs) {
 struct TestMpsMeasurement : public testing::Test {
   long N = 6;
 
-  QN qn0 = QN({QNNameVal("N", 0)});
-  Index pb_out = Index({
-                     QNSector(QN({QNNameVal("N", 0)}), 1),
-                     QNSector(QN({QNNameVal("N", 1)}), 1)}, OUT);
-  Index pb_in = InverseIndex(pb_out);
+  QNT qn0 = QNT({QNCard("N", U1QNVal(0))});
+  IndexT pb_out = IndexT({
+                      QNSctT(QNT({QNCard("N", U1QNVal(0))}), 1),
+                      QNSctT(QNT({QNCard("N", U1QNVal(1))}), 1)},
+                      GQTenIndexDirType::OUT
+                  );
+  IndexT pb_in = InverseIndex(pb_out);
 
   DGQTensor dntot = DGQTensor({pb_in, pb_out});
   ZGQTensor zntot = ZGQTensor({pb_in, pb_out});
   DGQTensor did = DGQTensor({pb_in, pb_out});
   ZGQTensor zid = ZGQTensor({pb_in, pb_out});
-  DMPS dmps = DMPS(DSiteVec(N,pb_out));
-  ZMPS zmps = ZMPS(ZSiteVec(N,pb_out));
+  DMPS dmps = DMPS(DSiteVec(N, pb_out));
+  ZMPS zmps = ZMPS(ZSiteVec(N, pb_out));
 
-  std::vector<long> stat_labs1;
-  std::vector<long> stat_labs2;
+  std::vector<size_t> stat_labs1;
+  std::vector<size_t> stat_labs2;
 
   void SetUp(void) {
     dntot({0, 0}) = 0;
@@ -67,33 +79,21 @@ struct TestMpsMeasurement : public testing::Test {
 };
 
 
-template <typename MpsType, typename TenElemType>
+template <typename TenElemT, typename QNT>
 void RunTestMeasureOneSiteOpCase(
-    MpsType &mps,
-    const GQTensor<TenElemType> &op,
-    const std::vector<TenElemType> &res
+    MPS<TenElemT, QNT> &mps,
+    const GQTensor<TenElemT, QNT> &op,
+    const std::vector<TenElemT> &res
 ) {
   auto measu_res = MeasureOneSiteOp(mps, op, "op1");
   assert(measu_res.size() == res.size());
   for (size_t i = 0; i < res.size(); ++i) {
     ExpectDoubleEq(measu_res[i].avg, res[i]);
   }
+
+  mkl_free_buffers();
 }
 
-///support for non-uniform index
-template <typename MpsType, typename TenElemType>
-void RunTestMeasureOneSiteOpCase(
-  MpsType &mps,
-  const GQTensor<TenElemType> &op,
-  const std::vector<long> site_set,
-  const std::vector<TenElemType> &res
-) {
-  auto measu_res = MeasureOneSiteOp(mps, op,site_set, "op1");
-  assert(measu_res.size() == res.size());
-  for (size_t i = 0; i < res.size(); ++i) {
-    ExpectDoubleEq(measu_res[i].avg, res[i]);
-  }
-}
 
 TEST_F(TestMpsMeasurement, TestMeasureOneSiteOp) {
   // Double case 1
@@ -119,13 +119,13 @@ TEST_F(TestMpsMeasurement, TestMeasureOneSiteOp) {
 }
 
 
-template <typename MpsType, typename TenElemType>
+template <typename TenElemT, typename QNT>
 void RunTestMeasureTwoSiteOpCase(
-    MpsType &mps,
-    const std::vector<GQTensor<TenElemType>> &phys_ops,
-    const GQTensor<TenElemType> &inst_op,
-    const std::vector<std::vector<long>> &sites_set,
-    const std::vector<TenElemType> &res
+    MPS<TenElemT, QNT> &mps,
+    const std::vector<GQTensor<TenElemT, QNT>> &phys_ops,
+    const GQTensor<TenElemT, QNT> &inst_op,
+    const std::vector<std::vector<size_t>> &sites_set,
+    const std::vector<TenElemT> &res
 ) {
   auto measu_res = MeasureTwoSiteOp(
                        mps, phys_ops, inst_op, sites_set, "op1op2"
@@ -134,15 +134,17 @@ void RunTestMeasureTwoSiteOpCase(
   for (size_t i = 0; i < res.size(); ++i) {
     ExpectDoubleEq(measu_res[i].avg, res[i]);
   }
+
+  mkl_free_buffers();
 }
 
 
 TEST_F(TestMpsMeasurement, TestMeasureTwoSiteOp) {
-  std::vector<std::vector<long>> sites_set = {
-                                               {0, 1}, {0, 2}, {0, 5},
-                                               {1, 2}, {1, 3},
-                                               {4, 5}
-                                             };
+  std::vector<std::vector<size_t>> sites_set = {
+                                                   {0, 1}, {0, 2}, {0, 5},
+                                                   {1, 2}, {1, 3},
+                                                   {4, 5}
+                                               };
 
   // Double case 1
   std::vector<GQTEN_Double> dres1(sites_set.size(), 1.0);

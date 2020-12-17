@@ -126,13 +126,14 @@ void CheckMPSCenter(const MPST &mps, const int center) {
 
 
 void RunTestMPSCentralizeCase(MPST &mps, const int center) {
-    mps.Centralize(center);
-    CheckMPSCenter(mps, center);
+  mps.Centralize(center);
+  CheckMPSCenter(mps, center);
+  mkl_free_buffers();
 }
 
 
 void RunTestMPSCentralizeCase(MPST &mps) {
-  for (int i = 0; i < mps.size(); ++i) {
+  for (size_t i = 0; i < mps.size(); ++i) {
     RunTestMPSCentralizeCase(mps, i);
   }
 }
@@ -244,4 +245,6 @@ TEST_F(TestMPS, TestTruncate) {
   TruncateMPS(mps, 0, 1, 3);
 
   TruncateMPS(mps, 0, 2, 2);
+
+  mkl_free_buffers();
 }

@@ -28,6 +28,13 @@ namespace gqmps2 {
 using namespace gqten;
 
 
+template <typename TenElemT, typename QNT>
+using TenVV = std::vector<std::vector<GQTensor<TenElemT, QNT>>>;
+
+template <typename TenElemT, typename QNT>
+using TenVVV = std::vector<std::vector<std::vector<GQTensor<TenElemT, QNT>>>>;
+
+
 /**
 Measurement result for a set specific operator(s).
 
@@ -36,10 +43,10 @@ Measurement result for a set specific operator(s).
 template <typename AvgT>
 struct MeasuResElem {
   MeasuResElem(void) = default;
-  MeasuResElem(const std::vector<long> &sites, const AvgT avg) :
+  MeasuResElem(const std::vector<size_t> &sites, const AvgT avg) :
     sites(sites), avg(avg) {}
 
-  std::vector<long> sites;  ///< Site indexes of the operators.
+  std::vector<size_t> sites;  ///< Site indexes of the operators.
   AvgT avg;                 ///< average of the observation.
 };
 
@@ -53,41 +60,41 @@ template <typename AvgT>
 using MeasuResSet = std::vector<MeasuRes<AvgT>>;
 
 
-template <typename TenElemT>
+template <typename TenElemT, typename QNT>
 MeasuResElem<TenElemT> OneSiteOpAvg(
-    const GQTensor<TenElemT> &, const GQTensor<TenElemT> &,
-    const long, const long
+    const GQTensor<TenElemT, QNT> &, const GQTensor<TenElemT, QNT> &,
+    const size_t, const size_t
 );
 
-template <typename TenElemT>
+template <typename TenElemT, typename QNT>
 MeasuResElem<TenElemT> MultiSiteOpAvg(
-    const MPS<GQTensor<TenElemT>> &,
-    const std::vector<GQTensor<TenElemT>> &,
-    const std::vector<std::vector<GQTensor<TenElemT>>> &,
-    const std::vector<long> &
+    const MPS<TenElemT, QNT> &,
+    const std::vector<GQTensor<TenElemT, QNT>> &,
+    const std::vector<std::vector<GQTensor<TenElemT, QNT>>> &,
+    const std::vector<size_t> &
 );
 
-template <typename TenElemT>
+template <typename TenElemT, typename QNT>
 MeasuResElem<TenElemT> MultiSiteOpAvg(
-    const MPS<GQTensor<TenElemT>> &,
-    const std::vector<GQTensor<TenElemT>> &,
-    const std::vector<GQTensor<TenElemT>> &,
-    const std::vector<long> &
+    const MPS<TenElemT, QNT> &,
+    const std::vector<GQTensor<TenElemT, QNT>> &,
+    const std::vector<GQTensor<TenElemT, QNT>> &,
+    const std::vector<size_t> &
 );
 
-template <typename TenElemT>
+template <typename TenElemT, typename QNT>
 TenElemT OpsVecAvg(
-    const MPS<GQTensor<TenElemT>> &,
-    const std::vector<GQTensor<TenElemT>> &,
+    const MPS<TenElemT, QNT> &,
+    const std::vector<GQTensor<TenElemT, QNT>> &,
     const size_t,
     const size_t
 );
 
-template <typename TenType>
+template <typename TenElemT, typename QNT>
 void CtrctMidTen(
-    const MPS<TenType> &, const long,
-    const TenType &, const TenType &,
-    TenType * &
+    const MPS<TenElemT, QNT> &, const size_t,
+    const GQTensor<TenElemT, QNT> &, const GQTensor<TenElemT, QNT> &,
+    GQTensor<TenElemT, QNT> * &
 );
 
 template <typename AvgT>
@@ -95,7 +102,7 @@ void DumpMeasuRes(const MeasuRes<AvgT> &, const std::string &);
 
 
 // Helpers.
-inline bool IsOrderKept(const std::vector<long> &sites) {
+inline bool IsOrderKept(const std::vector<size_t> &sites) {
   auto ordered_sites = sites;
   std::sort(ordered_sites.begin(), ordered_sites.end());
   for (std::size_t i = 0; i < sites.size(); ++i) {
@@ -105,7 +112,7 @@ inline bool IsOrderKept(const std::vector<long> &sites) {
 }
 
 
-inline void DumpSites(std::ofstream &ofs, const std::vector<long> &sites) {
+inline void DumpSites(std::ofstream &ofs, const std::vector<size_t> &sites) {
   ofs << "[";
   for (auto it = sites.begin(); it != sites.end()-1; ++it) {
     ofs << *it << ", ";
@@ -133,15 +140,17 @@ inline void DumpAvgVal(std::ofstream &ofs, const GQTEN_Complex avg) {
 /**
 Measure a single one-site operator on each sites of the MPS.
 
-@tparam TenElemT Type of the tensor element, real or complex.
+@tparam TenElemT Type of the tensor element.
+@tparam QNT Quantum number type.
+
 @param mps To-be-measured MPS.
 @param op The single one-site operator.
 @param res_file_basename The basename of the output file.
 */
-template <typename TenElemT>
+template <typename TenElemT, typename QNT>
 MeasuRes<TenElemT> MeasureOneSiteOp(
-    MPS<GQTensor<TenElemT>> &mps,
-    const GQTensor<TenElemT> &op,
+    MPS<TenElemT, QNT> &mps,
+    const GQTensor<TenElemT, QNT> &op,
     const std::string &res_file_basename
 ) {
   auto N = mps.size();
@@ -158,15 +167,17 @@ MeasuRes<TenElemT> MeasureOneSiteOp(
 /**
 Measure a list of one-site operators on each sites of the MPS.
 
-@tparam TenElemT Type of the tensor element, real or complex.
+@tparam TenElemT Type of the tensor element.
+@tparam QNT Quantum number type.
+
 @param mps To-be-measured MPS.
 @param ops A list of one-site operators.
 @param res_file_basename The basename of the output file.
 */
-template <typename TenElemT>
+template <typename TenElemT, typename QNT>
 MeasuResSet<TenElemT> MeasureOneSiteOp(
-    MPS<GQTensor<TenElemT>> &mps,
-    const std::vector<GQTensor<TenElemT>> &ops,
+    MPS<TenElemT, QNT> &mps,
+    const std::vector<GQTensor<TenElemT, QNT>> &ops,
     const std::vector<std::string> &res_file_basenames
 ) {
   auto op_num = ops.size();
@@ -203,24 +214,22 @@ The insert operators \f$O_{k}\f$ can be different for each measure event.
        for each measure event. Its size defines the number of measure events.
 @param res_file_basename The basename of the output file.
 */
-template <typename TenElemT>
+template <typename TenElemT, typename QNT>
 MeasuRes<TenElemT> MeasureTwoSiteOp(
-    MPS<GQTensor<TenElemT>> &mps,
-    const std::vector<GQTensor<TenElemT>> &phys_ops,
-    const std::vector<std::vector<GQTensor<TenElemT>>> &inst_ops_set,
-    const std::vector<std::vector<long>> &sites_set,
+    MPS<TenElemT, QNT> &mps,
+    const std::vector<GQTensor<TenElemT, QNT>> &phys_ops,
+    const std::vector<std::vector<GQTensor<TenElemT, QNT>>> &inst_ops_set,
+    const std::vector<std::vector<size_t>> &sites_set,
     const std::string &res_file_basename
 ) {
   // Deal with two physical operators
   assert(phys_ops.size() == 2);
   auto measu_event_num = sites_set.size();
-  std::vector<std::vector<GQTensor<TenElemT>>> phys_ops_set(
-                                                      measu_event_num,
-                                                      phys_ops);
+  TenVV<TenElemT, QNT> phys_ops_set(measu_event_num, phys_ops);
 
   // Deal with inset operators for each measure event
   assert(inst_ops_set.size() == measu_event_num);
-  std::vector<std::vector<std::vector<GQTensor<TenElemT>>>> inst_ops_set_set;
+  TenVVV<TenElemT, QNT> inst_ops_set_set;
   for (size_t i = 0; i < measu_event_num; ++i) {
     assert(sites_set[i].size() == 2);
     assert((sites_set[i][1] - sites_set[i][0] - 1) == inst_ops_set[i].size());
@@ -249,21 +258,18 @@ The insert operators \f$O_{k}\f$ must be same at each sites and for each measure
        for each measure event. Its size defines the number of measure events.
 @param res_file_basename The basename of the output file.
 */
-template <typename TenElemT>
+template <typename TenElemT, typename QNT>
 MeasuRes<TenElemT> MeasureTwoSiteOp(
-    MPS<GQTensor<TenElemT>> &mps,
-    const std::vector<GQTensor<TenElemT>> &phys_ops,
-    const GQTensor<TenElemT> &inst_op,
-    const std::vector<std::vector<long>> &sites_set,
-    const std::string &res_file_basename) {
+    MPS<TenElemT, QNT> &mps,
+    const std::vector<GQTensor<TenElemT, QNT>> &phys_ops,
+    const GQTensor<TenElemT, QNT> &inst_op,
+    const std::vector<std::vector<size_t>> &sites_set,
+    const std::string &res_file_basename
+) {
   assert(phys_ops.size() == 2);
   auto measu_event_num = sites_set.size();
-  std::vector<std::vector<GQTensor<TenElemT>>> phys_ops_set(
-                                                      measu_event_num,
-                                                      phys_ops);
-  std::vector<std::vector<GQTensor<TenElemT>>> inst_ops_set(
-                                                      measu_event_num,
-                                                      {inst_op});
+  TenVV<TenElemT, QNT> phys_ops_set(measu_event_num, phys_ops);
+  TenVV<TenElemT, QNT> inst_ops_set(measu_event_num, {inst_op});
   return MeasureMultiSiteOp(
       mps,
       phys_ops_set,
@@ -292,14 +298,12 @@ should be defined by the user in each measure events.
        for each measure event. Its size defines the number of measure events.
 @param res_file_basename The basename of the output file.
 */
-template <typename TenElemT>
+template <typename TenElemT, typename QNT>
 MeasuRes<TenElemT> MeasureMultiSiteOp(
-    MPS<GQTensor<TenElemT>> &mps,
-    const std::vector<std::vector<GQTensor<TenElemT>>> &phys_ops_set,
-    const std::vector<
-        std::vector<std::vector<GQTensor<TenElemT>>>
-    >                                                  &inst_ops_set_set,
-    const std::vector<std::vector<long>> &sites_set,
+    MPS<TenElemT, QNT> &mps,
+    const TenVV<TenElemT, QNT> &phys_ops_set,
+    const TenVVV<TenElemT, QNT> &inst_ops_set_set,
+    const std::vector<std::vector<size_t>> &sites_set,
     const std::string &res_file_basename
 ) {
   auto measu_event_num = sites_set.size();
@@ -335,13 +339,14 @@ operators are the same.
        for each measure event. Its size defines the number of measure events.
 @param res_file_basename The basename of the output file.
 */
-template <typename TenElemT>
+template <typename TenElemT, typename QNT>
 MeasuRes<TenElemT> MeasureMultiSiteOp(
-    MPS<GQTensor<TenElemT>> &mps,
-    const std::vector<std::vector<GQTensor<TenElemT>>> &phys_ops_set,
-    const std::vector<std::vector<GQTensor<TenElemT>>> &inst_ops_set,
-    const std::vector<std::vector<long>> &sites_set,
-    const std::string &res_file_basename) {
+    MPS<TenElemT, QNT> &mps,
+    const TenVV<TenElemT, QNT> &phys_ops_set,
+    const TenVV<TenElemT, QNT> &inst_ops_set,
+    const std::vector<std::vector<size_t>> &sites_set,
+    const std::string &res_file_basename
+) {
   auto measu_event_num = sites_set.size();
   MeasuRes<TenElemT> measu_res(measu_event_num);
   for (std::size_t i = 0; i < measu_event_num; ++i) {
@@ -359,12 +364,15 @@ MeasuRes<TenElemT> MeasureMultiSiteOp(
 
 
 // Averages.
-template <typename TenElemT>
+template <typename TenElemT, typename QNT>
 MeasuResElem<TenElemT> OneSiteOpAvg(
-    const GQTensor<TenElemT> &cent_ten, const GQTensor<TenElemT> &op,
-    const long site, const long N) {
-  std::vector<long> ta_ctrct_axes1, tb_ctrct_axes1;
-  std::vector<long> ta_ctrct_axes2, tb_ctrct_axes2;
+    const GQTensor<TenElemT, QNT> &cent_ten,
+    const GQTensor<TenElemT, QNT> &op,
+    const size_t site,
+    const size_t N
+) {
+  std::vector<size_t> ta_ctrct_axes1, tb_ctrct_axes1;
+  std::vector<size_t> ta_ctrct_axes2, tb_ctrct_axes2;
   if (site == 0) {
     ta_ctrct_axes1 = {0};
     tb_ctrct_axes1 = {1};
@@ -381,30 +389,32 @@ MeasuResElem<TenElemT> OneSiteOpAvg(
     ta_ctrct_axes2 = {0, 2, 1};
     tb_ctrct_axes2 = {0, 1, 2};
   }
-  auto temp_ten = Contract(cent_ten, op, {ta_ctrct_axes1, tb_ctrct_axes1});
-  auto res_ten = Contract(
-                     *temp_ten, Dag(cent_ten),
-                     {ta_ctrct_axes2, tb_ctrct_axes2});
-  delete temp_ten;
-  auto avg = res_ten->scalar;
-  delete res_ten;
+  GQTensor<TenElemT, QNT> temp_ten, res_ten;
+  Contract(&cent_ten, &op, {ta_ctrct_axes1, tb_ctrct_axes1}, &temp_ten);
+  auto cent_ten_dag = Dag(cent_ten);
+  Contract(
+      &temp_ten, &cent_ten_dag,
+      {ta_ctrct_axes2, tb_ctrct_axes2},
+      &res_ten
+  );
+  TenElemT avg = res_ten();
   return MeasuResElem<TenElemT>({site}, avg);
 }
 
 
-template <typename TenElemT>
+template <typename TenElemT, typename QNT>
 MeasuResElem<TenElemT> MultiSiteOpAvg(
-    const MPS<GQTensor<TenElemT>> &mps,
-    const std::vector<GQTensor<TenElemT>> &phys_ops,
-    const std::vector<std::vector<GQTensor<TenElemT>>> &inst_ops_set,
-    const std::vector<long> &sites
+    const MPS<TenElemT, QNT> &mps,
+    const std::vector<GQTensor<TenElemT, QNT>> &phys_ops,
+    const TenVV<TenElemT, QNT> &inst_ops_set,
+    const std::vector<size_t> &sites
 ) {
   auto inst_ops_num = inst_ops_set.size();
   auto phys_op_num = phys_ops.size();
   // All the insert operators are at the middle or
   // has a tail string behind the last physical operator.
   assert((phys_op_num == (inst_ops_num + 1)) || (phys_op_num == inst_ops_num));
-  std::vector<GQTensor<TenElemT>> ops;
+  std::vector<GQTensor<TenElemT, QNT>> ops;
   auto middle_inst_ops_num = phys_op_num - 1;
   for (size_t i = 0; i < middle_inst_ops_num; ++i) {
     ops.push_back(phys_ops[i]);
@@ -426,20 +436,20 @@ MeasuResElem<TenElemT> MultiSiteOpAvg(
 }
 
 
-template <typename TenElemT>
+template <typename TenElemT, typename QNT>
 MeasuResElem<TenElemT> MultiSiteOpAvg(
-    MPS<GQTensor<TenElemT>> &mps,
-    const std::vector<GQTensor<TenElemT>> &phys_ops,
-    const std::vector<GQTensor<TenElemT>> &inst_ops,
-    const std::vector<long> &sites
+    MPS<TenElemT, QNT> &mps,
+    const std::vector<GQTensor<TenElemT, QNT>> &phys_ops,
+    const std::vector<GQTensor<TenElemT, QNT>> &inst_ops,
+    const std::vector<size_t> &sites
 ) {
   auto inst_op_num = inst_ops.size();
   auto phys_op_num = phys_ops.size();
   assert(phys_op_num == (inst_op_num + 1));
-  std::vector<std::vector<GQTensor<TenElemT>>> inst_ops_set;
+  TenVV<TenElemT, QNT> inst_ops_set;
   for (size_t i = 0; i < inst_op_num; ++i) {
     inst_ops_set.push_back(
-        std::vector<GQTensor<TenElemT>>(
+        std::vector<GQTensor<TenElemT, QNT>>(
             sites[i+1] - sites[i] - 1,
             inst_ops[i]
         )
@@ -450,18 +460,18 @@ MeasuResElem<TenElemT> MultiSiteOpAvg(
 }
 
 
-template <typename TenElemT>
+template <typename TenElemT, typename QNT>
 TenElemT OpsVecAvg(
-    const MPS<GQTensor<TenElemT>> &mps,      // Has been centralized to head_site
-    const std::vector<GQTensor<TenElemT>> &ops,
+    const MPS<TenElemT, QNT> &mps,      // Has been centralized to head_site
+    const std::vector<GQTensor<TenElemT, QNT>> &ops,
     const size_t head_site,
     const size_t tail_site
 ) {
   auto id_op_set = mps.GetSitesInfo().id_ops;
   // Deal with head tensor.
-  std::vector<long> head_mps_ten_ctrct_axes1;
-  std::vector<long> head_mps_ten_ctrct_axes2;
-  std::vector<long> head_mps_ten_ctrct_axes3;
+  std::vector<size_t> head_mps_ten_ctrct_axes1;
+  std::vector<size_t> head_mps_ten_ctrct_axes2;
+  std::vector<size_t> head_mps_ten_ctrct_axes3;
   if (head_site == 0) {
     head_mps_ten_ctrct_axes1 = {0};
     head_mps_ten_ctrct_axes2 = {1};
@@ -471,23 +481,29 @@ TenElemT OpsVecAvg(
     head_mps_ten_ctrct_axes2 = {0, 2};
     head_mps_ten_ctrct_axes3 = {0, 1};
   }
-  auto temp_ten0 = Contract(
-                       mps[head_site], ops[0],
-                       {head_mps_ten_ctrct_axes1, {0}});
-  auto temp_ten = Contract(
-                       *temp_ten0, Dag(mps[head_site]),
-                       {head_mps_ten_ctrct_axes2, head_mps_ten_ctrct_axes3});
-  delete temp_ten0;
+  GQTensor<TenElemT, QNT> temp_ten0;
+  auto ptemp_ten = new GQTensor<TenElemT, QNT>;
+  Contract(
+      &mps[head_site], &ops[0],
+      {head_mps_ten_ctrct_axes1, {0}},
+      &temp_ten0
+  );
+  auto mps_ten_dag = Dag(mps[head_site]);
+  Contract(
+      &temp_ten0, &mps_ten_dag,
+      {head_mps_ten_ctrct_axes2, head_mps_ten_ctrct_axes3},
+      ptemp_ten
+  );
 
   // Deal with middle tensors.
   assert(ops.size() == (tail_site - head_site + 1));
   for (size_t i = head_site + 1; i < tail_site; ++i) {
-    CtrctMidTen(mps, i, ops[i - head_site], id_op_set[i], temp_ten);
+    CtrctMidTen(mps, i, ops[i - head_site], id_op_set[i], ptemp_ten);
   }
 
   // Deal with tail tensor.
-  std::vector<long> tail_mps_ten_ctrct_axes1;
-  std::vector<long> tail_mps_ten_ctrct_axes2;
+  std::vector<size_t> tail_mps_ten_ctrct_axes1;
+  std::vector<size_t> tail_mps_ten_ctrct_axes2;
   if (tail_site == mps.size()-1) {
     tail_mps_ten_ctrct_axes1 = {0, 1};
     tail_mps_ten_ctrct_axes2 = {1, 0};
@@ -495,40 +511,44 @@ TenElemT OpsVecAvg(
     tail_mps_ten_ctrct_axes1 = {0, 1, 2};
     tail_mps_ten_ctrct_axes2 = {2, 0, 1};
   }
-  auto temp_ten2 = Contract(
-                       mps[tail_site], *temp_ten,
-                       {{0}, {0}});
-  delete temp_ten;
-  auto temp_ten3 = Contract(*temp_ten2, ops.back(), {{0}, {0}});
-  delete temp_ten2;
-  auto res_ten = Contract(
-                     *temp_ten3, Dag(mps[tail_site]),
-                     {tail_mps_ten_ctrct_axes1, tail_mps_ten_ctrct_axes2});
-  delete temp_ten3;
-  auto avg = res_ten->scalar;
-  delete res_ten;
+  GQTensor<TenElemT, QNT> temp_ten2, temp_ten3, res_ten;
+  Contract(&mps[tail_site], ptemp_ten, {{0}, {0}}, &temp_ten2);
+  delete ptemp_ten;
+  Contract(&temp_ten2, &ops.back(), {{0}, {0}}, &temp_ten3);
+  mps_ten_dag = std::move(Dag(mps[tail_site]));
+  Contract(
+      &temp_ten3, &mps_ten_dag,
+      {tail_mps_ten_ctrct_axes1, tail_mps_ten_ctrct_axes2},
+      &res_ten
+  );
 
-  return avg;
+  return res_ten();
 }
 
 
-template <typename TenType>
+template <typename TenElemT, typename QNT>
 void CtrctMidTen(
-    const MPS<TenType> &mps, const long site,
-    const TenType &op, const TenType &id_op,
-    TenType * &t) {
+    const MPS<TenElemT, QNT> &mps,
+    const size_t site,
+    const GQTensor<TenElemT, QNT> &op,
+    const GQTensor<TenElemT, QNT> &id_op,
+    GQTensor<TenElemT, QNT> * &t) {
+  using Tensor = GQTensor<TenElemT, QNT>;
   if (op == id_op) {
-    auto temp_ten = Contract(mps[site], *t, {{0}, {0}});
+    Tensor temp_ten;
+    Contract(&mps[site], t, {{0}, {0}}, &temp_ten);
     delete t;
-    t = Contract(*temp_ten, Dag(mps[site]), {{0, 2}, {1, 0}});
-    delete temp_ten;
+    t = new Tensor;
+    auto mps_ten_dag = Dag(mps[site]);
+    Contract(&temp_ten, &mps_ten_dag, {{0, 2}, {1, 0}}, t);
   } else {
-    auto temp_ten1 = Contract(mps[site], *t, {{0}, {0}});
+    Tensor temp_ten1, temp_ten2;
+    Contract(&mps[site], t, {{0}, {0}}, &temp_ten1);
     delete t;
-    auto temp_ten2 = Contract(*temp_ten1, op, {{0}, {0}});
-    delete temp_ten1;
-    t = Contract(*temp_ten2, Dag(mps[site]), {{1, 2}, {0, 1}});
-    delete temp_ten2;
+    Contract(&temp_ten1, &op, {{0}, {0}}, &temp_ten2);
+    t = new Tensor;
+    auto mps_ten_dag = Dag(mps[site]);
+    Contract(&temp_ten2, &mps_ten_dag, {{1, 2}, {0, 1}}, t);
   }
 }
 
@@ -536,7 +556,9 @@ void CtrctMidTen(
 // Date dump.
 template <typename AvgT>
 void DumpMeasuRes(
-    const MeasuRes<AvgT> &res, const std::string &basename) {
+    const MeasuRes<AvgT> &res,
+    const std::string &basename
+) {
   auto file = basename + ".json";
   std::ofstream ofs(file);
 

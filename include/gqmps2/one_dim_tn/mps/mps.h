@@ -228,7 +228,8 @@ void MPS<TenElemT, QNT>::LeftCanonicalizeTen_(const size_t site_idx) {
   } else {
     ldims = 2;
   }
-  LocalTenT s, vt;
+  GQTensor<GQTEN_Double, QNT> s;
+  LocalTenT vt;
   auto pu = new LocalTenT;
   mock_gqten::SVD((*this)(site_idx), ldims, Div((*this)[site_idx]), pu, &s, &vt);
   delete (*this)(site_idx);
@@ -263,7 +264,8 @@ template <typename TenElemT, typename QNT>
 void MPS<TenElemT, QNT>::RightCanonicalizeTen_(const size_t site_idx) {
   assert(site_idx > 0);
   size_t ldims = 1;
-  LocalTenT u, s;
+  LocalTenT u;
+  GQTensor<GQTEN_Double, QNT> s;
   auto pvt = new LocalTenT;
   auto qndiv = Div((*this)[site_idx]);
   mock_gqten::SVD((*this)(site_idx), ldims, qndiv - qndiv, &u, &s, pvt);
@@ -324,7 +326,8 @@ void TruncateMPS(
     } else {
       ldims = 2;
     }
-    LocalTenT s, vt;
+    GQTensor<GQTEN_Double, QNT> s;
+    LocalTenT vt;
     auto pu = new LocalTenT;
     SVD(
         mps(i),
