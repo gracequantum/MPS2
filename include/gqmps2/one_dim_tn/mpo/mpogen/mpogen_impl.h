@@ -291,8 +291,7 @@ QNT MPOGenerator<TenElemT, QNT>::CalcTgtRvbQN_(
     const GQTensorVec &label_op_mapping, const IndexT &trans_vb
 ) {
   auto lvb = InverseIndex(trans_vb);
-  auto coor_off_set_and_qnsct = lvb.CoorInterOffsetAndQnsct(x);
-  auto lvb_qn = coor_off_set_and_qnsct.qnsct.qn;
+  auto lvb_qn = lvb.GetQNSctFromActualCoor(x).GetQn();
   auto op0_in_op_repr = label_op_mapping[op_repr.GetOpLabelList()[0]];
   return zero_div_ - Div(op0_in_op_repr) + lvb_qn;
 }
@@ -302,7 +301,7 @@ template <typename TenElemT, typename QNT>
 std::vector<size_t> MPOGenerator<TenElemT, QNT>::SortSparOpReprMatColsByQN_(
     SparOpReprMat &op_repr_mat, IndexT &trans_vb,
     const GQTensorVec &label_op_mapping) {
-  std::vector<QNSctT> rvb_qnscts;
+  std::vector<std::pair<QNT, size_t>> rvb_qn_dim_pairs;
   std::vector<size_t> transposed_idxs;
   for (size_t y = 0; y < op_repr_mat.cols; ++y) {
     bool has_ntrvl_op = false;
@@ -318,29 +317,33 @@ std::vector<size_t> MPOGenerator<TenElemT, QNT>::SortSparOpReprMatColsByQN_(
           has_ntrvl_op = true;
           bool has_qn = false;
           size_t offset = 0;
-          for (auto &qnsct : rvb_qnscts) {
-            if (qnsct.qn == rvb_qn) {
-              qnsct.dim += 1;
+          for (auto &qn_dim : rvb_qn_dim_pairs) {
+            if (qn_dim.first == rvb_qn) {
+              qn_dim.second += 1;
               auto beg_it = transposed_idxs.begin();
               transposed_idxs.insert(beg_it+offset, y);
               has_qn = true;
               break;
             } else {
-              offset += qnsct.dim;
+              offset += qn_dim.second;
             }
           }
           if (!has_qn) {
-            rvb_qnscts.push_back(QNSctT(rvb_qn, 1));
+            rvb_qn_dim_pairs.push_back(std::make_pair(rvb_qn, 1));
             auto beg_it = transposed_idxs.begin();
             transposed_idxs.insert(beg_it+offset, y);
           }
         } else {
-          assert(rvb_qn == col_rvb_qn); 
+          assert(rvb_qn == col_rvb_qn);
         }
       }
     }
   }
   op_repr_mat.TransposeCols(transposed_idxs);
+  std::vector<QNSctT> rvb_qnscts;
+  for (auto &qn_dim : rvb_qn_dim_pairs) {
+    rvb_qnscts.push_back(QNSctT(qn_dim.first, qn_dim.second));
+  }
   trans_vb = IndexT(rvb_qnscts, OUT);
   return transposed_idxs;
 }
@@ -408,8 +411,8 @@ MPOGenerator<TenElemT, QNT>::CentMpoTenRepr2MpoTen_(
 
 template <typename TenT>
 void AddOpToHeadMpoTen(TenT *pmpo_ten, const TenT &rop, const size_t rvb_coor) {
-  for (size_t bpb_coor = 0; bpb_coor < rop.indexes[0].dim; ++bpb_coor) {
-    for (size_t tpb_coor = 0; tpb_coor < rop.indexes[1].dim; ++tpb_coor) {
+  for (size_t bpb_coor = 0; bpb_coor < rop.GetIndexes()[0].dim(); ++bpb_coor) {
+    for (size_t tpb_coor = 0; tpb_coor < rop.GetIndexes()[1].dim(); ++tpb_coor) {
       auto elem = rop.GetElem({bpb_coor, tpb_coor});
       if (elem != 0.0) {
         (*pmpo_ten)(bpb_coor, rvb_coor, tpb_coor) = elem;
@@ -421,8 +424,8 @@ void AddOpToHeadMpoTen(TenT *pmpo_ten, const TenT &rop, const size_t rvb_coor) {
 
 template <typename TenT>
 void AddOpToTailMpoTen(TenT *pmpo_ten, const TenT &rop, const size_t lvb_coor) {
-  for (size_t bpb_coor = 0; bpb_coor < rop.indexes[0].dim; ++bpb_coor) {
-    for (size_t tpb_coor = 0; tpb_coor < rop.indexes[1].dim; ++tpb_coor) {
+  for (size_t bpb_coor = 0; bpb_coor < rop.GetIndexes()[0].dim(); ++bpb_coor) {
+    for (size_t tpb_coor = 0; tpb_coor < rop.GetIndexes()[1].dim(); ++tpb_coor) {
       auto elem = rop.GetElem({bpb_coor, tpb_coor});
       if (elem != 0.0) {
         (*pmpo_ten)(bpb_coor, lvb_coor, tpb_coor) = elem;
@@ -437,8 +440,8 @@ void AddOpToCentMpoTen(
     TenT *pmpo_ten, const TenT &rop,
     const size_t lvb_coor, const size_t rvb_coor
 ) {
-  for (size_t bpb_coor = 0; bpb_coor < rop.indexes[0].dim; ++bpb_coor) {
-    for (size_t tpb_coor = 0; tpb_coor < rop.indexes[1].dim; ++tpb_coor) {
+  for (size_t bpb_coor = 0; bpb_coor < rop.GetIndexes()[0].dim(); ++bpb_coor) {
+    for (size_t tpb_coor = 0; tpb_coor < rop.GetIndexes()[1].dim(); ++tpb_coor) {
       auto elem = rop.GetElem({bpb_coor, tpb_coor});
       if (elem != 0.0) {
         (*pmpo_ten)(lvb_coor, bpb_coor, tpb_coor, rvb_coor) = elem;
