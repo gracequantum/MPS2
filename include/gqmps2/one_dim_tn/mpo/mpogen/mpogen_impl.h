@@ -2,10 +2,10 @@
 /*
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
 * Creation Date: 2019-09-27 17:38
-* 
+*
 * Description: GraceQ/MPS2 project. Implantation details for MPO generator.
 */
-#include "gqmps2/consts.h"     // kNullIntVec
+#include "gqmps2/consts.h"     // kNullUintVec, kNullUintVecVec
 #include "gqmps2/one_dim_tn/mpo/mpogen/mpogen.h"
 #include "gqmps2/one_dim_tn/mpo/mpogen/symb_alg/coef_op_alg.h"
 #include "gqten/gqten.h"
@@ -87,7 +87,7 @@ template <typename TenElemT, typename QNT>
 void MPOGenerator<TenElemT, QNT>::AddTerm(
     const TenElemT coef,
     const GQTensorVec &local_ops,
-    const std::vector<int> &local_ops_idxs
+    const std::vector<size_t> &local_ops_idxs
 ) {
   assert(local_ops.size() == local_ops_idxs.size());
   assert(std::is_sorted(local_ops_idxs.cbegin(), local_ops_idxs.cend()));
@@ -95,10 +95,10 @@ void MPOGenerator<TenElemT, QNT>::AddTerm(
   if (coef == TenElemT(0)) { return; }   // If coef is zero, do nothing.
 
   auto coef_label = coef_label_convertor_.Convert(coef);
-  int ntrvl_ops_idxs_head = local_ops_idxs.front();
-  int ntrvl_ops_idxs_tail = local_ops_idxs.back();
+  auto ntrvl_ops_idxs_head = local_ops_idxs.front();
+  auto ntrvl_ops_idxs_tail = local_ops_idxs.back();
   OpReprVec ntrvl_ops_reprs;
-  for (int i = ntrvl_ops_idxs_head; i <= ntrvl_ops_idxs_tail; ++i) {
+  for (size_t i = ntrvl_ops_idxs_head; i <= ntrvl_ops_idxs_tail; ++i) {
     auto poss_it = std::find(local_ops_idxs.cbegin(), local_ops_idxs.cend(), i);
     if (poss_it != local_ops_idxs.cend()) {     // Nontrivial operator
       auto local_op_loc = poss_it - local_ops_idxs.cbegin();    // Location of the local operator in the local operators list.
@@ -144,9 +144,9 @@ template <typename TenElemT, typename QNT>
 void MPOGenerator<TenElemT, QNT>::AddTerm(
     const TenElemT coef,
     const GQTensorVec &phys_ops,
-    const std::vector<int> &phys_ops_idxs,
+    const std::vector<size_t> &phys_ops_idxs,
     const GQTensorVec &inst_ops,
-    const std::vector<std::vector<int>> &inst_ops_idxs_set
+    const std::vector<std::vector<size_t>> &inst_ops_idxs_set
 ) {
   assert(phys_ops.size() >= 2);
   assert(phys_ops.size() == phys_ops_idxs.size());
@@ -154,17 +154,17 @@ void MPOGenerator<TenElemT, QNT>::AddTerm(
       (inst_ops.size() == phys_ops.size() - 1) ||
       (inst_ops.size() == phys_ops.size())
   );
-  if (inst_ops_idxs_set != kNullIntVecVec) {
+  if (inst_ops_idxs_set != kNullUintVecVec) {
     assert(inst_ops_idxs_set.size() == inst_ops.size());
   }
 
   GQTensorVec local_ops;
-  std::vector<int> local_ops_idxs;
-  for (int i = 0; i < phys_ops.size()-1; ++i) {
+  std::vector<size_t> local_ops_idxs;
+  for (size_t i = 0; i < phys_ops.size()-1; ++i) {
     local_ops.push_back(phys_ops[i]);
     local_ops_idxs.push_back(phys_ops_idxs[i]);
-    if (inst_ops_idxs_set == kNullIntVecVec) {
-      for (int j = phys_ops_idxs[i]+1; j < phys_ops_idxs[i+1]; ++j) {
+    if (inst_ops_idxs_set == kNullUintVecVec) {
+      for (size_t j = phys_ops_idxs[i]+1; j < phys_ops_idxs[i+1]; ++j) {
         local_ops.push_back(inst_ops[i]);
         local_ops_idxs.push_back(j);
       }
@@ -180,8 +180,8 @@ void MPOGenerator<TenElemT, QNT>::AddTerm(
   local_ops.push_back(phys_ops.back());
   local_ops_idxs.push_back(phys_ops_idxs.back());
   if (inst_ops.size() == phys_ops.size()) {
-    if (inst_ops_idxs_set == kNullIntVecVec) {
-      for (int j = phys_ops_idxs.back(); j < N_; ++j) {
+    if (inst_ops_idxs_set == kNullUintVecVec) {
+      for (size_t j = phys_ops_idxs.back(); j < N_; ++j) {
         local_ops.push_back(inst_ops.back());
         local_ops_idxs.push_back(j);
       }
@@ -214,22 +214,22 @@ template <typename TenElemT, typename QNT>
 void MPOGenerator<TenElemT, QNT>::AddTerm(
     const TenElemT coef,
     const GQTensorT &op1,
-    const int op1_idx,
+    const size_t op1_idx,
     const GQTensorT &op2,
-    const int op2_idx,
+    const size_t op2_idx,
     const GQTensorT &inst_op,
-    const std::vector<int> &inst_op_idxs
+    const std::vector<size_t> &inst_op_idxs
 ) {
   if (op2 == GQTensorT()) {     // One-body interaction term
     GQTensorVec local_ops = {op1};
-    std::vector<int> local_ops_idxs = {op1_idx};
+    std::vector<size_t> local_ops_idxs = {op1_idx};
     AddTerm(coef, local_ops, local_ops_idxs);     // Use the most generic API
   } else {                      // Two-body interaction term
     assert(op2_idx != 0);
     if (inst_op == GQTensorT()) {     // Trivial insertion operator
       AddTerm(coef, {op1, op2}, {op1_idx, op2_idx});
     } else {                          // Non-trivial insertion operator
-      if (inst_op_idxs == kNullIntVec) {    // Uniform insertion
+      if (inst_op_idxs == kNullUintVec) {    // Uniform insertion
         AddTerm(coef, {op1, op2}, {op1_idx, op2_idx}, {inst_op});
       } else {                              // Non-uniform insertion
         AddTerm(

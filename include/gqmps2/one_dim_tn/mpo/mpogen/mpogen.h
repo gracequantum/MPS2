@@ -15,7 +15,7 @@
 #define GQMPS2_ONE_DIM_TN_MPO_MPOGEN_MPOGEN_H
 
 
-#include "gqmps2/consts.h"       // kNullIntVec
+#include "gqmps2/consts.h"       // kNullUintVec, kNullUintVecVec
 #include "gqmps2/site_vec.h"     // SiteVec
 #include "gqmps2/one_dim_tn/mpo/mpo.h"    // MPO
 #include "gqmps2/one_dim_tn/mpo/mpogen/fsm.h"
@@ -52,25 +52,27 @@ public:
   void AddTerm(
       const TenElemT,
       const GQTensorVec &,
-      const std::vector<int> &
+      const std::vector<size_t> &
   );
 
   void AddTerm(
       const TenElemT,
       const GQTensorVec &,
-      const std::vector<int> &,
+      const std::vector<size_t> &,
       const GQTensorVec &,
-      const std::vector<std::vector<int>> &inst_ops_idxs_set = kNullIntVecVec
+      const std::vector<
+          std::vector<size_t>
+      > &inst_ops_idxs_set = kNullUintVecVec
   );
 
   void AddTerm(
     const TenElemT,
     const GQTensorT &,
-    const int,
+    const size_t,
     const GQTensorT &op2 = GQTensorT(),
-    const int op2_idx = 0,
+    const size_t op2_idx = 0,
     const GQTensorT &inst_op = GQTensorT(),
-    const std::vector<int> &inst_op_idxs = kNullIntVec
+    const std::vector<size_t> &inst_op_idxs = kNullUintVec
   );
 
   FSM GetFSM(void) { return fsm_; }
