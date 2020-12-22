@@ -42,7 +42,9 @@ macro(add_unittest
 
     add_test(
         NAME ${TEST_NAME}
-        COMMAND "${TEST_NAME}" "${INPUT_ARGS}")
+        COMMAND "${TEST_NAME}" "${INPUT_ARGS}"
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
 
   set_target_properties(${TEST_NAME} PROPERTIES FOLDER tests)
 endmacro()

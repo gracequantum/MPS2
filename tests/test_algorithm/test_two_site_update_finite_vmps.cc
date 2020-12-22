@@ -143,6 +143,8 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DIsing) {
   dmps.Dump(sweep_params.mps_path);
   for (size_t i = 0; i < N; ++i) { dmps.dealloc(i); }
   RunTestTwoSiteAlgorithmCase(dmps, dmpo, sweep_params, -0.25*(N-1), 1.0E-10);
+  RemoveFolder(sweep_params.mps_path);
+  RemoveFolder(sweep_params.temp_path);
 
   // Complex Hamiltonian
   auto zmpo_gen = MPOGenerator<GQTEN_Complex, U1QN>(zsite_vec_6, qn0);
@@ -159,6 +161,8 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DIsing) {
   zmps.Dump(sweep_params.mps_path);
   for (size_t i = 0; i < N; ++i) { zmps.dealloc(i); }
   RunTestTwoSiteAlgorithmCase(zmps, zmpo, sweep_params, -0.25*(N-1), 1.0E-10);
+  RemoveFolder(sweep_params.mps_path);
+  RemoveFolder(sweep_params.temp_path);
 }
 
 
