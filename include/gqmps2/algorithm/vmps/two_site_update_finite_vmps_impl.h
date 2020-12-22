@@ -95,7 +95,9 @@ GQTEN_Double TwoSiteFiniteVMPS(
   GQTEN_Double e0;
   for (size_t sweep = 1; sweep <= sweep_params.sweeps; ++sweep) {
     std::cout << "sweep " << sweep << std::endl;
+    Timer sweep_timer("sweep");
     e0 = TwoSiteFiniteVMPSSweep(mps, mpo, sweep_params);
+    sweep_timer.PrintElapsed();
     std::cout << "\n";
   }
   return e0;
