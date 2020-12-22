@@ -54,22 +54,21 @@ void SVD(
       pu, ps, pvt, &actual_trunc_err, &actual_bond_dim
   );
 }
-} /* mock_gqten */ 
+} /* mock_gqten */
 
 
-template <typename TenType>
-inline void WriteGQTensorTOFile(const TenType &t, const std::string &file) {
+template <typename TenT>
+inline void WriteGQTensorTOFile(const TenT &t, const std::string &file) {
   std::ofstream ofs(file, std::ofstream::binary);
-  bfwrite(ofs, t);
+  ofs << t;
   ofs.close();
 }
 
 
-template <typename TenType>
-inline void ReadGQTensorFromFile(TenType * &rpt, const std::string &file) {
+template <typename TenT>
+inline void ReadGQTensorFromFile(TenT &t, const std::string &file) {
   std::ifstream ifs(file, std::ifstream::binary);
-  rpt = new TenType();
-  bfread(ifs, *rpt);
+  ifs >> t;
   ifs.close();
 }
 

@@ -3,7 +3,7 @@
 /*
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
 * Creation Date: 2020-08-08 16:45
-* 
+*
 * Description: GraceQ/MPS2 project. Two-site update finite size vMPS.
 */
 
@@ -15,11 +15,12 @@
 #define GQMPS2_ALGORITHM_VMPS_TWO_SITE_UPDATE_FINITE_VMPS_H
 
 
+#include "gqmps2/consts.h"                      // kMpsPath, kRuntimeTempPath
 #include "gqmps2/algorithm/lanczos_solver.h"    // LanczParams
-#include "gqmps2/one_dim_tn/mpo/mpo.h"    // MPO
-#include "gqmps2/one_dim_tn/mps/mps.h"    // MPS
+#include "gqmps2/one_dim_tn/mpo/mpo.h"          // MPO
+#include "gqmps2/one_dim_tn/mps/mps.h"          // MPS
 
-#include <vector>     // vector
+#include <string>     // string
 
 
 namespace gqmps2 {
@@ -27,48 +28,38 @@ namespace gqmps2 {
 
 struct SweepParams {
   SweepParams(
-      const long sweeps,
-      const long dmin, const long dmax, const double cutoff,
-      const bool fileio,
-      const char workflow,
-      const LanczosParams &lancz_params) :
-      Sweeps(sweeps), Dmin(dmin), Dmax(dmax), Cutoff(cutoff), FileIO(fileio),
-      Workflow(workflow),
-      LanczParams(lancz_params) {}
+      const size_t sweeps,
+      const size_t dmin, const size_t dmax, const double trunc_err,
+      const LanczosParams &lancz_params,
+      const std::string mps_path = kMpsPath,
+      const std::string temp_path = kRuntimeTempPath
+  ) :
+      sweeps(sweeps),
+      Dmin(dmin), Dmax(dmax), trunc_err(trunc_err),
+      lancz_params(lancz_params),
+      mps_path(mps_path),
+      temp_path(temp_path) {}
 
-  long Sweeps;
+  size_t sweeps;
 
-  long Dmin;
-  long Dmax;
-  double Cutoff;
+  size_t Dmin;
+  size_t Dmax;
+  double trunc_err;
 
-  bool FileIO;
-  char Workflow;
+  LanczosParams lancz_params;
 
-  LanczosParams LanczParams;
+  // Advanced parameters
+  /// MPS directory path
+  std::string mps_path;
+
+  /// Runtime temporary files directory path
+  std::string temp_path;
 };
-
-
-template <typename TenType>
-double TwoSiteAlgorithm(
-    MPS<TenType> &,
-    const MPO<TenType> &,
-    const SweepParams &
-);
-
-template <typename TenType>
-double TwoSiteAlgorithm(
-    MPS<TenType> &,
-    const std::vector<TenType *> &,
-    const SweepParams &,
-    std::vector<double>
-);
-} /* gqmps2 */ 
+} /* gqmps2 */
 
 
 // Implementation details
 #include "gqmps2/algorithm/vmps/two_site_update_finite_vmps_impl.h"
-//#include "gqmps2/algorithm/vmps/two_site_update_finite_vmps_with_noise_impl.h"
 
 
 #endif /* ifndef GQMPS2_ALGORITHM_VMPS_TWO_SITE_UPDATE_FINITE_VMPS_H */

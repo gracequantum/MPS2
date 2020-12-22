@@ -27,12 +27,8 @@ const std::string kCaseParamsJsonObjName = "CaseParams";
 
 const std::string kMpsPath = "mps";
 const std::string kRuntimeTempPath = ".temp";
-const std::string kBlockFileBaseName = "block";
+const std::string kEnvFileBaseName = "env";
 const std::string kMpsTenBaseName = "mps_ten";
-
-const char kTwoSiteAlgoWorkflowInitial = 'i';
-const char kTwoSiteAlgoWorkflowRestart = 'r';
-const char kTwoSiteAlgoWorkflowContinue = 'c';
 
 const int kLanczEnergyOutputPrecision = 16;
 

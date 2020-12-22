@@ -309,7 +309,7 @@ inline void TridiagGsSolver(
     case 'V':
       gs_eng = d[0];
       gs_vec = new double [n];
-      for (long i = 0; i < n; ++i) { gs_vec[i] = z[i*n]; }
+      for (size_t i = 0; i < n; ++i) { gs_vec[i] = z[i*n]; }
       delete [] d;
       delete [] e;
       delete [] z;
