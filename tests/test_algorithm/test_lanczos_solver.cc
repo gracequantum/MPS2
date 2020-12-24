@@ -2,25 +2,25 @@
 /*
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
 * Creation Date: 2019-05-12 10:19
-* 
+*
 * Description: GraceQ/mps2 project. Lanczos algorithm unittests.
 */
 #include "gqmps2/algorithm/lanczos_solver.h"
 #include "../testing_utils.h"
 #include "gqten/gqten.h"
+#include "gqten/utility/timer.h"
 
 #include "gtest/gtest.h"
 
 #include <vector>
 #include <iostream>
 
-#include <assert.h>
-
-#include "mkl.h"
-
 #ifdef Release
   #define NDEBUG
 #endif
+#include <assert.h>
+
+#include "mkl.h"
 
 
 using namespace gqmps2;
@@ -59,11 +59,14 @@ void RunTestCentLanczosSolverCase(
     const LanczosParams &lanczos_params
 ) {
   using TenT = GQTensor<TenElemT, QNT>;
+
+  Timer timer("cent_lancz");
   auto lancz_res = LanczosSolver(
                        eff_ham, pinit_state,
                        lanczos_params,
                        "cent"
                    );
+  timer.PrintElapsed();
 
   std::vector<size_t> ta_ctrct_axes1 = {1};
   std::vector<size_t> ta_ctrct_axes2 = {4};
@@ -210,11 +213,15 @@ void RunTestLendLanczosSolverCase(
     const LanczosParams &lanczos_params
 ) {
   using TenT = GQTensor<TenElemT, QNT>;
+
+  Timer timer("lend_lancz");
   auto lancz_res = LanczosSolver(
                        eff_ham, pinit_state,
                        lanczos_params,
                        "lend"
                    );
+  timer.PrintElapsed();
+
   std::vector<size_t> ta_ctrct_axes1 = {1};
   std::vector<size_t> ta_ctrct_axes2 = {4};
   std::vector<size_t> tb_ctrct_axes1 = {0};

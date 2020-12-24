@@ -148,12 +148,14 @@ LanczosRes<TenT> LanczosSolver(
     m += 1;
     auto gamma = last_mat_mul_vec_res;
     if (m == 1) {
-      (*gamma) += ((-a[m-1]) * (*bases[m-1]));
+      LinearCombine({-a[m-1]}, {bases[m-1]}, 1.0, gamma);
     } else {
-      (*gamma) += (
-                      (-a[m-1]) * (*bases[m-1]) +
-                      (-std::sqrt(N[m-1]) * (*bases[m-2]))
-                  );
+      LinearCombine(
+          {-a[m-1], -std::sqrt(N[m-1])},
+          {bases[m-1], bases[m-2]},
+          1.0,
+          gamma
+      );
     }
     auto norm_gamma = gamma->Normalize();
     GQTEN_Double eigval;
@@ -168,13 +170,7 @@ LanczosRes<TenT> LanczosSolver(
       } else {
         TridiagGsSolver(a, b, m, eigval, eigvec, 'V');
         auto gs_vec = new TenT(bases[0]->GetIndexes());
-        for (size_t i = 0; i < m; ++i) {
-          if (i == 0) {
-            (*gs_vec) = (eigvec[i] * (*bases[i]));
-          } else {
-            (*gs_vec) += (eigvec[i] * (*bases[i]));
-          }
-        }
+        LinearCombine(m, eigvec, bases, 0.0, gs_vec);
         lancz_res.iters = m;
         lancz_res.gs_eng = energy0;
         lancz_res.gs_vec = gs_vec;
@@ -216,13 +212,7 @@ LanczosRes<TenT> LanczosSolver(
       TridiagGsSolver(a, b, m+1, eigval, eigvec, 'V');
       energy0 = energy0_new;
       auto gs_vec = new TenT(bases[0]->GetIndexes());
-      for (size_t i = 0; i < m+1; ++i) {
-        if (i == 0) {
-          (*gs_vec) = (eigvec[i] * (*bases[i]));
-        } else {
-          (*gs_vec) += (eigvec[i] * (*bases[i]));
-        }
-      }
+      LinearCombine(m+1, eigvec, bases, 0.0, gs_vec);
       lancz_res.iters = m;
       lancz_res.gs_eng = energy0;
       lancz_res.gs_vec = gs_vec;
