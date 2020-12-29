@@ -375,7 +375,7 @@ MeasuResElem<TenElemT> OneSiteOpAvg(
   std::vector<size_t> ta_ctrct_axes2, tb_ctrct_axes2;
   if (site == 0) {
     ta_ctrct_axes1 = {0};
-    tb_ctrct_axes1 = {1};
+    tb_ctrct_axes1 = {0};
     ta_ctrct_axes2 = {0, 1};
     tb_ctrct_axes2 = {1, 0};
   } else if (site == (N-1)) {
@@ -506,7 +506,7 @@ TenElemT OpsVecAvg(
   std::vector<size_t> tail_mps_ten_ctrct_axes2;
   if (tail_site == mps.size()-1) {
     tail_mps_ten_ctrct_axes1 = {0, 1};
-    tail_mps_ten_ctrct_axes2 = {1, 0};
+    tail_mps_ten_ctrct_axes2 = {0, 1};
   } else {
     tail_mps_ten_ctrct_axes1 = {0, 1, 2};
     tail_mps_ten_ctrct_axes2 = {2, 0, 1};

@@ -101,22 +101,28 @@ struct TestTwoSiteAlgorithmSpinSystem : public testing::Test {
   DSiteVec dsite_vec_6 = DSiteVec(N, pb_out);
   ZSiteVec zsite_vec_6 = ZSiteVec(N, pb_out);
 
+  DGQTensor  did  = DGQTensor({pb_in, pb_out});
   DGQTensor  dsz  = DGQTensor({pb_in, pb_out});
   DGQTensor  dsp  = DGQTensor({pb_in, pb_out});
   DGQTensor  dsm  = DGQTensor({pb_in, pb_out});
   DMPS dmps = DMPS(dsite_vec_6);
 
+  ZGQTensor  zid  = ZGQTensor({pb_in, pb_out});
   ZGQTensor  zsz  = ZGQTensor({pb_in, pb_out});
   ZGQTensor  zsp  = ZGQTensor({pb_in, pb_out});
   ZGQTensor  zsm  = ZGQTensor({pb_in, pb_out});
   ZMPS zmps = ZMPS(zsite_vec_6);
 
   void SetUp(void) {
+    did({0, 0}) = 1;
+    did({1, 1}) = 1;
     dsz({0, 0}) = 0.5;
     dsz({1, 1}) = -0.5;
     dsp({0, 1}) = 1;
     dsm({1, 0}) = 1;
 
+    zid({0, 0}) = 1;
+    zid({1, 1}) = 1;
     zsz({0, 0}) = 0.5;
     zsz({1, 1}) = -0.5;
     zsp({0, 1}) = 1;
@@ -143,6 +149,18 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DIsing) {
   dmps.Dump(sweep_params.mps_path);
   for (size_t i = 0; i < N; ++i) { dmps.dealloc(i); }
   RunTestTwoSiteAlgorithmCase(dmps, dmpo, sweep_params, -0.25*(N-1), 1.0E-10);
+
+  dmps.Load(sweep_params.mps_path);
+  MeasureOneSiteOp(dmps, dsz, "dsz");
+  std::vector<std::vector<size_t>> sites_set;
+  for (size_t i = 0; i < N; ++i) {
+    for (size_t j = 0; j < N; ++j) {
+      if (i < j) { sites_set.push_back({i, j}); }
+    }
+  }
+  MeasureTwoSiteOp(dmps, {dsz, dsz}, did, sites_set, "dszdsz");
+  for (size_t i = 0; i < N; ++i) { dmps.dealloc(i); }
+
   RemoveFolder(sweep_params.mps_path);
   RemoveFolder(sweep_params.temp_path);
 
@@ -161,6 +179,12 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DIsing) {
   zmps.Dump(sweep_params.mps_path);
   for (size_t i = 0; i < N; ++i) { zmps.dealloc(i); }
   RunTestTwoSiteAlgorithmCase(zmps, zmpo, sweep_params, -0.25*(N-1), 1.0E-10);
+
+  zmps.Load(sweep_params.mps_path);
+  MeasureOneSiteOp(zmps, zsz, "zsz");
+  MeasureTwoSiteOp(zmps, {zsz, zsz}, zid, sites_set, "zszzsz");
+  for (size_t i = 0; i < N; ++i) { zmps.dealloc(i); }
+
   RemoveFolder(sweep_params.mps_path);
   RemoveFolder(sweep_params.temp_path);
 }
