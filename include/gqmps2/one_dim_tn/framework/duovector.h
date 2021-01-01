@@ -205,6 +205,18 @@ public:
   */
   size_t size(void) const { return raw_data_.size(); }
 
+  /**
+  Check whether the vector is empty.
+  */
+  bool empty(void) const {
+    for (auto &pelem : raw_data_) {
+      if (pelem != nullptr) {
+        return false;
+      }
+    }
+    return true;
+  }
+
 private:
   std::vector<ElemT *> raw_data_;
 };
