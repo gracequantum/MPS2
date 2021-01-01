@@ -192,9 +192,16 @@ public:
     }
   }
 
-  // Property methods.
   /**
-  Get the size of the DuoVector .
+  Deallocate all elements.
+  */
+  void clear(void) {
+    for (size_t i = 0; i < size(); ++i) { dealloc(i); }
+  }
+
+  // Property methods
+  /**
+  Get the size of the DuoVector.
   */
   size_t size(void) const { return raw_data_.size(); }
 
