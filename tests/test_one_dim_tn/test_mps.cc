@@ -238,6 +238,9 @@ TEST_F(TestMPS, TestIO) {
   for (size_t i = 0; i < 5; ++i) {
     EXPECT_EQ(mps2[i], mps[i]);
   }
+
+  mps.Dump("mps3", true);
+  EXPECT_TRUE(mps.empty());
 }
 
 

@@ -166,6 +166,24 @@ public:
   }
 
   /**
+  Dump MPS to HDD.
+
+  @param mps_path Path to the MPS directory.
+  @param release_mem Wheter release memory after dump.
+  */
+  void Dump(
+      const std::string &mps_path = kMpsPath,
+      const bool release_mem = false
+  ) {
+    if (!IsPathExist(mps_path)) { CreatPath(mps_path); }
+    std::string file;
+    for (size_t i = 0; i < this->size(); ++i) {
+      file = GenMPSTenName(mps_path, i);
+      this->DumpTen(i, file, release_mem);
+    }
+  }
+
+  /**
   Load MPS from HDD.
 
   @param mps_path Path to the MPS directory.
