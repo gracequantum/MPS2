@@ -45,11 +45,12 @@ TEST(TestTenVec, TestIO) {
   tenvec[1] = ten1;
   tenvec[2] = ten2;
   tenvec.DumpTen(0, "ten0." + kGQTenFileSuffix);
-  tenvec.DumpTen(1, "ten1." + kGQTenFileSuffix);
-  tenvec.DumpTen(2, "ten2." + kGQTenFileSuffix);
+  tenvec.DumpTen(1, "ten1." + kGQTenFileSuffix, true);
+  tenvec.DumpTen(2, "ten2." + kGQTenFileSuffix, false);
   tenvec.dealloc(0);
-  tenvec.dealloc(1);
   tenvec.dealloc(2);
+  EXPECT_TRUE(tenvec.empty());
+
   tenvec.LoadTen(0, "ten2." + kGQTenFileSuffix);
   tenvec.LoadTen(1, "ten0." + kGQTenFileSuffix);
   tenvec.LoadTen(2, "ten1." + kGQTenFileSuffix);

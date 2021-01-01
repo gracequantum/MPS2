@@ -65,6 +65,24 @@ public:
     ofs << (*this)[idx];
     ofs.close();
   }
+
+  /**
+  Dump element tensor to a file.
+
+  @param idx The index of the element.
+  @param file The element tensor will be dumped to this file.
+  @param release_mem Whether release memory after dump.
+  */
+  void DumpTen(
+      const size_t idx,
+      const std::string &file,
+      const bool release_mem = false
+  ) {
+    std::ofstream ofs(file, std::ofstream::binary);
+    ofs << (*this)[idx];
+    ofs.close();
+    if (release_mem) { this->dealloc(idx); }
+  }
 };
 } /* gqmps2 */
 #endif /* ifndef GQMPS2_ONE_DIM_TN_FRAMEWORK_TEN_VEC_H */
