@@ -16,7 +16,7 @@
 
 #include "gqmps2/algorithm/vmps/two_site_update_finite_vmps.h"    // SweepParams
 #include "gqmps2/one_dim_tn/mpo/mpo.h"                            // MPO
-#include "gqmps2/one_dim_tn/mps/mps.h"                            // MPS
+#include "gqmps2/one_dim_tn/mps/finite_mps/finite_mps.h"          // FiniteMPS
 #include "gqmps2/utilities.h"                                     // IsPathExist, CreatPath
 #include "gqmps2/one_dim_tn/framework/ten_vec.h"                  // TenVec
 #include "gqmps2/consts.h"
@@ -37,9 +37,6 @@
 
 namespace gqmps2 {
 using namespace gqten;
-
-
-// Forward declarations
 
 
 // Helpers
@@ -79,7 +76,7 @@ Function to perform two-site update finite vMPS algorithm.
 */
 template <typename TenElemT, typename QNT>
 GQTEN_Double TwoSiteFiniteVMPS(
-    MPS<TenElemT, QNT> &mps,
+    FiniteMPS<TenElemT, QNT> &mps,
     const MPO<GQTensor<TenElemT, QNT>> &mpo,
     const SweepParams &sweep_params
 ) {
@@ -106,7 +103,7 @@ GQTEN_Double TwoSiteFiniteVMPS(
 
 template <typename TenElemT, typename QNT>
 void InitEnvs(
-    MPS<TenElemT, QNT> &mps,
+    FiniteMPS<TenElemT, QNT> &mps,
     const MPO<GQTensor<TenElemT, QNT>> &mpo,
     const SweepParams &sweep_params) {
   using TenT = GQTensor<TenElemT, QNT>;
@@ -134,7 +131,7 @@ void InitEnvs(
     }
     mps.dealloc(N-i);
   }
-
+  assert(mps.empty());
 }
 
 
@@ -145,7 +142,7 @@ Function to perform a single two-site finite vMPS sweep.
 */
 template <typename TenElemT, typename QNT>
 double TwoSiteFiniteVMPSSweep(
-    MPS<TenElemT, QNT> &mps,
+    FiniteMPS<TenElemT, QNT> &mps,
     const MPO<GQTensor<TenElemT, QNT>> &mpo,
     const SweepParams &sweep_params
 ) {
@@ -166,7 +163,7 @@ double TwoSiteFiniteVMPSSweep(
 
 template <typename TenElemT, typename QNT>
 double TwoSiteFiniteVMPSUpdate(
-    MPS<TenElemT, QNT> &mps,
+    FiniteMPS<TenElemT, QNT> &mps,
     TenVec<GQTensor<TenElemT, QNT>> &lenvs,
     TenVec<GQTensor<TenElemT, QNT>> &renvs,
     const MPO<GQTensor<TenElemT, QNT>> &mpo,
@@ -345,7 +342,7 @@ double TwoSiteFiniteVMPSUpdate(
 
 template <typename TenElemT, typename QNT>
 void LoadRelatedTens(
-    MPS<TenElemT, QNT> &mps,
+    FiniteMPS<TenElemT, QNT> &mps,
     TenVec<GQTensor<TenElemT, QNT>> &lenvs,
     TenVec<GQTensor<TenElemT, QNT>> &renvs,
     const size_t target_site,
@@ -411,7 +408,7 @@ void LoadRelatedTens(
 
 template <typename TenElemT, typename QNT>
 void DumpRelatedTens(
-    MPS<TenElemT, QNT> &mps,
+    FiniteMPS<TenElemT, QNT> &mps,
     TenVec<GQTensor<TenElemT, QNT>> &lenvs,
     TenVec<GQTensor<TenElemT, QNT>> &renvs,
     const size_t target_site,
@@ -425,9 +422,9 @@ void DumpRelatedTens(
         renvs.dealloc(N - (target_site+2));
         mps.DumpTen(
             target_site,
-            GenMPSTenName(sweep_params.mps_path, target_site)
+            GenMPSTenName(sweep_params.mps_path, target_site),
+            true
         );
-        mps.dealloc(target_site);
         lenvs.DumpTen(
             target_site + 1,
             GenEnvTenName("l", target_site + 1, sweep_params.temp_path)
@@ -442,9 +439,9 @@ void DumpRelatedTens(
         renvs.dealloc(N - (target_site + 2));
         mps.DumpTen(
             target_site,
-            GenMPSTenName(sweep_params.mps_path, target_site)
+            GenMPSTenName(sweep_params.mps_path, target_site),
+            true
         );
-        mps.dealloc(target_site);
         lenvs.DumpTen(
             target_site + 1,
             GenEnvTenName("l", target_site + 1, sweep_params.temp_path)
@@ -456,9 +453,9 @@ void DumpRelatedTens(
         lenvs.dealloc((target_site+1) - 2);
         mps.DumpTen(
             target_site,
-            GenMPSTenName(sweep_params.mps_path, target_site)
+            GenMPSTenName(sweep_params.mps_path, target_site),
+            true
         );
-        mps.dealloc(target_site);
         auto next_renv_len = N - target_site;
         renvs.DumpTen(
             next_renv_len,
@@ -468,22 +465,22 @@ void DumpRelatedTens(
         renvs.dealloc(N - (target_site+1));
         mps.DumpTen(
             target_site,
-            GenMPSTenName(sweep_params.mps_path, target_site)
+            GenMPSTenName(sweep_params.mps_path, target_site),
+            true
         );
-        mps.dealloc(target_site);
         mps.DumpTen(
             target_site - 1,
-            GenMPSTenName(sweep_params.mps_path, target_site - 1)
+            GenMPSTenName(sweep_params.mps_path, target_site - 1),
+            true
         );
-        mps.dealloc(target_site - 1);
       } else {
         lenvs.dealloc((target_site+1) - 2);
         renvs.dealloc(N - (target_site+1));
         mps.DumpTen(
             target_site,
-            GenMPSTenName(sweep_params.mps_path, target_site)
+            GenMPSTenName(sweep_params.mps_path, target_site),
+            true
         );
-        mps.dealloc(target_site);
         auto next_renv_len = N - target_site;
         renvs.DumpTen(
             next_renv_len,
