@@ -3,7 +3,7 @@
 /*
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
 * Creation Date: 2019-05-11 14:37
-* 
+*
 * Description: GraceQ/MPS2 project. The main header file.
 */
 
@@ -13,6 +13,13 @@
 */
 #ifndef GQMPS2_GQMPS2_H
 #define GQMPS2_GQMPS2_H
+
+
+#define GQMPS2_VERSION_MAJOR "0"
+#define GQMPS2_VERSION_MINOR "2-alpha"
+#define GQMPS2_VERSION_PATCH "0"
+// GQMPS2_VERSION_DEVSTR to describe the development status, for example the git branch
+#define GQMPS2_VERSION_DEVSTR
 
 
 #include "gqmps2/case_params_parser.h"                              // CaseParamsParserBasic
