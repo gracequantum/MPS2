@@ -4,18 +4,18 @@
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
 * Creation Date: 2019-10-08 22:18
 *
-* Description: GraceQ/MPS2 project. Implementation details for MPS observation measurements.
+* Description: GraceQ/MPS2 project. Finite MPS observation measurements.
 */
 
 /**
 @file mps_measu.h
-@brief Observation measurements based on MPS.
+@brief Finite MPS observation measurements.
 */
-#ifndef GQMPS2_ONE_DIM_TN_MPS_MPS_MEASU_H
-#define GQMPS2_ONE_DIM_TN_MPS_MPS_MEASU_H
+#ifndef GQMPS2_ONE_DIM_TN_MPS_FINITE_MPS_FINITE_MPS_MEASU_H
+#define GQMPS2_ONE_DIM_TN_MPS_FINITE_MPS_FINITE_MPS_MEASU_H
 
 
-#include "gqmps2/one_dim_tn/mps/mps.h"    // MPS
+#include "gqmps2/one_dim_tn/mps/finite_mps/finite_mps.h"    // FiniteMPS
 #include "gqten/gqten.h"
 
 #include <string>
@@ -68,7 +68,7 @@ MeasuResElem<TenElemT> OneSiteOpAvg(
 
 template <typename TenElemT, typename QNT>
 MeasuResElem<TenElemT> MultiSiteOpAvg(
-    const MPS<TenElemT, QNT> &,
+    const FiniteMPS<TenElemT, QNT> &,
     const std::vector<GQTensor<TenElemT, QNT>> &,
     const std::vector<std::vector<GQTensor<TenElemT, QNT>>> &,
     const std::vector<size_t> &
@@ -76,7 +76,7 @@ MeasuResElem<TenElemT> MultiSiteOpAvg(
 
 template <typename TenElemT, typename QNT>
 MeasuResElem<TenElemT> MultiSiteOpAvg(
-    const MPS<TenElemT, QNT> &,
+    const FiniteMPS<TenElemT, QNT> &,
     const std::vector<GQTensor<TenElemT, QNT>> &,
     const std::vector<GQTensor<TenElemT, QNT>> &,
     const std::vector<size_t> &
@@ -84,7 +84,7 @@ MeasuResElem<TenElemT> MultiSiteOpAvg(
 
 template <typename TenElemT, typename QNT>
 TenElemT OpsVecAvg(
-    const MPS<TenElemT, QNT> &,
+    const FiniteMPS<TenElemT, QNT> &,
     const std::vector<GQTensor<TenElemT, QNT>> &,
     const size_t,
     const size_t
@@ -92,7 +92,7 @@ TenElemT OpsVecAvg(
 
 template <typename TenElemT, typename QNT>
 void CtrctMidTen(
-    const MPS<TenElemT, QNT> &, const size_t,
+    const FiniteMPS<TenElemT, QNT> &, const size_t,
     const GQTensor<TenElemT, QNT> &, const GQTensor<TenElemT, QNT> &,
     GQTensor<TenElemT, QNT> * &
 );
@@ -138,7 +138,7 @@ inline void DumpAvgVal(std::ofstream &ofs, const GQTEN_Complex avg) {
 
 // Measure one-site operator.
 /**
-Measure a single one-site operator on each sites of the MPS.
+Measure a single one-site operator on each sites of the finite MPS.
 
 @tparam TenElemT Type of the tensor element.
 @tparam QNT Quantum number type.
@@ -149,7 +149,7 @@ Measure a single one-site operator on each sites of the MPS.
 */
 template <typename TenElemT, typename QNT>
 MeasuRes<TenElemT> MeasureOneSiteOp(
-    MPS<TenElemT, QNT> &mps,
+    FiniteMPS<TenElemT, QNT> &mps,
     const GQTensor<TenElemT, QNT> &op,
     const std::string &res_file_basename
 ) {
@@ -165,7 +165,7 @@ MeasuRes<TenElemT> MeasureOneSiteOp(
 
 
 /**
-Measure a list of one-site operators on each sites of the MPS.
+Measure a list of one-site operators on each sites of the finite MPS.
 
 @tparam TenElemT Type of the tensor element.
 @tparam QNT Quantum number type.
@@ -176,7 +176,7 @@ Measure a list of one-site operators on each sites of the MPS.
 */
 template <typename TenElemT, typename QNT>
 MeasuResSet<TenElemT> MeasureOneSiteOp(
-    MPS<TenElemT, QNT> &mps,
+    FiniteMPS<TenElemT, QNT> &mps,
     const std::vector<GQTensor<TenElemT, QNT>> &ops,
     const std::vector<std::string> &res_file_basenames
 ) {
@@ -216,7 +216,7 @@ The insert operators \f$O_{k}\f$ can be different for each measure event.
 */
 template <typename TenElemT, typename QNT>
 MeasuRes<TenElemT> MeasureTwoSiteOp(
-    MPS<TenElemT, QNT> &mps,
+    FiniteMPS<TenElemT, QNT> &mps,
     const std::vector<GQTensor<TenElemT, QNT>> &phys_ops,
     const std::vector<std::vector<GQTensor<TenElemT, QNT>>> &inst_ops_set,
     const std::vector<std::vector<size_t>> &sites_set,
@@ -260,7 +260,7 @@ The insert operators \f$O_{k}\f$ must be same at each sites and for each measure
 */
 template <typename TenElemT, typename QNT>
 MeasuRes<TenElemT> MeasureTwoSiteOp(
-    MPS<TenElemT, QNT> &mps,
+    FiniteMPS<TenElemT, QNT> &mps,
     const std::vector<GQTensor<TenElemT, QNT>> &phys_ops,
     const GQTensor<TenElemT, QNT> &inst_op,
     const std::vector<std::vector<size_t>> &sites_set,
@@ -300,7 +300,7 @@ should be defined by the user in each measure events.
 */
 template <typename TenElemT, typename QNT>
 MeasuRes<TenElemT> MeasureMultiSiteOp(
-    MPS<TenElemT, QNT> &mps,
+    FiniteMPS<TenElemT, QNT> &mps,
     const TenVV<TenElemT, QNT> &phys_ops_set,
     const TenVVV<TenElemT, QNT> &inst_ops_set_set,
     const std::vector<std::vector<size_t>> &sites_set,
@@ -341,7 +341,7 @@ operators are the same.
 */
 template <typename TenElemT, typename QNT>
 MeasuRes<TenElemT> MeasureMultiSiteOp(
-    MPS<TenElemT, QNT> &mps,
+    FiniteMPS<TenElemT, QNT> &mps,
     const TenVV<TenElemT, QNT> &phys_ops_set,
     const TenVV<TenElemT, QNT> &inst_ops_set,
     const std::vector<std::vector<size_t>> &sites_set,
@@ -404,7 +404,7 @@ MeasuResElem<TenElemT> OneSiteOpAvg(
 
 template <typename TenElemT, typename QNT>
 MeasuResElem<TenElemT> MultiSiteOpAvg(
-    const MPS<TenElemT, QNT> &mps,
+    const FiniteMPS<TenElemT, QNT> &mps,
     const std::vector<GQTensor<TenElemT, QNT>> &phys_ops,
     const TenVV<TenElemT, QNT> &inst_ops_set,
     const std::vector<size_t> &sites
@@ -438,7 +438,7 @@ MeasuResElem<TenElemT> MultiSiteOpAvg(
 
 template <typename TenElemT, typename QNT>
 MeasuResElem<TenElemT> MultiSiteOpAvg(
-    MPS<TenElemT, QNT> &mps,
+    FiniteMPS<TenElemT, QNT> &mps,
     const std::vector<GQTensor<TenElemT, QNT>> &phys_ops,
     const std::vector<GQTensor<TenElemT, QNT>> &inst_ops,
     const std::vector<size_t> &sites
@@ -462,7 +462,7 @@ MeasuResElem<TenElemT> MultiSiteOpAvg(
 
 template <typename TenElemT, typename QNT>
 TenElemT OpsVecAvg(
-    const MPS<TenElemT, QNT> &mps,      // Has been centralized to head_site
+    const FiniteMPS<TenElemT, QNT> &mps,      // Has been centralized to head_site
     const std::vector<GQTensor<TenElemT, QNT>> &ops,
     const size_t head_site,
     const size_t tail_site
@@ -528,7 +528,7 @@ TenElemT OpsVecAvg(
 
 template <typename TenElemT, typename QNT>
 void CtrctMidTen(
-    const MPS<TenElemT, QNT> &mps,
+    const FiniteMPS<TenElemT, QNT> &mps,
     const size_t site,
     const GQTensor<TenElemT, QNT> &op,
     const GQTensor<TenElemT, QNT> &id_op,
@@ -583,4 +583,4 @@ void DumpMeasuRes(
   ofs.close();
 }
 } /* gqmps2 */ 
-#endif /* ifndef GQMPS2_ONE_DIM_TN_MPS_MPS_MEASU_H */
+#endif /* ifndef GQMPS2_ONE_DIM_TN_MPS_FINITE_MPS_FINITE_MPS_MEASU_H */

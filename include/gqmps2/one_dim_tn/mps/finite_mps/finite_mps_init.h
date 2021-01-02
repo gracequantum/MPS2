@@ -3,13 +3,13 @@
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
 * Creation Date: 2019-09-29 22:11
 *
-* Description: GraceQ/MPS2 project. MPS initializations.
+* Description: GraceQ/MPS2 project. Finite MPS initializations.
 */
-#ifndef GQMPS2_ONE_DIM_TN_MPS_MPS_INIT_H
-#define GQMPS2_ONE_DIM_TN_MPS_MPS_INIT_H
+#ifndef GQMPS2_ONE_DIM_TN_MPS_FINITE_MPS_FINITE_MPS_INIT_H
+#define GQMPS2_ONE_DIM_TN_MPS_FINITE_MPS_FINITE_MPS_INIT_H
 
 
-#include "gqmps2/one_dim_tn/mps/mps.h"    // MPS
+#include "gqmps2/one_dim_tn/mps/finite_mps/finite_mps.h"    // FiniteMPS
 #include "gqten/gqten.h"
 
 #ifdef Release
@@ -209,9 +209,12 @@ using  namespace gqten;
 //}
 
 
+/**
+Initialize a finite MPS as a direct product state.
+*/
 template <typename TenElemT, typename QNT>
 void DirectStateInitMps(
-    MPS<TenElemT, QNT> &mps,
+    FiniteMPS<TenElemT, QNT> &mps,
     const std::vector<size_t> &stat_labs,
     const QNT &zero_div
 ) {
@@ -259,9 +262,12 @@ void DirectStateInitMps(
 }
 
 
+/**
+Initialize a finite MPS as a extended direct product state.
+*/
 template <typename TenElemT, typename QNT>
 void ExtendDirectRandomInitMps(
-    MPS<TenElemT, QNT> &mps,
+    FiniteMPS<TenElemT, QNT> &mps,
     const std::vector<std::vector<size_t>> &stat_labs_set,
     const QNT &zero_div,
     const size_t enlarged_dim
@@ -323,4 +329,4 @@ void ExtendDirectRandomInitMps(
   mps[0].Normalize();
 }
 } /* gqmps2 */
-#endif /* ifndef GQMPS2_ONE_DIM_TN_MPS_MPS_INIT_H */
+#endif /* ifndef GQMPS2_ONE_DIM_TN_MPS_FINITE_MPS_FINITE_MPS_INIT_H */

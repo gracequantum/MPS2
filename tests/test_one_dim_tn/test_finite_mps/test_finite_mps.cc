@@ -6,7 +6,7 @@
 *
 * Description: GraceQ/MPS2 project. Unittests for MPS .
 */
-#include "gqmps2/one_dim_tn/mps/mps.h"
+#include "gqmps2/one_dim_tn/mps/finite_mps/finite_mps.h"
 #include "gqten/gqten.h"
 #include "gtest/gtest.h"
 
@@ -25,7 +25,7 @@ using DGQTensor = GQTensor<GQTEN_Double, U1QN>;
 using Tensor = DGQTensor;
 
 using SiteVecT = SiteVec<GQTEN_Double, U1QN>;
-using MPST = MPS<GQTEN_Double, U1QN>;
+using MPST = FiniteMPS<GQTEN_Double, U1QN>;
 
 
 struct TestMPS : public testing::Test {

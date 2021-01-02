@@ -63,13 +63,13 @@ add_unittest(test_ten_vec
 )
 
 # Test MPS class
-add_unittest(test_mps
-  "test_one_dim_tn/test_mps.cc"
+add_unittest(test_finite_mps
+  "test_one_dim_tn/test_finite_mps/test_finite_mps.cc"
   "" "" "${MATH_LIB_LINK_FLAGS}" ""
 )
 # Test MPS measurement.
-add_unittest(test_mps_measu
-  "test_one_dim_tn/test_mps_measu.cc"
+add_unittest(test_finite_mps_measu
+  "test_one_dim_tn/test_finite_mps/test_finite_mps_measu.cc"
   "" "" "${MATH_LIB_LINK_FLAGS}" ""
 )
 

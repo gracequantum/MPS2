@@ -3,7 +3,7 @@
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
 * Creation Date: 2019-10-08 09:38
 * 
-* Description: GraceQ/MPS2 project. Unittest for MPS measurements.
+* Description: GraceQ/MPS2 project. Unittest for finite MPS measurements.
 */
 #include "gqmps2/one_dim_tn/mps_all.h"
 #include "gqten/gqten.h"
@@ -25,8 +25,8 @@ using ZGQTensor = GQTensor<GQTEN_Complex, U1QN>;
 
 using DSiteVec = SiteVec<GQTEN_Double, U1QN>;
 using ZSiteVec = SiteVec<GQTEN_Complex, U1QN>;
-using DMPS = MPS<GQTEN_Double, U1QN>;
-using ZMPS = MPS<GQTEN_Complex, U1QN>;
+using DMPS = FiniteMPS<GQTEN_Double, U1QN>;
+using ZMPS = FiniteMPS<GQTEN_Complex, U1QN>;
 
 
 inline void ExpectDoubleEq(const double lhs, const double rhs) {
@@ -81,7 +81,7 @@ struct TestMpsMeasurement : public testing::Test {
 
 template <typename TenElemT, typename QNT>
 void RunTestMeasureOneSiteOpCase(
-    MPS<TenElemT, QNT> &mps,
+    FiniteMPS<TenElemT, QNT> &mps,
     const GQTensor<TenElemT, QNT> &op,
     const std::vector<TenElemT> &res
 ) {
@@ -121,7 +121,7 @@ TEST_F(TestMpsMeasurement, TestMeasureOneSiteOp) {
 
 template <typename TenElemT, typename QNT>
 void RunTestMeasureTwoSiteOpCase(
-    MPS<TenElemT, QNT> &mps,
+    FiniteMPS<TenElemT, QNT> &mps,
     const std::vector<GQTensor<TenElemT, QNT>> &phys_ops,
     const GQTensor<TenElemT, QNT> &inst_op,
     const std::vector<std::vector<size_t>> &sites_set,
