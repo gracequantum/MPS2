@@ -1,0 +1,25 @@
+This file contains a list of people who have made contributions to the
+GraceQ/MPS2.
+
+Names should be added to this file as:
+  Name <email address>
+
+
+Current developer and maintainer:
+  Rong-Yang Sun <sun-rongyang@outlook.com>
+
+
+Original (before version 0.1) developers:
+  Rong-Yang Sun <sun-rongyang@outlook.com>
+  Cheng Peng <cpeng18@stanford.edu>
+
+
+Feature contributors:
+  Hao-Xin Wang <wanghx18@mails.tsinghua.edu.cn>
+    * DMRG for nonuniform sites in version 0.1.
+    * Two-site DMRG with noise in version 0.1.
+
+
+Bug reporters:
+  Hao-Kai Zhang <zhk20@mails.tsinghua.edu.cn>
+    * Small bug for finite MPS observation measurements.
