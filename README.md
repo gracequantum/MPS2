@@ -8,7 +8,7 @@ _Easily push your bond dimension to 10k_
 [![Documentation Status](https://readthedocs.org/projects/gqmps2-doc/badge/?version=latest)](https://mps2.gracequantum.org/en/latest/?badge=latest)
 
 ### Last release
-- [v0.2-alpha.0](https://github.com/gracequantum/MPS2/releases/latest)
+- [v0.2-alpha.1](https://github.com/gracequantum/MPS2/releases/latest)
 
 
 ## Project homepage

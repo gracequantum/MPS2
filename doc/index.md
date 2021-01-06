@@ -15,7 +15,7 @@ _Easily push your bond dimension to 10k_
 
 
 ## Newest version
-- version [0.2-alpha.0](https://github.com/gracequantum/MPS2/releases/latest)
+- version [0.2-alpha.1](https://github.com/gracequantum/MPS2/releases/latest)
 
 
 ## Current developers and maintainers

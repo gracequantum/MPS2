@@ -17,7 +17,7 @@
 
 #define GQMPS2_VERSION_MAJOR "0"
 #define GQMPS2_VERSION_MINOR "2-alpha"
-#define GQMPS2_VERSION_PATCH "0"
+#define GQMPS2_VERSION_PATCH "1"
 // GQMPS2_VERSION_DEVSTR to describe the development status, for example the git branch
 #define GQMPS2_VERSION_DEVSTR
 
