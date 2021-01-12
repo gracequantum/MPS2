@@ -2,11 +2,12 @@
 /*
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
 * Creation Date: 2019-09-24 17:46
-* 
+*
 * Description: GraceQ/MPS2 project. Implementation details for Lanczos solver.
 */
 #include "gqmps2/algorithm/lanczos_solver.h"    // LanczosParams
 #include "gqten/gqten.h"
+#include "gqten/utility/timer.h"                // Timer
 
 
 #include <iostream>
@@ -121,8 +122,7 @@ LanczosRes<TenT> LanczosSolver(
   bases[0] = pinit_state;
 
 #ifdef GQMPS2_TIMING_MODE
-  Timer mat_vec_timer("mat_vec");
-  mat_vec_timer.Restart();
+  Timer mat_vec_timer("lancz_mat_vec");
 #endif
 
   auto last_mat_mul_vec_res = (*eff_ham_mul_state)(rpeff_ham, bases[0]);

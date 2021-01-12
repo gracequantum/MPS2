@@ -171,7 +171,11 @@ double TwoSiteFiniteVMPSUpdate(
     const char dir,
     const size_t target_site
 ) {
-  Timer update_timer("update");
+  Timer update_timer("two_site_fvmps_update");
+
+#ifdef GQMPS2_TIMING_MODE
+  Timer preprocessing_timer("two_site_fvmps_preprocessing");
+#endif
 
   // Assign some parameters
   auto N = mps.size();
@@ -231,6 +235,10 @@ double TwoSiteFiniteVMPSUpdate(
   // Load to-be-used tensors
   LoadRelatedTens(mps, lenvs, renvs, target_site, dir, sweep_params);
 
+#ifdef GQMPS2_TIMING_MODE
+  preprocessing_timer.PrintElapsed();
+#endif
+
   // Lanczos
   using TenT = GQTensor<TenElemT, QNT>;
   std::vector<TenT *>eff_ham(4);
@@ -241,15 +249,24 @@ double TwoSiteFiniteVMPSUpdate(
   eff_ham[3] = renvs(renv_len);
   auto init_state = new TenT;
   Contract(&mps[lsite_idx], &mps[rsite_idx], init_state_ctrct_axes, init_state);
-  Timer lancz_timer("Lancz");
+  Timer lancz_timer("two_site_fvmps_lancz");
   auto lancz_res = LanczosSolver(
                        eff_ham, init_state,
                        sweep_params.lancz_params,
                        where
                    );
+
+#ifdef GQMPS2_TIMING_MODE
+  auto lancz_elapsed_time = lancz_timer.PrintElapsed();
+#else
   auto lancz_elapsed_time = lancz_timer.Elapsed();
+#endif
 
   // SVD and measure entanglement entropy
+#ifdef GQMPS2_TIMING_MODE
+  Timer svd_timer("two_site_fvmps_svd");
+#endif
+
   TenT u, vt;
   using DTenT = GQTensor<GQTEN_Double, QNT>;
   DTenT s;
@@ -264,7 +281,15 @@ double TwoSiteFiniteVMPSUpdate(
   delete lancz_res.gs_vec;
   auto ee = MeasureEE(s, D);
 
+#ifdef GQMPS2_TIMING_MODE
+  svd_timer.PrintElapsed();
+#endif
+
   // Update MPS local tensor
+#ifdef GQMPS2_TIMING_MODE
+  Timer update_mps_ten_timer("two_site_fvmps_update_mps_ten");
+#endif
+
   TenT the_other_mps_ten;
   switch (dir) {
     case 'r':
@@ -281,7 +306,15 @@ double TwoSiteFiniteVMPSUpdate(
       assert(false);
   }
 
+#ifdef GQMPS2_TIMING_MODE
+  update_mps_ten_timer.PrintElapsed();
+#endif
+
   // Update environment tensors
+#ifdef GQMPS2_TIMING_MODE
+  Timer update_env_ten_timer("two_site_fvmps_update_env_ten");
+#endif
+
   switch (dir) {
     case 'r':
       if (target_site != N-2) {
@@ -323,8 +356,20 @@ double TwoSiteFiniteVMPSUpdate(
       assert(false);
   }
 
+#ifdef GQMPS2_TIMING_MODE
+  update_env_ten_timer.PrintElapsed();
+#endif
+
   // Dump related tensor to HD and remove unused tensor from RAM
+#ifdef GQMPS2_TIMING_MODE
+  Timer postprocessing_timer("two_site_fvmps_postprocessing");
+#endif
+
   DumpRelatedTens(mps, lenvs, renvs, target_site, dir, sweep_params);
+
+#ifdef GQMPS2_TIMING_MODE
+  postprocessing_timer.PrintElapsed();
+#endif
 
   auto update_elapsed_time = update_timer.Elapsed();
   std::cout << "Site " << std::setw(4) << target_site
