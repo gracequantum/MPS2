@@ -8,7 +8,7 @@
 */
 
 /**
-@file mps_measu.h
+@file finite_mps_measu.h
 @brief Finite MPS observation measurements.
 */
 #ifndef GQMPS2_ONE_DIM_TN_MPS_FINITE_MPS_FINITE_MPS_MEASU_H
