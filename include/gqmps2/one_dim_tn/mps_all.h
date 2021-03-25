@@ -21,6 +21,7 @@
 #include "gqmps2/one_dim_tn/mps/finite_mps/finite_mps.h"
 #include "gqmps2/one_dim_tn/mps/finite_mps/finite_mps_init.h"
 #include "gqmps2/one_dim_tn/mps/finite_mps/finite_mps_measu.h"
+#include "gqmps2/one_dim_tn/mps/finite_mps/finite_mps_ops.h"
 
 
 #endif /* ifndef GQMPS2_ONE_DIM_TN_MPS_ALL_H */
