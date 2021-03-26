@@ -120,6 +120,19 @@ public:
     return *this;
   }
 
+  /**
+  Equivalence check.
+
+  @param rhs A SiteVec instance.
+  */
+  bool operator==(const SiteVec &rhs) const {
+    return sites == rhs.sites;
+  }
+
+  bool operator!=(const SiteVec &rhs) const {
+    return !(*this == rhs);
+  }
+
   size_t size;                  ///< The size of the SiteVec, i.e. the size of the system.
   IndexVec<QNT> sites;          ///< Local Hilbert spaces represented by a vector of Index with OUT direction.
   std::vector<TenT> id_ops;     ///< Identity operators on each site.

@@ -58,6 +58,8 @@ void RunTestSiteVecBasicFeatures(
   for (int i = 0; i < site_vec.size; ++i) {
     TestIsIdOp(site_vec.id_ops[i]);
   }
+
+  EXPECT_EQ(site_vec, site_vec);
 }
 
 
