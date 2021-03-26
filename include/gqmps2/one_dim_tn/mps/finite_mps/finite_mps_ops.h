@@ -35,7 +35,7 @@ template <typename TenElemT, typename QNT>
 void FiniteMPSAdd(
     const FiniteMPS<TenElemT, QNT> &mps_a,
     const FiniteMPS<TenElemT, QNT> &mps_b,
-    FiniteMPS<TenElemT, QNT> mps_c
+    FiniteMPS<TenElemT, QNT> &mps_c
 ) {
   assert(Div(mps_a[0]) == Div(mps_b[0]));
   assert(mps_a.size() == mps_b.size());   // TODO: should check SiteVecs
