@@ -19,6 +19,7 @@
 
 #include <vector>     // vector
 #include <utility>    // move
+#include <cstddef>    // size_t
 
 
 namespace gqmps2 {
