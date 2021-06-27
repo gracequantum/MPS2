@@ -96,7 +96,12 @@ public:
     return case_params_[item].get<bool>();
   }
 
-
+  /// Parse a std::vector<double> parameter.
+  std::vector<double> ParseDoubleVec(
+      const std:: string &item    ///< Parameter key.
+      ){
+    return case_params_[item].get<std::vector<double>>();
+  }
 private:
   json case_params_;
 };

@@ -29,6 +29,7 @@ struct SweepParams {
       const size_t sweeps,
       const size_t dmin, const size_t dmax, const double trunc_err,
       const LanczosParams &lancz_params,
+      const std::vector<double> noises = std::vector<double>(),
       const std::string mps_path = kMpsPath,
       const std::string temp_path = kRuntimeTempPath
   ) :
@@ -52,6 +53,9 @@ struct SweepParams {
 
   /// Runtime temporary files directory path
   std::string temp_path;
+
+  /// Noise magnitude each sweep
+  std::vector<double> noises;
 };
 } /* gqmps2 */
 
