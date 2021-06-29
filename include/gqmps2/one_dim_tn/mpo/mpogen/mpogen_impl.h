@@ -356,7 +356,10 @@ MPOGenerator<TenElemT, QNT>::HeadMpoTenRepr2MpoTen_(
     const IndexT &rvb,
     const TenElemVec &label_coef_mapping, const GQTensorVec &label_op_mapping
 ) {
-  auto mpo_ten = GQTensorT({pb_in_vector_.front(), rvb, pb_out_vector_.front()});
+  QNT qn_eg = rvb.GetQNSct(0).GetQn();
+  QNT qn0 = qn_eg - qn_eg;
+  IndexT lvb = IndexT({QNSctT(qn0, 1)}, GQTenIndexDirType::IN);
+  auto mpo_ten = GQTensorT({lvb, pb_in_vector_.front(), pb_out_vector_.front(), rvb});
   for (size_t y = 0; y < op_repr_mat.cols; ++y) {
     auto elem = op_repr_mat(0, y);
     if (elem != kNullOpRepr) {
@@ -374,7 +377,10 @@ MPOGenerator<TenElemT, QNT>::TailMpoTenRepr2MpoTen_(
     const SparOpReprMat &op_repr_mat,
     const IndexT &lvb,
     const TenElemVec &label_coef_mapping, const GQTensorVec &label_op_mapping) {
-  auto mpo_ten = GQTensorT({pb_in_vector_.back(), lvb, pb_out_vector_.back()});
+  QNT qn_eg = lvb.GetQNSct(0).GetQn();
+  QNT qn0 = qn_eg - qn_eg;
+  IndexT rvb = IndexT({QNSctT(qn0, 1)}, GQTenIndexDirType::OUT);
+  auto mpo_ten = GQTensorT({lvb, pb_in_vector_.back(), pb_out_vector_.back(), rvb});
   for (size_t x = 0; x < op_repr_mat.rows; ++x) {
     auto elem = op_repr_mat(x, 0);
     if (elem != kNullOpRepr) {
@@ -415,7 +421,7 @@ void AddOpToHeadMpoTen(TenT *pmpo_ten, const TenT &rop, const size_t rvb_coor) {
     for (size_t tpb_coor = 0; tpb_coor < rop.GetIndexes()[1].dim(); ++tpb_coor) {
       auto elem = rop.GetElem({bpb_coor, tpb_coor});
       if (elem != 0.0) {
-        (*pmpo_ten)(bpb_coor, rvb_coor, tpb_coor) = elem;
+        (*pmpo_ten)(0, bpb_coor, tpb_coor, rvb_coor) = elem;
       }
     }
   }
@@ -428,7 +434,7 @@ void AddOpToTailMpoTen(TenT *pmpo_ten, const TenT &rop, const size_t lvb_coor) {
     for (size_t tpb_coor = 0; tpb_coor < rop.GetIndexes()[1].dim(); ++tpb_coor) {
       auto elem = rop.GetElem({bpb_coor, tpb_coor});
       if (elem != 0.0) {
-        (*pmpo_ten)(bpb_coor, lvb_coor, tpb_coor) = elem;
+        (*pmpo_ten)(lvb_coor, bpb_coor, tpb_coor, 0) = elem;
       }
     }
   }

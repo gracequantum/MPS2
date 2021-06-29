@@ -44,8 +44,10 @@ template <typename DTenT>
 inline double MeasureEE(const DTenT &s, const size_t sdim) {
   double ee = 0;
   double p;
+  double singluar_value;
   for (size_t i = 0; i < sdim; ++i) {
-    p = std::pow(s(i, i), 2.0);
+    singluar_value = s(i, i);
+    p = singluar_value*singluar_value;
     ee += (-p * std::log(p));
   }
   return ee;
@@ -90,6 +92,9 @@ GQTEN_Double TwoSiteFiniteVMPS(
 
   std::cout << "\n";
   GQTEN_Double e0;
+  mps.LoadTen(
+      1,
+      GenMPSTenName(sweep_params.mps_path, 1));
   for (size_t sweep = 1; sweep <= sweep_params.sweeps; ++sweep) {
     std::cout << "sweep " << sweep << std::endl;
     Timer sweep_timer("sweep");
@@ -97,6 +102,10 @@ GQTEN_Double TwoSiteFiniteVMPS(
     sweep_timer.PrintElapsed();
     std::cout << "\n";
   }
+  mps.DumpTen(
+      1,
+      GenMPSTenName(sweep_params.mps_path, 1),
+      true);
   return e0;
 }
 
@@ -105,32 +114,49 @@ template <typename TenElemT, typename QNT>
 void InitEnvs(
     FiniteMPS<TenElemT, QNT> &mps,
     const MPO<GQTensor<TenElemT, QNT>> &mpo,
-    const SweepParams &sweep_params) {
+    const SweepParams &sweep_params,
+    const unsigned int update_site_num = 2) {
   using TenT = GQTensor<TenElemT, QNT>;
   auto N = mps.size();
 
   TenT renv;
-  for (size_t i = 1; i <= N - 2; ++i) {
-    mps.LoadTen(N-i, GenMPSTenName(sweep_params.mps_path, N-i));
+  //Write a trivial right environment tensor to disk
+  mps.LoadTen(N-1, GenMPSTenName(sweep_params.mps_path, N-1));
+  auto mps_trivial_index = mps.back().GetIndexes()[2];
+  auto mpo_trivial_index_inv = InverseIndex(mpo.back().GetIndexes()[3]);
+  auto mps_trivial_index_inv = InverseIndex(mps_trivial_index);
+  renv = TenT({mps_trivial_index_inv, mpo_trivial_index_inv, mps_trivial_index});
+  renv({0,0,0}) = 1;
+  auto file = GenEnvTenName("r", 0, sweep_params.temp_path);
+  WriteGQTensorTOFile(renv, file);
+
+  //bulk right environment tensors
+  for (size_t i = 1; i <= N - update_site_num; ++i) {
+    if(i>1){mps.LoadTen(N-i, GenMPSTenName(sweep_params.mps_path, N-i));}
     auto file = GenEnvTenName("r", i, sweep_params.temp_path);
-    if (i == 1) {
-      TenT temp;
-      Contract(&mps[N-i], &mpo.back(), {{1}, {0}}, &temp);
-      auto mps_ten_dag = Dag(mps[N-i]);
-      Contract(&temp, &mps_ten_dag, {{2}, {1}}, &renv);
-      WriteGQTensorTOFile(renv, file);
-    } else {
-      TenT temp1;
-      Contract(&mps[N-i], &renv, {{2}, {0}}, &temp1);
-      renv = TenT();
-      TenT temp2;
-      Contract(&temp1, &mpo[N-i], {{1, 2}, {1, 3}}, &temp2);
-      auto mps_ten_dag = Dag(mps[N-i]);
-      Contract(&temp2, &mps_ten_dag, {{3, 1}, {1, 2}}, &renv);
-      WriteGQTensorTOFile(renv, file);
-    }
+    TenT temp1;
+    Contract(&mps[N-i], &renv, {{2}, {0}}, &temp1);
+    renv = TenT();
+    TenT temp2;
+    Contract(&temp1, &mpo[N-i], {{1, 2}, {1, 3}}, &temp2);
+    auto mps_ten_dag = Dag(mps[N-i]);
+    Contract(&temp2, &mps_ten_dag, {{3, 1}, {1, 2}}, &renv);
+    WriteGQTensorTOFile(renv, file);
     mps.dealloc(N-i);
   }
+
+  //Write a trivial left environment tensor to disk
+  TenT lenv;
+  mps.LoadTen(0, GenMPSTenName(sweep_params.mps_path, 0));
+  mps_trivial_index = mps.front().GetIndexes()[0];
+  mpo_trivial_index_inv = InverseIndex(mpo.front().GetIndexes()[0]);
+  mps_trivial_index_inv = InverseIndex(mps_trivial_index);
+  lenv = TenT({mps_trivial_index_inv, mpo_trivial_index_inv, mps_trivial_index});
+  lenv({0,0,0}) = 1;
+  file = GenEnvTenName("l", 0, sweep_params.temp_path);
+  WriteGQTensorTOFile(lenv, file);
+  mps.dealloc(0);
+
   assert(mps.empty());
 }
 
@@ -151,16 +177,28 @@ double TwoSiteFiniteVMPSSweep(
   TenVec<TenT> lenvs(N - 1);
   TenVec<TenT> renvs(N - 1);
   double e0;
-  for (size_t i = 0; i < N - 1; ++i) {
+
+  for (size_t i = 0; i < N - 2; ++i) {
+    // Load to-be-used tensors
+    LoadRelatedTens(mps, lenvs, renvs, i, 'r', sweep_params);
     e0 = TwoSiteFiniteVMPSUpdate(mps, lenvs, renvs, mpo, sweep_params, 'r', i);
+    DumpRelatedTens(mps, lenvs, renvs, i, 'r', sweep_params);
   }
-  for (size_t i = N-1; i > 0; --i) {
+  for (size_t i = N-1; i > 1; --i) {
+    LoadRelatedTens(mps, lenvs, renvs, i, 'l', sweep_params);
     e0 = TwoSiteFiniteVMPSUpdate(mps, lenvs, renvs, mpo, sweep_params, 'l', i);
+    DumpRelatedTens(mps, lenvs, renvs, i, 'l', sweep_params);
   }
   return e0;
 }
 
-
+/**  Single step for two site update.
+ *  This function includes below procedure:
+ *    ** update mps[lsite_idx]*mps[rsite_idx] tensors according corresponding environment tensors and these two mpo tensors,
+ *       using lanczos algorithm;
+ *    ** decompose and truncate mps[lsite_idx]*mps[rsite_idx] by svd decomposition. Canonical central are determined by the direction;
+ *    ** generate the next environment in the direction.
+ */
 template <typename TenElemT, typename QNT>
 double TwoSiteFiniteVMPSUpdate(
     FiniteMPS<TenElemT, QNT> &mps,
@@ -179,61 +217,33 @@ double TwoSiteFiniteVMPSUpdate(
 
   // Assign some parameters
   auto N = mps.size();
-  std::vector<std::vector<size_t>> init_state_ctrct_axes, us_ctrct_axes;
+  std::vector<std::vector<size_t>> init_state_ctrct_axes;
   std::string where;
   size_t svd_ldims;
   size_t lsite_idx, rsite_idx;
   size_t lenv_len, renv_len;
   std::string lblock_file, rblock_file;
+  init_state_ctrct_axes = {{2}, {0}};
+  where = "cent";
+  svd_ldims = 2;
   switch (dir) {
     case 'r':
       lsite_idx = target_site;
       rsite_idx = target_site + 1;
       lenv_len = target_site;
       renv_len = N - (target_site + 2);
-      if (target_site == 0) {
-        init_state_ctrct_axes = {{1}, {0}};
-        where = "lend";
-        svd_ldims = 1;
-      } else if (target_site == N-2) {
-        init_state_ctrct_axes = {{2}, {0}};
-        where = "rend";
-        svd_ldims = 2;
-      } else {
-        init_state_ctrct_axes = {{2}, {0}};
-        where = "cent";
-        svd_ldims = 2;
-      }
       break;
     case 'l':
       lsite_idx = target_site - 1;
       rsite_idx = target_site;
       lenv_len = target_site - 1;
       renv_len = N - target_site - 1;
-      if (target_site == N-1) {
-        init_state_ctrct_axes = {{2}, {0}};
-        where = "rend";
-        svd_ldims = 2;
-        us_ctrct_axes = {{2}, {0}};
-      } else if (target_site == 1) {
-        init_state_ctrct_axes = {{1}, {0}};
-        where = "lend";
-        svd_ldims = 1;
-        us_ctrct_axes = {{1}, {0}};
-      } else {
-        init_state_ctrct_axes = {{2}, {0}};
-        where = "cent";
-        svd_ldims = 2;
-        us_ctrct_axes = {{2}, {0}};
-      }
       break;
     default:
       std::cout << "dir must be 'r' or 'l', but " << dir << std::endl;
       exit(1);
   }
 
-  // Load to-be-used tensors
-  LoadRelatedTens(mps, lenvs, renvs, target_site, dir, sweep_params);
 
 #ifdef GQMPS2_TIMING_MODE
   preprocessing_timer.PrintElapsed();
@@ -255,7 +265,6 @@ double TwoSiteFiniteVMPSUpdate(
                        sweep_params.lancz_params,
                        where
                    );
-
 #ifdef GQMPS2_TIMING_MODE
   auto lancz_elapsed_time = lancz_timer.PrintElapsed();
 #else
@@ -298,7 +307,7 @@ double TwoSiteFiniteVMPSUpdate(
       mps[rsite_idx] = std::move(the_other_mps_ten);
       break;
     case 'l':
-      Contract(&u, &s, us_ctrct_axes, &the_other_mps_ten);
+      Contract(&u, &s, {{2}, {0}}, &the_other_mps_ten);
       mps[lsite_idx] = std::move(the_other_mps_ten);
       mps[rsite_idx] = std::move(vt);
       break;
@@ -316,42 +325,22 @@ double TwoSiteFiniteVMPSUpdate(
 #endif
 
   switch (dir) {
-    case 'r':
-      if (target_site != N-2) {
-        if (target_site == 0) {
-          TenT temp, lenv_ten;
-          Contract(&mps[target_site], &mpo[target_site], {{0}, {0}}, &temp);
-          auto mps_ten_dag = Dag(mps[target_site]);
-          Contract(&temp, &mps_ten_dag, {{2}, {0}}, &lenv_ten);
-          lenvs[lenv_len + 1] = std::move(lenv_ten);
-        } else {
-          TenT temp1, temp2, lenv_ten;
-          Contract(&lenvs[lenv_len], &mps[target_site], {{0}, {0}}, &temp1);
-          Contract(&temp1, &mpo[target_site], {{0, 2}, {0, 1}}, &temp2);
-          auto mps_ten_dag = Dag(mps[target_site]);
-          Contract(&temp2, &mps_ten_dag, {{0 ,2}, {0, 1}}, &lenv_ten);
-          lenvs[lenv_len + 1] = std::move(lenv_ten);
-        }
-      }
-      break;
-    case 'l':
-      if (target_site != 1) {
-        if (target_site == N-1) {
-          TenT temp, renv_ten;
-          Contract(&mps[target_site], &mpo[target_site], {{1}, {0}}, &temp);
-          auto mps_ten_dag = Dag(mps[target_site]);
-          Contract(&temp, &mps_ten_dag, {{2}, {1}}, &renv_ten);
-          renvs[renv_len + 1] = std::move(renv_ten);
-        } else {
-          TenT temp1, temp2, renv_ten;
-          Contract(&mps[target_site], eff_ham[3], {{2}, {0}}, &temp1);
-          Contract(&temp1, &mpo[target_site], {{1, 2}, {1, 3}}, &temp2);
-          auto mps_ten_dag = Dag(mps[target_site]);
-          Contract(&temp2, &mps_ten_dag, {{3, 1}, {1, 2}}, &renv_ten);
-          renvs[renv_len + 1] = std::move(renv_ten);
-        }
-      }
-      break;
+    case 'r':{
+      TenT temp1, temp2, lenv_ten;
+      Contract(&lenvs[lenv_len], &mps[target_site], {{0}, {0}}, &temp1);
+      Contract(&temp1, &mpo[target_site], {{0, 2}, {0, 1}}, &temp2);
+      auto mps_ten_dag = Dag(mps[target_site]);
+      Contract(&temp2, &mps_ten_dag, {{0 ,2}, {0, 1}}, &lenv_ten);
+      lenvs[lenv_len + 1] = std::move(lenv_ten);
+    }break;
+    case 'l':{
+      TenT temp1, temp2, renv_ten;
+      Contract(&mps[target_site], eff_ham[3], {{2}, {0}}, &temp1);
+      Contract(&temp1, &mpo[target_site], {{1, 2}, {1, 3}}, &temp2);
+      auto mps_ten_dag = Dag(mps[target_site]);
+      Contract(&temp2, &mps_ten_dag, {{3, 1}, {1, 2}}, &renv_ten);
+      renvs[renv_len + 1] = std::move(renv_ten);
+    }break;
     default:
       assert(false);
   }
@@ -365,7 +354,6 @@ double TwoSiteFiniteVMPSUpdate(
   Timer postprocessing_timer("two_site_fvmps_postprocessing");
 #endif
 
-  DumpRelatedTens(mps, lenvs, renvs, target_site, dir, sweep_params);
 
 #ifdef GQMPS2_TIMING_MODE
   postprocessing_timer.PrintElapsed();
@@ -402,19 +390,15 @@ void LoadRelatedTens(
             target_site,
             GenMPSTenName(sweep_params.mps_path, target_site)
         );
-        mps.LoadTen(
-            target_site + 1,
-            GenMPSTenName(sweep_params.mps_path, target_site + 1)
-        );
+
         auto renv_len = N - (target_site + 2);
         auto renv_file = GenEnvTenName("r", renv_len, sweep_params.temp_path);
         renvs.LoadTen(renv_len, renv_file);
         RemoveFile(renv_file);
-      } else if (target_site == N-2) {
-        mps.LoadTen(
-            target_site + 1,
-            GenMPSTenName(sweep_params.mps_path, target_site + 1)
-        );
+
+        auto lenv_len = 0;
+        auto lenv_file = GenEnvTenName("l", lenv_len, sweep_params.temp_path);
+        lenvs.LoadTen(lenv_len, lenv_file);
       } else {
         mps.LoadTen(
             target_site + 1,
@@ -428,12 +412,17 @@ void LoadRelatedTens(
       break;
     case 'l':
       if (target_site == N-1) {
-        // Do nothing
-      } else if (target_site == 1) {
         mps.LoadTen(
-            target_site - 1,
-            GenMPSTenName(sweep_params.mps_path, target_site - 1)
+            target_site,
+            GenMPSTenName(sweep_params.mps_path, target_site)
         );
+        auto renv_len = 0;
+        auto renv_file = GenEnvTenName("r", renv_len, sweep_params.temp_path);
+        renvs.LoadTen(renv_len, renv_file);
+
+        auto lenv_len = N-2;
+        auto lenv_file = GenEnvTenName("l", lenv_len, sweep_params.temp_path);
+        RemoveFile(lenv_file);
       } else {
         mps.LoadTen(
             target_site - 1,
@@ -462,77 +451,29 @@ void DumpRelatedTens(
 ) {
   auto N = mps.size();
   switch (dir) {
-    case 'r':
-      if (target_site == 0) {
-        renvs.dealloc(N - (target_site+2));
-        mps.DumpTen(
-            target_site,
-            GenMPSTenName(sweep_params.mps_path, target_site),
-            true
-        );
-        lenvs.DumpTen(
-            target_site + 1,
-            GenEnvTenName("l", target_site + 1, sweep_params.temp_path)
-        );
-      } else if (target_site == N-2) {
-        mps.DumpTen(
-            target_site,
-            GenMPSTenName(sweep_params.mps_path, target_site)
-        );
-      } else {
-        lenvs.dealloc(target_site);
-        renvs.dealloc(N - (target_site + 2));
-        mps.DumpTen(
-            target_site,
-            GenMPSTenName(sweep_params.mps_path, target_site),
-            true
-        );
-        lenvs.DumpTen(
-            target_site + 1,
-            GenEnvTenName("l", target_site + 1, sweep_params.temp_path)
-        );
-      }
-      break;
-    case 'l':
-      if (target_site == N - 1) {
-        lenvs.dealloc((target_site+1) - 2);
-        mps.DumpTen(
-            target_site,
-            GenMPSTenName(sweep_params.mps_path, target_site),
-            true
-        );
-        auto next_renv_len = N - target_site;
-        renvs.DumpTen(
-            next_renv_len,
-            GenEnvTenName("r", next_renv_len, sweep_params.temp_path)
-        );
-      } else if (target_site == 1) {
-        renvs.dealloc(N - (target_site+1));
-        mps.DumpTen(
-            target_site,
-            GenMPSTenName(sweep_params.mps_path, target_site),
-            true
-        );
-        mps.DumpTen(
-            target_site - 1,
-            GenMPSTenName(sweep_params.mps_path, target_site - 1),
-            true
-        );
-      } else {
-        lenvs.dealloc((target_site+1) - 2);
-        renvs.dealloc(N - (target_site+1));
-        mps.DumpTen(
-            target_site,
-            GenMPSTenName(sweep_params.mps_path, target_site),
-            true
-        );
-        auto next_renv_len = N - target_site;
-        renvs.DumpTen(
-            next_renv_len,
-            GenEnvTenName("r", next_renv_len, sweep_params.temp_path)
-        );
-      }
-      break;
+    case 'r':{
+      lenvs.dealloc(target_site);
+      renvs.dealloc(N - (target_site + 2));
+      mps.DumpTen(
+          target_site,
+          GenMPSTenName(sweep_params.mps_path, target_site),
+          true);
+      lenvs.DumpTen(
+          target_site + 1,
+          GenEnvTenName("l", target_site + 1, sweep_params.temp_path));
+    }break;
+    case 'l':{
+      lenvs.dealloc((target_site+1) - 2);
+      renvs.dealloc(N - (target_site+1));
+      mps.DumpTen(
+          target_site,
+          GenMPSTenName(sweep_params.mps_path, target_site),
+          true);
+      auto next_renv_len = N - target_site;
+      renvs.DumpTen(
+          next_renv_len,
+          GenEnvTenName("r", next_renv_len, sweep_params.temp_path));
+    }break;
     default:
       assert(false);
   }

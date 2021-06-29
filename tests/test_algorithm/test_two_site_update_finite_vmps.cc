@@ -146,7 +146,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DIsing) {
                       );
   std::vector<size_t> stat_labs;
   for (size_t i = 0; i < N; ++i) { stat_labs.push_back(i % 2); }
-  DirectStateInitMps(dmps, stat_labs, qn0);
+  DirectStateInitMps(dmps, stat_labs);
   dmps.Dump(sweep_params.mps_path, true);
   RunTestTwoSiteAlgorithmCase(dmps, dmpo, sweep_params, -0.25*(N-1), 1.0E-10);
 
@@ -175,7 +175,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DIsing) {
                      1, 10, 1.0E-5,
                      LanczosParams(1.0E-7)
                  );
-  DirectStateInitMps(zmps, stat_labs, qn0);
+  DirectStateInitMps(zmps, stat_labs);
   zmps.Dump(sweep_params.mps_path, true);
   RunTestTwoSiteAlgorithmCase(zmps, zmpo, sweep_params, -0.25*(N-1), 1.0E-10);
 
@@ -205,7 +205,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DHeisenberg) {
                       );
   std::vector<size_t> stat_labs;
   for (size_t i = 0; i < N; ++i) { stat_labs.push_back(i % 2); }
-  DirectStateInitMps(dmps, stat_labs, qn0);
+  DirectStateInitMps(dmps, stat_labs);
   dmps.Dump(sweep_params.mps_path, true);
   RunTestTwoSiteAlgorithmCase(
       dmps, dmpo, sweep_params,
@@ -235,7 +235,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DHeisenberg) {
                      8, 8, 1.0E-9,
                      LanczosParams(1.0E-7)
                  );
-  DirectStateInitMps(zmps, stat_labs, qn0);
+  DirectStateInitMps(zmps, stat_labs);
   zmps.Dump(sweep_params.mps_path, true);
   RunTestTwoSiteAlgorithmCase(
       zmps, zmpo, sweep_params,
@@ -273,7 +273,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DHeisenberg) {
   // Test direct product state initialization.
   std::vector<size_t> stat_labs;
   for (size_t i = 0; i < N; ++i) { stat_labs.push_back(i % 2); }
-  DirectStateInitMps(dmps, stat_labs, qn0);
+  DirectStateInitMps(dmps, stat_labs);
   dmps.Dump(sweep_params.mps_path, true);
   RunTestTwoSiteAlgorithmCase(
       dmps, dmpo, sweep_params,
@@ -296,7 +296,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DHeisenberg) {
                      8, 8, 1.0E-9,
                      LanczosParams(1.0E-7)
                  );
-  DirectStateInitMps(zmps, stat_labs, qn0);
+  DirectStateInitMps(zmps, stat_labs);
   zmps.Dump(sweep_params.mps_path, true);
   RunTestTwoSiteAlgorithmCase(
       zmps, zmpo, sweep_params,
@@ -337,7 +337,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DKitaevSimpleCase) {
     stat_labs2.push_back((i+1)%2);
   }
   auto dmps_8sites = DMPS(dsite_vec);
-  ExtendDirectRandomInitMps(dmps_8sites, {stat_labs1, stat_labs2}, qn0, 2);
+  ExtendDirectRandomInitMps(dmps_8sites, {stat_labs1, stat_labs2}, 2);
   dmps_8sites.Dump(sweep_params.mps_path, true);
   RunTestTwoSiteAlgorithmCase(
       dmps_8sites, dmpo, sweep_params,
@@ -361,7 +361,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DKitaevSimpleCase) {
   }
   auto zmpo = zmpo_gen.Gen();
   auto zmps_8sites = ZMPS(zsite_vec);
-  ExtendDirectRandomInitMps(zmps_8sites, {stat_labs1, stat_labs2}, qn0, 2);
+  ExtendDirectRandomInitMps(zmps_8sites, {stat_labs1, stat_labs2}, 2);
   zmps_8sites.Dump(sweep_params.mps_path, true);
   RunTestTwoSiteAlgorithmCase(
       zmps_8sites, zmpo, sweep_params,
@@ -479,7 +479,7 @@ TEST(TestTwoSiteAlgorithmNoSymmetrySpinSystem, 2DKitaevComplexCase) {
                           60, 60, 1.0E-4,
                           LanczosParams(1.0E-10)
                       );
-  DirectStateInitMps(mps, stat_labs, zero_div);
+  DirectStateInitMps(mps, stat_labs);
   mps.Dump(sweep_params.mps_path, true);
   RunTestTwoSiteAlgorithmCase(mps, mpo, sweep_params, -4.57509167674, 2.0E-10);
   RemoveFolder(sweep_params.mps_path);
@@ -569,7 +569,7 @@ TEST_F(TestTwoSiteAlgorithmTjSystem2U1Symm, 1DCase) {
                           8, 8, 1.0E-9,
                           LanczosParams(1.0E-8, 20)
                       );
-  DirectStateInitMps(dmps, {2, 1, 2, 0}, qn0);
+  DirectStateInitMps(dmps, {2, 1, 2, 0});
   dmps.Dump(sweep_params.mps_path, true);
   RunTestTwoSiteAlgorithmCase(
       dmps, dmpo, sweep_params,
@@ -590,7 +590,7 @@ TEST_F(TestTwoSiteAlgorithmTjSystem2U1Symm, 1DCase) {
     zmpo_gen.AddTerm(J/2, zsm, i, zsp, i+1);
   }
   auto zmpo = zmpo_gen.Gen();
-  DirectStateInitMps(zmps, {2, 1, 2, 0}, qn0);
+  DirectStateInitMps(zmps, {2, 1, 2, 0});
   zmps.Dump(sweep_params.mps_path, true);
   RunTestTwoSiteAlgorithmCase(
       zmps, zmpo, sweep_params,
@@ -629,7 +629,7 @@ TEST_F(TestTwoSiteAlgorithmTjSystem2U1Symm, 2DCase) {
   auto zero_div = U1U1QN({QNCard("N",  U1QNVal(0)), QNCard("Sz",   U1QNVal(0))});
 
   // Direct product state initialization.
-  DirectStateInitMps(dmps, {2, 0, 1, 2}, zero_div);
+  DirectStateInitMps(dmps, {2, 0, 1, 2});
   dmps.Dump(sweep_params.mps_path, true);
   RunTestTwoSiteAlgorithmCase(
       dmps, dmpo, sweep_params,
@@ -650,7 +650,7 @@ TEST_F(TestTwoSiteAlgorithmTjSystem2U1Symm, 2DCase) {
     zmpo_gen.AddTerm(J/2, zsm, p.first, zsp, p.second);
   }
   auto zmpo = zmpo_gen.Gen();
-  DirectStateInitMps(zmps, {2, 0, 1, 2}, zero_div);
+  DirectStateInitMps(zmps, {2, 0, 1, 2});
   zmps.Dump(sweep_params.mps_path, true);
   RunTestTwoSiteAlgorithmCase(
       zmps, zmpo, sweep_params,
@@ -778,7 +778,7 @@ TEST_F(TestTwoSiteAlgorithmTjSystem1U1Symm, RashbaTermCase) {
                           LanczosParams(1.0E-14, 100)
                       );
   auto mps = ZMPS(site_vec);
-  DirectStateInitMps(mps, {0, 1, 0, 2, 0, 1}, qn0);
+  DirectStateInitMps(mps, {0, 1, 0, 2, 0, 1});
   mps.Dump(sweep_params.mps_path, true);
   RunTestTwoSiteAlgorithmCase(
       mps, mpo, sweep_params,
@@ -943,7 +943,7 @@ TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
   auto qn0 = U1U1QN({QNCard("Nup", U1QNVal(0)), QNCard("Ndn", U1QNVal(0))});
   std::vector<size_t> stat_labs(N);
   for (size_t i = 0; i < N; ++i) { stat_labs[i] = (i % 2 == 0 ? 1 : 2); }
-  DirectStateInitMps(dmps, stat_labs, qn0);
+  DirectStateInitMps(dmps, stat_labs);
   dmps.Dump(sweep_params.mps_path, true);
   RunTestTwoSiteAlgorithmCase(
       dmps, dmpo, sweep_params,
@@ -1001,7 +1001,7 @@ TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
     }
   }
   auto zmpo = zmpo_gen.Gen();
-  DirectStateInitMps(zmps, stat_labs, qn0);
+  DirectStateInitMps(zmps, stat_labs);
   zmps.Dump(sweep_params.mps_path, true);
   RunTestTwoSiteAlgorithmCase(
       zmps, zmpo, sweep_params,
@@ -1103,7 +1103,7 @@ TEST_F(TestKondoInsulatorSystem, doublechain) {
 
   std::vector<size_t> stat_labs;
   for (size_t i = 0; i < N; ++i) { stat_labs.push_back(i % 2); }
-  DirectStateInitMps(dmps, stat_labs, qn0);
+  DirectStateInitMps(dmps, stat_labs);
   dmps.Dump(sweep_params.mps_path, true);
 
   RunTestTwoSiteAlgorithmCase(
