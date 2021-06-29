@@ -164,7 +164,7 @@ void InitEnvs(
 /**
 Function to perform a single two-site finite vMPS sweep.
 
-@note Before the sweep and after the sweep, the MPS is empty.
+@note Before the sweep and after the sweep, the MPS only contains mps[1].
 */
 template <typename TenElemT, typename QNT>
 double TwoSiteFiniteVMPSSweep(
@@ -218,13 +218,11 @@ double TwoSiteFiniteVMPSUpdate(
   // Assign some parameters
   auto N = mps.size();
   std::vector<std::vector<size_t>> init_state_ctrct_axes;
-  std::string where;
   size_t svd_ldims;
   size_t lsite_idx, rsite_idx;
   size_t lenv_len, renv_len;
   std::string lblock_file, rblock_file;
   init_state_ctrct_axes = {{2}, {0}};
-  where = "cent";
   svd_ldims = 2;
   switch (dir) {
     case 'r':
@@ -262,8 +260,8 @@ double TwoSiteFiniteVMPSUpdate(
   Timer lancz_timer("two_site_fvmps_lancz");
   auto lancz_res = LanczosSolver(
                        eff_ham, init_state,
-                       sweep_params.lancz_params,
-                       where
+                       &eff_ham_mul_two_site_state,
+                       sweep_params.lancz_params
                    );
 #ifdef GQMPS2_TIMING_MODE
   auto lancz_elapsed_time = lancz_timer.PrintElapsed();

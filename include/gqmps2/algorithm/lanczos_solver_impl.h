@@ -25,13 +25,9 @@ using namespace gqten;
 
 // Forward declarations.
 template <typename TenT>
-TenT *eff_ham_mul_state_cent(const std::vector<TenT *> &, TenT *);
-
+TenT *eff_ham_mul_two_site_state(const std::vector<TenT *> &, TenT *);
 template <typename TenT>
-TenT *eff_ham_mul_state_lend(const std::vector<TenT *> &, TenT *);
-
-template <typename TenT>
-TenT *eff_ham_mul_state_rend(const std::vector<TenT *> &, TenT *);
+TenT *eff_ham_mul_single_site_state(const std::vector<TenT *> &, TenT *);
 
 void TridiagGsSolver(
     const std::vector<double> &, const std::vector<double> &, const size_t,
@@ -81,35 +77,19 @@ template <typename TenT>
 LanczosRes<TenT> LanczosSolver(
     const std::vector<TenT *> &rpeff_ham,
     TenT *pinit_state,
-    const LanczosParams &params,
-    const std::string &where
+    TenT *(* eff_ham_mul_state)(const std::vector<TenT *> &, TenT *), //this is a pointer pointing to a function
+    const LanczosParams &params
 ) {
   // Take care that init_state will be destroyed after call the solver
-  size_t eff_ham_eff_dim = 1;
-  TenT *(* eff_ham_mul_state)(const std::vector<TenT *> &, TenT *) = nullptr;
-  std::vector<std::vector<size_t>> energy_measu_ctrct_axes;
+  size_t eff_ham_eff_dim = pinit_state->size();
+
   LanczosRes<TenT> lancz_res;
 
-  // Calculate position dependent parameters.
-  if (where == "cent") {
-    eff_ham_eff_dim *= rpeff_ham[0]->GetIndexes()[0].dim();
-    eff_ham_eff_dim *= rpeff_ham[1]->GetIndexes()[1].dim();
-    eff_ham_eff_dim *= rpeff_ham[2]->GetIndexes()[1].dim();
-    eff_ham_eff_dim *= rpeff_ham[3]->GetIndexes()[0].dim();
-    eff_ham_mul_state = &eff_ham_mul_state_cent;
+  std::vector<std::vector<size_t>> energy_measu_ctrct_axes;
+  if( pinit_state->Rank() ==3 ){
+    energy_measu_ctrct_axes = {{0, 1, 2}, {0, 1, 2}};
+  }else if( pinit_state->Rank() == 4 ){
     energy_measu_ctrct_axes = {{0, 1, 2, 3}, {0, 1, 2, 3}};
-  } else if (where == "lend") {
-    eff_ham_eff_dim *= rpeff_ham[1]->GetIndexes()[0].dim();
-    eff_ham_eff_dim *= rpeff_ham[2]->GetIndexes()[1].dim();
-    eff_ham_eff_dim *= rpeff_ham[3]->GetIndexes()[0].dim();
-    eff_ham_mul_state = &eff_ham_mul_state_lend;
-    energy_measu_ctrct_axes = {{0, 1, 2}, {0, 1, 2}};
-  } else if (where ==  "rend") {
-    eff_ham_eff_dim *= rpeff_ham[0]->GetIndexes()[0].dim();
-    eff_ham_eff_dim *= rpeff_ham[1]->GetIndexes()[1].dim();
-    eff_ham_eff_dim *= rpeff_ham[2]->GetIndexes()[0].dim();
-    eff_ham_mul_state = &eff_ham_mul_state_rend;
-    energy_measu_ctrct_axes = {{0, 1, 2}, {0, 1, 2}};
   }
 
   std::vector<TenT *> bases(params.max_iterations);
@@ -226,7 +206,7 @@ LanczosRes<TenT> LanczosSolver(
 
 
 template <typename TenT>
-TenT *eff_ham_mul_state_cent(const std::vector<TenT *> &eff_ham, TenT *state) {
+TenT *eff_ham_mul_two_site_state(const std::vector<TenT *> &eff_ham, TenT *state) {
   auto res = new TenT;
   Contract(eff_ham[0], state, {{0}, {0}}, res);
   InplaceContract(res, eff_ham[1], {{0, 2}, {0, 1}});
@@ -237,24 +217,13 @@ TenT *eff_ham_mul_state_cent(const std::vector<TenT *> &eff_ham, TenT *state) {
 
 
 template <typename TenT>
-TenT *eff_ham_mul_state_lend(const std::vector<TenT *> &eff_ham, TenT *state) {
+TenT *eff_ham_mul_single_site_state(const std::vector<TenT *> &eff_ham, TenT *state) {
   auto res = new TenT;
-  Contract(state, eff_ham[1], {{0}, {0}}, res);
-  InplaceContract(res, eff_ham[2], {{0, 2}, {1, 0}});
-  InplaceContract(res, eff_ham[3], {{0, 3}, {0, 1}});
+  Contract(eff_ham[0], state, {{0}, {0}}, res);
+  InplaceContract(res, eff_ham[1], {{0, 2}, {0, 1}});
+  InplaceContract(res, eff_ham[2], {{1, 3}, {0, 1}});
   return res;
 }
-
-
-template <typename TenT>
-TenT *eff_ham_mul_state_rend(const std::vector<TenT *> &eff_ham, TenT *state) {
-  auto res = new TenT;
-  Contract(state, eff_ham[0], {{0}, {0}}, res);
-  InplaceContract(res, eff_ham[1], {{2, 0}, {0, 1}});
-  InplaceContract(res, eff_ham[2], {{3, 0}, {1,0}});
-  return res;
-}
-
 
 inline void TridiagGsSolver(
     const std::vector<double> &a, const std::vector<double> &b, const size_t n,
