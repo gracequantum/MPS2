@@ -180,14 +180,15 @@ double TwoSiteFiniteVMPSSweep(
 
   for (size_t i = 0; i < N - 2; ++i) {
     // Load to-be-used tensors
-    LoadRelatedTens(mps, lenvs, renvs, i, 'r', sweep_params);
+    LoadRelatedTensTwoSiteAlg(mps, lenvs, renvs, i, 'r', sweep_params);
     e0 = TwoSiteFiniteVMPSUpdate(mps, lenvs, renvs, mpo, sweep_params, 'r', i);
-    DumpRelatedTens(mps, lenvs, renvs, i, 'r', sweep_params);
+    // Dump related tensor to HD and remove unused tensor from RAM
+    DumpRelatedTensTwoSiteAlg(mps, lenvs, renvs, i, 'r', sweep_params);
   }
   for (size_t i = N-1; i > 1; --i) {
-    LoadRelatedTens(mps, lenvs, renvs, i, 'l', sweep_params);
+    LoadRelatedTensTwoSiteAlg(mps, lenvs, renvs, i, 'l', sweep_params);
     e0 = TwoSiteFiniteVMPSUpdate(mps, lenvs, renvs, mpo, sweep_params, 'l', i);
-    DumpRelatedTens(mps, lenvs, renvs, i, 'l', sweep_params);
+    DumpRelatedTensTwoSiteAlg(mps, lenvs, renvs, i, 'l', sweep_params);
   }
   return e0;
 }
@@ -211,9 +212,6 @@ double TwoSiteFiniteVMPSUpdate(
 ) {
   Timer update_timer("two_site_fvmps_update");
 
-#ifdef GQMPS2_TIMING_MODE
-  Timer preprocessing_timer("two_site_fvmps_preprocessing");
-#endif
 
   // Assign some parameters
   auto N = mps.size();
@@ -241,11 +239,6 @@ double TwoSiteFiniteVMPSUpdate(
       std::cout << "dir must be 'r' or 'l', but " << dir << std::endl;
       exit(1);
   }
-
-
-#ifdef GQMPS2_TIMING_MODE
-  preprocessing_timer.PrintElapsed();
-#endif
 
   // Lanczos
   using TenT = GQTensor<TenElemT, QNT>;
@@ -347,16 +340,6 @@ double TwoSiteFiniteVMPSUpdate(
   update_env_ten_timer.PrintElapsed();
 #endif
 
-  // Dump related tensor to HD and remove unused tensor from RAM
-#ifdef GQMPS2_TIMING_MODE
-  Timer postprocessing_timer("two_site_fvmps_postprocessing");
-#endif
-
-
-#ifdef GQMPS2_TIMING_MODE
-  postprocessing_timer.PrintElapsed();
-#endif
-
   auto update_elapsed_time = update_timer.Elapsed();
   std::cout << "Site " << std::setw(4) << target_site
             << " E0 = " << std::setw(20) << std::setprecision(kLanczEnergyOutputPrecision) << std::fixed << lancz_res.gs_eng
@@ -372,7 +355,7 @@ double TwoSiteFiniteVMPSUpdate(
 
 
 template <typename TenElemT, typename QNT>
-void LoadRelatedTens(
+void LoadRelatedTensTwoSiteAlg(
     FiniteMPS<TenElemT, QNT> &mps,
     TenVec<GQTensor<TenElemT, QNT>> &lenvs,
     TenVec<GQTensor<TenElemT, QNT>> &renvs,
@@ -380,6 +363,9 @@ void LoadRelatedTens(
     const char dir,
     const SweepParams &sweep_params
 ) {
+#ifdef GQMPS2_TIMING_MODE
+  Timer preprocessing_timer("two_site_fvmps_preprocessing");
+#endif
   auto N = mps.size();
   switch (dir) {
     case 'r':
@@ -435,11 +421,14 @@ void LoadRelatedTens(
     default:
       assert(false);
   }
+#ifdef GQMPS2_TIMING_MODE
+  preprocessing_timer.PrintElapsed();
+#endif
 }
 
 
 template <typename TenElemT, typename QNT>
-void DumpRelatedTens(
+void DumpRelatedTensTwoSiteAlg(
     FiniteMPS<TenElemT, QNT> &mps,
     TenVec<GQTensor<TenElemT, QNT>> &lenvs,
     TenVec<GQTensor<TenElemT, QNT>> &renvs,
@@ -447,6 +436,9 @@ void DumpRelatedTens(
     const char dir,
     const SweepParams &sweep_params
 ) {
+#ifdef GQMPS2_TIMING_MODE
+  Timer postprocessing_timer("two_site_fvmps_postprocessing");
+#endif
   auto N = mps.size();
   switch (dir) {
     case 'r':{
@@ -475,6 +467,9 @@ void DumpRelatedTens(
     default:
       assert(false);
   }
+#ifdef GQMPS2_TIMING_MODE
+  postprocessing_timer.PrintElapsed();
+#endif
 }
 } /* gqmps2 */ 
 #endif /* ifndef GQMPS2_ALGORITHM_VMPS_TWO_SITE_UPDATE_FINITE_VMPS_IMPL_H */

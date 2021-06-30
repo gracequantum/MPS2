@@ -36,6 +36,7 @@ struct SweepParams {
       sweeps(sweeps),
       Dmin(dmin), Dmax(dmax), trunc_err(trunc_err),
       lancz_params(lancz_params),
+      noises(noises),
       mps_path(mps_path),
       temp_path(temp_path) {}
 
