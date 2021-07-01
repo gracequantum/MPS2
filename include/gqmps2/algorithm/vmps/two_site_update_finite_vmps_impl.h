@@ -75,6 +75,7 @@ inline void RemoveFile(const std::string &file) {
 Function to perform two-site update finite vMPS algorithm.
 
 @note The input MPS will be considered an empty one.
+@note The canonical center of MPS should be set at site 0 or 1.
 */
 template <typename TenElemT, typename QNT>
 GQTEN_Double TwoSiteFiniteVMPS(
@@ -199,6 +200,7 @@ double TwoSiteFiniteVMPSSweep(
  *       using lanczos algorithm;
  *    ** decompose and truncate mps[lsite_idx]*mps[rsite_idx] by svd decomposition. Canonical central are determined by the direction;
  *    ** generate the next environment in the direction.
+ *  When using this function, one must make sure memory at least contains mps[lsite_idx] and mps[rsite_idx] tensors, and their environment tensors.
  */
 template <typename TenElemT, typename QNT>
 double TwoSiteFiniteVMPSUpdate(

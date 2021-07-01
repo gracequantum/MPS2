@@ -1172,6 +1172,26 @@ struct TestSingleSiteAlgorithmElectronPhononSystem : public testing::Test {
 
   std::vector<IndexT2> index_set = std::vector<IndexT2>(N);
 
+  ZGQTensor2 znf     = ZGQTensor2({pb_inF, pb_outF}); //fermion number
+  ZGQTensor2 zbupcF  = ZGQTensor2({pb_inF,pb_outF});
+  ZGQTensor2 zbupaF  = ZGQTensor2({pb_inF,pb_outF});
+  ZGQTensor2 zFbdnc  = ZGQTensor2({pb_inF,pb_outF});
+  ZGQTensor2 zFbdna  = ZGQTensor2({pb_inF,pb_outF});
+  ZGQTensor2 zbupc   = ZGQTensor2({pb_inF,pb_outF});
+  ZGQTensor2 zbupa   = ZGQTensor2({pb_inF,pb_outF});
+  ZGQTensor2 zbdnc   = ZGQTensor2({pb_inF,pb_outF});
+  ZGQTensor2 zbdna   = ZGQTensor2({pb_inF,pb_outF});
+  ZGQTensor2 zUterm  = ZGQTensor2({pb_inF,pb_outF}); // Hubbard Uterm, nup*ndown
+
+  ZGQTensor2 za      =   ZGQTensor2({pb_inB, pb_outB}); //bosonic annihilation
+  ZGQTensor2 zadag   =   ZGQTensor2({pb_inB, pb_outB}); //bosonic creation
+  ZGQTensor2 zP1    =   ZGQTensor2({pb_inB, pb_outB}); // the number of phonon
+  ZGQTensor2 zidB    =   ZGQTensor2({pb_inB, pb_outB}); // bosonic identity
+  ZGQTensor2 zP0     =   ZGQTensor2({pb_inB, pb_outB});
+
+
+
+
 
   void SetUp(void) {
     nf({0,0}) = 2;  nf({1,1}) = 1;  nf({2,2}) = 1;
@@ -1193,6 +1213,25 @@ struct TestSingleSiteAlgorithmElectronPhononSystem : public testing::Test {
     P1({0,0}) = 1;
     idB({0,0}) = 1; idB({1,1}) = 1;
     P0 = idB+(-P1);
+
+    znf = ToComplex(nf);
+
+    zbupcF = ToComplex(bupcF);
+    zFbdnc = ToComplex(Fbdnc);
+    zbupaF = ToComplex(bupaF);
+    zFbdna = ToComplex(Fbdna);
+    zbupc  = ToComplex(bupc);
+    zbdnc  = ToComplex(bdnc);
+    zbupa  = ToComplex(bupa);
+    zbdna  = ToComplex(bdna);
+
+    zUterm	=  ToComplex(Uterm);
+    zadag 	=  ToComplex(adag );
+    za    	=  ToComplex(a    );
+    zP1   	=  ToComplex(P1   );
+    zidB  	=  ToComplex(idB  );
+    zP0   	=  ToComplex(P0   );
+
     for(size_t i =0; i < N; ++i){
       if(i%(Np+1)==0) index_set[i] = pb_outF; // even site is fermion
       else index_set[i] = pb_outB; // odd site is boson
@@ -1234,7 +1273,7 @@ TEST_F(TestSingleSiteAlgorithmElectronPhononSystem, holsteinchain) {
   auto sweep_params = SweepParams(5,
      256, 256, 1.0E-10,
      LanczosParams(1.0E-7),
-      {0.1,0.01,0.001,0.0001,0.00001}
+      {0.1,0.1,0.01,0.001,0.0001}
   );
   dmps.Dump(sweep_params.mps_path, true);
 
@@ -1244,4 +1283,41 @@ TEST_F(TestSingleSiteAlgorithmElectronPhononSystem, holsteinchain) {
   );
   RemoveFolder(sweep_params.mps_path);
   RemoveFolder(sweep_params.temp_path);
+
+
+
+  //Complex case
+  ZSiteVec2 zsite_vec = ZSiteVec2(index_set);
+  auto zmpo_gen = MPOGenerator<GQTEN_Complex, U1U1QN>(zsite_vec, qn0);
+  for (int i = 0; i < N-Np-1; i=i+Np+1) {
+    zmpo_gen.AddTerm(-t, zbupcF, i, zbupa,  i+Np+1);
+    zmpo_gen.AddTerm(-t, zbdnc,  i, zFbdna, i+Np+1);
+    zmpo_gen.AddTerm( t, zbupaF, i, zbupc,  i+Np+1);
+    zmpo_gen.AddTerm( t, zbdna,  i, zFbdnc, i+Np+1);
+  }
+  for (unsigned long i = 0; i < N; i=i+Np+1) {
+    zmpo_gen.AddTerm(U, zUterm, i);
+    for(unsigned long j = 0; j < Np; ++j) {
+    zmpo_gen.AddTerm(omega, (double)(pow(2,j))*zP1, i+j+1);
+  }
+    zmpo_gen.AddTerm(2*g, {znf,  za,      za,    zadag},                  {i, i+1,  i+2,  i+3});
+    zmpo_gen.AddTerm(2*g, {znf,  zadag,   zadag, za},                     {i, i+1,  i+2,  i+3});
+    zmpo_gen.AddTerm(g,   {znf,  za,      zadag, sqrt(2)*zP0+sqrt(6)*zP1}, {i, i+1,  i+2,  i+3});
+    zmpo_gen.AddTerm(g,   {znf,  zadag,   za,    sqrt(2)*zP0+sqrt(6)*zP1}, {i, i+1,  i+2,  i+3});
+    zmpo_gen.AddTerm(g,   {znf,  za+zadag, zP1,   sqrt(3)*zP0+sqrt(7)*zP1}, {i, i+1,  i+2,  i+3});
+    zmpo_gen.AddTerm(g,   {znf,  za+zadag, zP0,   zP0+sqrt(5)*zP1},         {i, i+1,  i+2,  i+3});
+}
+
+  auto zmpo = zmpo_gen.Gen();
+  ZMPS2 zmps = ZMPS2(zsite_vec);
+  DirectStateInitMps(zmps, stat_labs);
+  zmps.Dump(sweep_params.mps_path, true);
+
+  RunTestSingleSiteAlgorithmCase(
+      zmps, zmpo, sweep_params,
+  -1.9363605088186260 , 1.0E-8
+  );
+  RemoveFolder(sweep_params.mps_path);
+  RemoveFolder(sweep_params.temp_path);
+
 }

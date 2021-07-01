@@ -70,6 +70,7 @@ namespace gqmps2 {
 Function to perform single-site update finite vMPS algorithm.
 
 @note The input MPS will be considered an empty one.
+@note The canonical center of MPS should be set at site 0.
 */
 template <typename TenElemT, typename QNT>
 GQTEN_Double SingleSiteFiniteVMPS(
@@ -181,11 +182,13 @@ double SingleSiteFiniteVMPSSweep(
 
 /**  Single step for single site update.
  *  This function includes below procedure:
- *    ** update mps[target] tensors according corresponding environment tensors and the mpo tensor,
+ *    ** update \f$ mps[target] \f$ tensors according corresponding environment tensors and the mpo tensor,
  *       using lanczos algorithm;
- *    ** expand mps[target] and mps[next_site] by noise, if need
- *    ** canonicalize mps to mps[next_site] by svd, while truncate tensor mps[target] if need
+ *    ** expand \f$ mps[target] \f$ and \f$ mps[next_site] \f$ by noise, if need
+ *    ** canonicalize mps to \f$ mps[next_site] \f$ by svd, while truncate tensor \f$ mps[target] \f$ if need
  *    ** generate the next environment in the direction.
+ *  When using this function, one must make sure memory at least contains \f$ mps[target] \f$ tensor,
+ *  its environment tensors and \f$ mps[next_site] \f$.
  */
 template <typename TenElemT, typename QNT>
 double SingleSiteFiniteVMPSUpdate(
@@ -250,7 +253,9 @@ auto lancz_elapsed_time = lancz_timer.Elapsed();
     noise = 0.0; //just for output
     need_expand= false;
   }
-  Timer expand_timer("single_site_fvmps_expand");
+#ifdef GQMPS2_TIMING_MODE
+  auto expand_timer("single_site_fvmps_expand");
+#endif
   if(need_expand){
     SingleSiteFiniteVMPSExpand( lancz_res.gs_vec, mps, eff_ham, dir, target_site, noise);
     delete lancz_res.gs_vec;
@@ -260,8 +265,6 @@ auto lancz_elapsed_time = lancz_timer.Elapsed();
 
 #ifdef GQMPS2_TIMING_MODE
     auto expand_elapsed_time = expand_timer.PrintElapsed();
-#else
-    auto expand_elapsed_time = expand_timer.Elapsed();
 #endif
 #ifdef GQMPS2_TIMING_MODE
     Timer svd_timer("single_site_fvmps_svd");
@@ -350,7 +353,6 @@ auto lancz_elapsed_time = lancz_timer.Elapsed();
               << " D = " << std::setw(5) << D
               << " Iter = " << std::setw(3) << lancz_res.iters
               << " LanczT = " << std::setw(8) << lancz_elapsed_time
-              << " ExpandT = " << std::setw(8) << expand_elapsed_time
               << " TotT = " << std::setw(8) << update_elapsed_time
               << " S = " << std::setw(10) << std::setprecision(7) << ee;
     std::cout << std::scientific << std::endl;
