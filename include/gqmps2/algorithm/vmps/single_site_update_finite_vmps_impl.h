@@ -30,6 +30,12 @@ namespace gqmps2 {
   using std::cout;
   using std::endl;
   using std::vector;
+
+  const double max_noise = 1.0; //maximal noise
+  const double noise_increase = 1.02;
+  const double noise_decrease = 0.95;
+  const double alpha = 0.3;
+
   // Helpers
   template <typename DTenT>
   inline double MeasureEE(const DTenT &s, const size_t sdim);
@@ -113,8 +119,6 @@ GQTEN_Double SingleSiteFiniteVMPS(
     for (size_t sweep = 1; sweep <= sweep_params.sweeps; ++sweep) {
       if(sweep-1 < sweep_params.noises.size()){
         noise_start = sweep_params.noises[sweep-1];
-      }else{
-        //do nothing, using the last sweep returned noise
       }
       std::cout << "sweep " << sweep << std::endl;
       Timer sweep_timer("sweep");
@@ -135,7 +139,7 @@ double SingleSiteFiniteVMPSSweep(
   auto N = mps.size();
   using TenT = GQTensor<TenElemT, QNT>;
   TenVec<TenT> lenvs(N), renvs(N);
-  double e0(0.0), actual_e0(0.0), laststep_e0(1000.0), actual_laststep_e0(0.0);
+  double e0(0.0), actual_e0(0.0), actual_laststep_e0(0.0);
 
   double& noise_running = noise_start;
   for (size_t i = 0; i < N - 1; ++i) {
@@ -144,18 +148,17 @@ double SingleSiteFiniteVMPSSweep(
 // mps[i]'s renvs can be removed
 
     actual_e0 = CalEnergyEptSingleSite(mps, mpo,lenvs, renvs, i);
-    if(actual_e0-laststep_e0 <= 0.0){
+    if(actual_e0-e0 <= 0.0){
       //expand and truncate let the energy lower or not change
       // this case is very rare, but include the boundary mps tensor case
       // so we do nothing now
-    }else if(actual_e0-laststep_e0 >= fabs(actual_laststep_e0-laststep_e0)){
+    }else if(actual_e0-e0 >= alpha*fabs(actual_laststep_e0-e0)){
       //below two case suppose actual_laststep_e0-laststep_e0>0, usually it is right
-      noise_running=noise_running*0.9;
+      noise_running = noise_running*noise_decrease;
     }else{
-      noise_running = std::min(noise_running*1.05, 1.0);
+      noise_running = std::min(noise_running*noise_increase, max_noise);
     }
     e0 = SingleSiteFiniteVMPSUpdate(mps, lenvs, renvs, mpo, sweep_params, 'r', i, noise_running);
-    laststep_e0 = e0;
     actual_laststep_e0 = actual_e0;
     DumpRelatedTensSingleSiteAlg(mps, lenvs, renvs, i, 'r', sweep_params);
 // note: here we need dump mps[i](free memory), lenvs[i+1](without free memory)
@@ -163,18 +166,13 @@ double SingleSiteFiniteVMPSSweep(
   for (size_t i = N-1; i > 0; --i) {
     LoadRelatedTensSingleSiteAlg(mps, lenvs, renvs, i, 'l', sweep_params);
     actual_e0 = CalEnergyEptSingleSite(mps, mpo,lenvs, renvs, i);
-    if(actual_e0-laststep_e0 <= 0.0){
-      //expand and truncate let the energy lower or not change
-      // this case is very rare, but include the boundary mps tensor case
-      // so we do nothing now
-    }else if(actual_e0-laststep_e0 >= fabs(actual_laststep_e0-laststep_e0)){
-      //below two case suppose actual_laststep_e0-laststep_e0>0, usually it is right
-      noise_running=noise_running*0.9;
+    if(actual_e0-e0 <= 0.0){
+    }else if(actual_e0-e0 >= alpha*fabs(actual_laststep_e0-e0)){
+      noise_running = noise_running*noise_decrease;
     }else{
-      noise_running = std::min(noise_running*1.05, 1.0);
+      noise_running = std::min(noise_running*noise_increase, max_noise);
     }
     e0 = SingleSiteFiniteVMPSUpdate(mps, lenvs, renvs, mpo, sweep_params, 'l', i, noise_running);
-    laststep_e0 = e0;
     actual_laststep_e0 = actual_e0;
     DumpRelatedTensSingleSiteAlg(mps, lenvs, renvs, i, 'l', sweep_params);
   }
@@ -198,7 +196,7 @@ double SingleSiteFiniteVMPSUpdate(
     const SweepParams &sweep_params,
     const char dir,
     const size_t target_site,
-    double& noise
+    double noise
   ){
   Timer update_timer("single_site_fvmps_update");
 
@@ -245,8 +243,13 @@ auto lancz_elapsed_time = lancz_timer.Elapsed();
   bool need_expand(true);
 
   if(fabs(noise)<1e-15){need_expand=false;}
-  else if( target_site < N/2 && mps_ten_shape[0]*mps_ten_shape[1]<=mps_ten_shape[2]){need_expand= false;}
-  else if( target_site > N/2 && mps_ten_shape[2]*mps_ten_shape[1]<=mps_ten_shape[0]){need_expand= false;}
+  else if(
+      (target_site < N/2 && mps_ten_shape[0]*mps_ten_shape[1]<=mps_ten_shape[2]) ||
+      (target_site > N/2 && mps_ten_shape[2]*mps_ten_shape[1]<=mps_ten_shape[0])
+      ){
+    noise = 0.0; //just for output
+    need_expand= false;
+  }
   Timer expand_timer("single_site_fvmps_expand");
   if(need_expand){
     SingleSiteFiniteVMPSExpand( lancz_res.gs_vec, mps, eff_ham, dir, target_site, noise);
@@ -350,9 +353,6 @@ auto lancz_elapsed_time = lancz_timer.Elapsed();
               << " ExpandT = " << std::setw(8) << expand_elapsed_time
               << " TotT = " << std::setw(8) << update_elapsed_time
               << " S = " << std::setw(10) << std::setprecision(7) << ee;
-    if(!need_expand){
-      std::cout << "(no noise)";
-    }
     std::cout << std::scientific << std::endl;
     return lancz_res.gs_eng;
 }
@@ -523,7 +523,6 @@ double CalEnergyEptSingleSite(
   double energy = Real(scalar_ten());
   return energy;
 }
-
 }
 
 #endif //GRACEQ_MPS2_ONE_SITE_UPDATE_FINITE_VMPS_IMPL_H

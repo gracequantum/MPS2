@@ -60,7 +60,7 @@ void RunTestTwoSiteLanczosSolverCase(
 ) {
   using TenT = GQTensor<TenElemT, QNT>;
 
-  Timer timer("cent_lancz");
+  Timer timer("two_site_lancz");
   auto lancz_res = LanczosSolver(
                        eff_ham, pinit_state,
                        &eff_ham_mul_two_site_state,
