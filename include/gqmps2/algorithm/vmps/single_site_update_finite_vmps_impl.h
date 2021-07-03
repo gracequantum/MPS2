@@ -41,7 +41,7 @@ namespace gqmps2 {
   inline double MeasureEE(const DTenT &s, const size_t sdim);
 
   /** Fuse two indices of a tensor t. we suppose i<j, and the new index is placed on position i.
-   * Original index after index i a placed in original order.
+   * Original index after index i are placed in original order.
    */
   template <typename TenElemType, typename QNT>
   GQTensor<TenElemType, QNT> FuseIndex(const GQTensor<TenElemType, QNT>& t, unsigned int i, unsigned int j){
@@ -254,7 +254,7 @@ auto lancz_elapsed_time = lancz_timer.Elapsed();
     need_expand= false;
   }
 #ifdef GQMPS2_TIMING_MODE
-  auto expand_timer("single_site_fvmps_expand");
+  Timer expand_timer("single_site_fvmps_expand");
 #endif
   if(need_expand){
     SingleSiteFiniteVMPSExpand( lancz_res.gs_vec, mps, eff_ham, dir, target_site, noise);
@@ -264,7 +264,7 @@ auto lancz_elapsed_time = lancz_timer.Elapsed();
   }
 
 #ifdef GQMPS2_TIMING_MODE
-    auto expand_elapsed_time = expand_timer.PrintElapsed();
+    expand_timer.PrintElapsed();
 #endif
 #ifdef GQMPS2_TIMING_MODE
     Timer svd_timer("single_site_fvmps_svd");
