@@ -4,11 +4,12 @@
     "Double": 2.33,
     "Char": "c",
     "String": "string",
-    "Boolean": false 
+    "Boolean": false,
+    "DoubleVec": [0.1, 0.02, 0.003]
   },
 
   "Unused": {
-    "UnusedInt": 1, 
+    "UnusedInt": 1,
     "UnusedObj": {
       "key1": "val",
       "key2": 2.0
