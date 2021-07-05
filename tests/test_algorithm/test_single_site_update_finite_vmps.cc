@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 /*
-* Author: Rongyang Sun <sun-rongyang@outlook.com>
-* Creation Date: 2019-05-14 16:08
+* Author: Hao-Xin Wang
+*         Rongyang Sun <sun-rongyang@outlook.com>
+* Creation Date: 2021-06-30
 *
-* Description: GraceQ/mps2 project. Unittest for two sites algorithm.
+* Description: GraceQ/mps2 project. Unittest for single site algorithm.
 */
 #include "gqmps2/gqmps2.h"
 #include "gtest/gtest.h"
@@ -76,20 +77,21 @@ inline void RemoveFolder(const std::string &folder_path) {
 
 
 template <typename TenElemT, typename QNT>
-void RunTestTwoSiteAlgorithmCase(
+void RunTestSingleSiteAlgorithmCase(
     FiniteMPS<TenElemT, QNT> &mps,
     const MPO<GQTensor<TenElemT, QNT>> &mpo,
-    const SweepParams &sweep_params,
+    SweepParams sweep_params,
     const double benmrk_e0, const double precision
 ) {
-  auto e0 = TwoSiteFiniteVMPS(mps, mpo, sweep_params);
+  auto e0 = SingleSiteFiniteVMPS(mps, mpo, sweep_params);
   EXPECT_NEAR(e0, benmrk_e0, precision);
   EXPECT_TRUE(mps.empty());
+  mkl_free_buffers();
 }
 
 
 // Test spin systems
-struct TestTwoSiteAlgorithmSpinSystem : public testing::Test {
+struct TestSingleSiteAlgorithmSpinSystem : public testing::Test {
   size_t N = 6;
 
   U1QN qn0 = U1QN({QNCard("Sz", U1QNVal(0))});
@@ -132,7 +134,7 @@ struct TestTwoSiteAlgorithmSpinSystem : public testing::Test {
 };
 
 
-TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DIsing) {
+TEST_F(TestSingleSiteAlgorithmSpinSystem, 1DIsing) {
   auto dmpo_gen = MPOGenerator<GQTEN_Double, U1QN>(dsite_vec_6, qn0);
   for (size_t i = 0; i < N-1; ++i) {
     dmpo_gen.AddTerm(1, {dsz, dsz}, {i, i+1});
@@ -148,7 +150,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DIsing) {
   for (size_t i = 0; i < N; ++i) { stat_labs.push_back(i % 2); }
   DirectStateInitMps(dmps, stat_labs);
   dmps.Dump(sweep_params.mps_path, true);
-  RunTestTwoSiteAlgorithmCase(dmps, dmpo, sweep_params, -0.25*(N-1), 1.0E-10);
+  RunTestSingleSiteAlgorithmCase(dmps, dmpo, sweep_params, -0.25*(N-1), 1.0E-10);
 
   dmps.Load(sweep_params.mps_path);
   MeasureOneSiteOp(dmps, dsz, "dsz");
@@ -177,7 +179,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DIsing) {
                  );
   DirectStateInitMps(zmps, stat_labs);
   zmps.Dump(sweep_params.mps_path, true);
-  RunTestTwoSiteAlgorithmCase(zmps, zmpo, sweep_params, -0.25*(N-1), 1.0E-10);
+  RunTestSingleSiteAlgorithmCase(zmps, zmpo, sweep_params, -0.25*(N-1), 1.0E-10);
 
   zmps.Load(sweep_params.mps_path);
   MeasureOneSiteOp(zmps, zsz, "zsz");
@@ -189,7 +191,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DIsing) {
 }
 
 
-TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DHeisenberg) {
+TEST_F(TestSingleSiteAlgorithmSpinSystem, 1DHeisenberg) {
   auto dmpo_gen = MPOGenerator<GQTEN_Double, U1QN>(dsite_vec_6, qn0);
   for (size_t i = 0; i < N-1; ++i) {
     dmpo_gen.AddTerm(1,   {dsz, dsz}, {i, i+1});
@@ -199,22 +201,23 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DHeisenberg) {
   auto dmpo = dmpo_gen.Gen();
 
   auto sweep_params = SweepParams(
-                          4,
+                          6,
                           8, 8, 1.0E-9,
-                          LanczosParams(1.0E-7)
+                          LanczosParams(1.0E-7),
+                          {0.01, 0.001, 0.0001, 0.00001}
                       );
   std::vector<size_t> stat_labs;
   for (size_t i = 0; i < N; ++i) { stat_labs.push_back(i % 2); }
   DirectStateInitMps(dmps, stat_labs);
   dmps.Dump(sweep_params.mps_path, true);
-  RunTestTwoSiteAlgorithmCase(
+  RunTestSingleSiteAlgorithmCase(
       dmps, dmpo, sweep_params,
       -2.493577133888, 1.0E-12
   );
 
   // Continue simulation test
   dmps.clear();
-  RunTestTwoSiteAlgorithmCase(
+  RunTestSingleSiteAlgorithmCase(
       dmps, dmpo, sweep_params,
       -2.493577133888, 1.0E-12
   );
@@ -231,13 +234,14 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DHeisenberg) {
   auto zmpo = zmpo_gen.Gen();
 
   sweep_params = SweepParams(
-                     4,
+                     6,
                      8, 8, 1.0E-9,
-                     LanczosParams(1.0E-7)
+                     LanczosParams(1.0E-7),
+                     {0.01, 0.001, 0.0001, 0.00001}
                  );
   DirectStateInitMps(zmps, stat_labs);
   zmps.Dump(sweep_params.mps_path, true);
-  RunTestTwoSiteAlgorithmCase(
+  RunTestSingleSiteAlgorithmCase(
       zmps, zmpo, sweep_params,
       -2.493577133888, 1.0E-12
   );
@@ -246,7 +250,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 1DHeisenberg) {
 }
 
 
-TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DHeisenberg) {
+TEST_F(TestSingleSiteAlgorithmSpinSystem, 2DHeisenberg) {
   auto dmpo_gen = MPOGenerator<GQTEN_Double, U1QN>(dsite_vec_6, qn0);
   std::vector<std::pair<size_t, size_t>> nn_pairs = {
       std::make_pair(0, 1),
@@ -265,9 +269,10 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DHeisenberg) {
   auto dmpo = dmpo_gen.Gen();
 
   auto sweep_params = SweepParams(
-                          4,
+                          6,
                           8, 8, 1.0E-9,
-                          LanczosParams(1.0E-7)
+                          LanczosParams(1.0E-7),
+                          {0.01, 0.001, 0.0001, 0.00001}
                       );
 
   // Test direct product state initialization.
@@ -275,7 +280,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DHeisenberg) {
   for (size_t i = 0; i < N; ++i) { stat_labs.push_back(i % 2); }
   DirectStateInitMps(dmps, stat_labs);
   dmps.Dump(sweep_params.mps_path, true);
-  RunTestTwoSiteAlgorithmCase(
+  RunTestSingleSiteAlgorithmCase(
       dmps, dmpo, sweep_params,
       -3.129385241572, 1.0E-12
   );
@@ -292,13 +297,14 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DHeisenberg) {
   auto zmpo = zmpo_gen.Gen();
 
   sweep_params = SweepParams(
-                     4,
+                     6,
                      8, 8, 1.0E-9,
-                     LanczosParams(1.0E-7)
+                     LanczosParams(1.0E-7),
+                     {0.01, 0.001, 0.0001, 0.00001}
                  );
   DirectStateInitMps(zmps, stat_labs);
   zmps.Dump(sweep_params.mps_path, true);
-  RunTestTwoSiteAlgorithmCase(
+  RunTestSingleSiteAlgorithmCase(
       zmps, zmpo, sweep_params,
       -3.129385241572, 1.0E-12
   );
@@ -307,7 +313,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DHeisenberg) {
 }
 
 
-TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DKitaevSimpleCase) {
+TEST_F(TestSingleSiteAlgorithmSpinSystem, 2DKitaevSimpleCase) {
   size_t Nx = 4;
   size_t Ny = 2;
   size_t N1 = Nx*Ny;
@@ -328,7 +334,8 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DKitaevSimpleCase) {
   auto sweep_params = SweepParams(
                           4,
                           8, 8, 1.0E-4,
-                          LanczosParams(1.0E-10)
+                          LanczosParams(1.0E-10),
+                          {0.01, 0.001, 0.0001, 0.00001}
                       );
   // Test extend direct product state random initialization.
   std::vector<size_t> stat_labs1, stat_labs2;
@@ -339,7 +346,7 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DKitaevSimpleCase) {
   auto dmps_8sites = DMPS(dsite_vec);
   ExtendDirectRandomInitMps(dmps_8sites, {stat_labs1, stat_labs2}, 2);
   dmps_8sites.Dump(sweep_params.mps_path, true);
-  RunTestTwoSiteAlgorithmCase(
+  RunTestSingleSiteAlgorithmCase(
       dmps_8sites, dmpo, sweep_params,
       -1.0, 1.0E-12
   );
@@ -363,15 +370,16 @@ TEST_F(TestTwoSiteAlgorithmSpinSystem, 2DKitaevSimpleCase) {
   auto zmps_8sites = ZMPS(zsite_vec);
   ExtendDirectRandomInitMps(zmps_8sites, {stat_labs1, stat_labs2}, 2);
   zmps_8sites.Dump(sweep_params.mps_path, true);
-  RunTestTwoSiteAlgorithmCase(
+  RunTestSingleSiteAlgorithmCase(
       zmps_8sites, zmpo, sweep_params,
-      -1.0, 1.0E-12);
+      -1.0, 1.0E-12
+  );
   RemoveFolder(sweep_params.mps_path);
   RemoveFolder(sweep_params.temp_path);
 }
 
 
-TEST(TestTwoSiteAlgorithmNoSymmetrySpinSystem, 2DKitaevComplexCase) {
+TEST(TestSingleSiteAlgorithmNoSymmetrySpinSystem, 2DKitaevComplexCase) {
   using TenElemType = GQTEN_Complex;
   using Tensor = GQTensor<TenElemType, U1QN>;
   //-------------Set quantum numbers-----------------
@@ -477,18 +485,22 @@ TEST(TestTwoSiteAlgorithmNoSymmetrySpinSystem, 2DKitaevComplexCase) {
   auto sweep_params = SweepParams(
                           4,
                           60, 60, 1.0E-4,
-                          LanczosParams(1.0E-10)
+                          LanczosParams(1.0E-10),
+                          {0.01, 0.001, 0.0001, 0.00001}
                       );
   DirectStateInitMps(mps, stat_labs);
   mps.Dump(sweep_params.mps_path, true);
-  RunTestTwoSiteAlgorithmCase(mps, mpo, sweep_params, -4.57509167674, 2.0E-10);
+  RunTestSingleSiteAlgorithmCase(
+      mps, mpo, sweep_params,
+      -4.57509167674, 2.0E-10
+  );
   RemoveFolder(sweep_params.mps_path);
   RemoveFolder(sweep_params.temp_path);
 }
 
 
 // Test fermion models.
-struct TestTwoSiteAlgorithmTjSystem2U1Symm : public testing::Test {
+struct TestSingleSiteAlgorithmTjSystem2U1Symm : public testing::Test {
   size_t N = 4;
   double t = 3.0;
   double J = 1.0;
@@ -551,7 +563,7 @@ struct TestTwoSiteAlgorithmTjSystem2U1Symm : public testing::Test {
 };
 
 
-TEST_F(TestTwoSiteAlgorithmTjSystem2U1Symm, 1DCase) {
+TEST_F(TestSingleSiteAlgorithmTjSystem2U1Symm, 1DCase) {
   auto dmpo_gen = MPOGenerator<GQTEN_Double, U1U1QN>(dsite_vec_4, qn0);
   for (size_t i = 0; i < N-1; ++i) {
     dmpo_gen.AddTerm(-t, dcdagup, i, dcup, i+1, df);
@@ -567,11 +579,12 @@ TEST_F(TestTwoSiteAlgorithmTjSystem2U1Symm, 1DCase) {
   auto sweep_params = SweepParams(
                           11,
                           8, 8, 1.0E-9,
-                          LanczosParams(1.0E-8, 20)
+                          LanczosParams(1.0E-8, 20),
+                          {0.01, 0.001, 0.0001, 0.00001}
                       );
   DirectStateInitMps(dmps, {2, 1, 2, 0});
   dmps.Dump(sweep_params.mps_path, true);
-  RunTestTwoSiteAlgorithmCase(
+  RunTestSingleSiteAlgorithmCase(
       dmps, dmpo, sweep_params,
       -6.947478526233, 1.0E-10
   );
@@ -592,7 +605,7 @@ TEST_F(TestTwoSiteAlgorithmTjSystem2U1Symm, 1DCase) {
   auto zmpo = zmpo_gen.Gen();
   DirectStateInitMps(zmps, {2, 1, 2, 0});
   zmps.Dump(sweep_params.mps_path, true);
-  RunTestTwoSiteAlgorithmCase(
+  RunTestSingleSiteAlgorithmCase(
       zmps, zmpo, sweep_params,
       -6.947478526233, 1.0E-10
   );
@@ -601,7 +614,7 @@ TEST_F(TestTwoSiteAlgorithmTjSystem2U1Symm, 1DCase) {
 }
 
 
-TEST_F(TestTwoSiteAlgorithmTjSystem2U1Symm, 2DCase) {
+TEST_F(TestSingleSiteAlgorithmTjSystem2U1Symm, 2DCase) {
   auto dmpo_gen = MPOGenerator<GQTEN_Double, U1U1QN>(dsite_vec_4, qn0);
   std::vector<std::pair<int, int>> nn_pairs = {
       std::make_pair(0, 1), 
@@ -622,7 +635,8 @@ TEST_F(TestTwoSiteAlgorithmTjSystem2U1Symm, 2DCase) {
   auto sweep_params = SweepParams(
                           10,
                           8, 8, 1.0E-9,
-                          LanczosParams(1.0E-8, 20)
+                          LanczosParams(1.0E-8, 20),
+                          {0.01,0.001,0.0001,0.00001}
                       );
 
   auto total_div = U1U1QN({QNCard("N", U1QNVal(N-2)), QNCard("Sz", U1QNVal(0))});
@@ -631,7 +645,7 @@ TEST_F(TestTwoSiteAlgorithmTjSystem2U1Symm, 2DCase) {
   // Direct product state initialization.
   DirectStateInitMps(dmps, {2, 0, 1, 2});
   dmps.Dump(sweep_params.mps_path, true);
-  RunTestTwoSiteAlgorithmCase(
+  RunTestSingleSiteAlgorithmCase(
       dmps, dmpo, sweep_params,
       -8.868563739680, 1.0E-10
   );
@@ -652,7 +666,7 @@ TEST_F(TestTwoSiteAlgorithmTjSystem2U1Symm, 2DCase) {
   auto zmpo = zmpo_gen.Gen();
   DirectStateInitMps(zmps, {2, 0, 1, 2});
   zmps.Dump(sweep_params.mps_path, true);
-  RunTestTwoSiteAlgorithmCase(
+  RunTestSingleSiteAlgorithmCase(
       zmps, zmpo, sweep_params,
       -8.868563739680, 1.0E-10
   );
@@ -661,7 +675,7 @@ TEST_F(TestTwoSiteAlgorithmTjSystem2U1Symm, 2DCase) {
 }
 
 
-struct TestTwoSiteAlgorithmTjSystem1U1Symm : public testing::Test {
+struct TestSingleSiteAlgorithmTjSystem1U1Symm : public testing::Test {
   U1QN qn0 = U1QN({QNCard("N", U1QNVal(0))});
   IndexT pb_out = IndexT({
                       QNSctT(U1QN({QNCard("N", U1QNVal(1))}), 2),
@@ -701,7 +715,7 @@ struct TestTwoSiteAlgorithmTjSystem1U1Symm : public testing::Test {
 };
 
 
-TEST_F(TestTwoSiteAlgorithmTjSystem1U1Symm, RashbaTermCase) {
+TEST_F(TestSingleSiteAlgorithmTjSystem1U1Symm, RashbaTermCase) {
   double t = 3.0;
   double J = 1.0;
   double lamb = 0.03;
@@ -775,12 +789,13 @@ TEST_F(TestTwoSiteAlgorithmTjSystem1U1Symm, RashbaTermCase) {
   auto sweep_params = SweepParams(
                           8,
                           30, 30, 1.0E-4,
-                          LanczosParams(1.0E-14, 100)
+                          LanczosParams(1.0E-14, 100),
+                          {0.01, 0.001, 0.0001, 0.00001}
                       );
   auto mps = ZMPS(site_vec);
   DirectStateInitMps(mps, {0, 1, 0, 2, 0, 1});
   mps.Dump(sweep_params.mps_path, true);
-  RunTestTwoSiteAlgorithmCase(
+  RunTestSingleSiteAlgorithmCase(
       mps, mpo, sweep_params,
       -11.018692166942165, 1.0E-10
   );
@@ -789,7 +804,7 @@ TEST_F(TestTwoSiteAlgorithmTjSystem1U1Symm, RashbaTermCase) {
 }
 
 
-struct TestTwoSiteAlgorithmHubbardSystem : public testing::Test {
+struct TestSingleSiteAlgorithmHubbardSystem : public testing::Test {
   size_t Nx = 2;
   size_t Ny = 2;
   size_t N = Nx * Ny;
@@ -885,7 +900,7 @@ struct TestTwoSiteAlgorithmHubbardSystem : public testing::Test {
 };
 
 
-TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
+TEST_F(TestSingleSiteAlgorithmHubbardSystem, 2Dcase) {
   auto dmpo_gen = MPOGenerator<GQTEN_Double, U1U1QN>(dsite_vec, qn0);
   for (int i = 0; i < Nx; ++i) {
     for (int j = 0; j < Ny; ++j) {
@@ -938,14 +953,15 @@ TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
   auto sweep_params = SweepParams(
                           10,
                           16, 16, 1.0E-9,
-                          LanczosParams(1.0E-8, 20)
+                          LanczosParams(1.0E-8, 20),
+                          {0.1, 0.01, 0.001}
                       );
   auto qn0 = U1U1QN({QNCard("Nup", U1QNVal(0)), QNCard("Ndn", U1QNVal(0))});
   std::vector<size_t> stat_labs(N);
   for (size_t i = 0; i < N; ++i) { stat_labs[i] = (i % 2 == 0 ? 1 : 2); }
   DirectStateInitMps(dmps, stat_labs);
   dmps.Dump(sweep_params.mps_path, true);
-  RunTestTwoSiteAlgorithmCase(
+  RunTestSingleSiteAlgorithmCase(
       dmps, dmpo, sweep_params,
       -2.828427124746, 1.0E-10
   );
@@ -1003,7 +1019,7 @@ TEST_F(TestTwoSiteAlgorithmHubbardSystem, 2Dcase) {
   auto zmpo = zmpo_gen.Gen();
   DirectStateInitMps(zmps, stat_labs);
   zmps.Dump(sweep_params.mps_path, true);
-  RunTestTwoSiteAlgorithmCase(
+  RunTestSingleSiteAlgorithmCase(
       zmps, zmpo, sweep_params,
       -2.828427124746, 1.0E-10
   );
@@ -1096,19 +1112,19 @@ TEST_F(TestKondoInsulatorSystem, doublechain) {
   auto dmpo = dmpo_gen.Gen();
 
   auto sweep_params = SweepParams(
-    5,
-    64, 64, 1.0E-9,
-    LanczosParams(1.0E-8, 20)
-  );
+                          5,
+                          64, 64, 1.0E-9,
+                          LanczosParams(1.0E-8, 20),
+                          {0.01, 0.001}
+                      );
 
   std::vector<size_t> stat_labs;
   for (size_t i = 0; i < N; ++i) { stat_labs.push_back(i % 2); }
   DirectStateInitMps(dmps, stat_labs);
   dmps.Dump(sweep_params.mps_path, true);
 
-  RunTestTwoSiteAlgorithmCase(
-      dmps, dmpo,
-      sweep_params,
+  RunTestSingleSiteAlgorithmCase(
+      dmps, dmpo, sweep_params,
       -3.180025784229132, 1.0E-10
   );
   RemoveFolder(sweep_params.mps_path);
@@ -1117,137 +1133,203 @@ TEST_F(TestKondoInsulatorSystem, doublechain) {
 
 
 
-//// Test noised tow-site vMPS algorithm.
-//// Electron-phonon interaction Holstein chain, ref 10.1103/PhysRevB.57.6376
-//struct TestHolsteinChain : public testing::Test {
-  //int L = 4;           // The number of electron
-  //int Np = 3;          // per electron has Np pseudosite
-  //double t = 1;         // electron hopping
-  //double g = 1;         // electron-phonon interaction
-  //double U = 8;         // Hubbard U
-  //double omega = 5;     // phonon on-site potential
-  //int N = (1+Np)*L;     // The length of the mps/mpo
+// Electron-phonon interaction Holstein chain, ref 10.1103/PhysRevB.57.6376
+struct TestSingleSiteAlgorithmElectronPhononSystem : public testing::Test {
+  unsigned L = 4;           // The number of electron
+  unsigned Np = 3;          // per electron has Np pseudosite
+  double t = 1;         // electron hopping
+  double g = 1;         // electron-phonon interaction
+  double U = 8;         // Hubbard U
+  double omega = 5;     // phonon on-site potential
+  unsigned N = (1+Np)*L;     // The length of the mps/mpo
 
-  //QN qn0 = QN({ QNNameVal("Nf", 0), QNNameVal("Sz", 0) });
-  ////Fermion(electron)
-  //Index pb_outF = Index({
-                      //QNSector(
-                          //QN( {QNNameVal("Nf", 2), QNNameVal("Sz",  0)}),
-                          //1
-                      //),
-                      //QNSector(
-                          //QN( {QNNameVal("Nf", 1), QNNameVal("Sz",  1)} ),
-                          //1
-                      //),
-                      //QNSector(
-                          //QN( {QNNameVal("Nf", 1), QNNameVal("Sz", -1)} ),
-                          //1
-                      //),
-                      //QNSector(
-                          //QN( {QNNameVal("Nf", 0), QNNameVal("Sz",  0)} ),
-                          //1
-                      //)
-                  //}, OUT);
-  //Index pb_inF = InverseIndex(pb_outF);
-  ////Boson(Phonon)
-  //Index pb_outB = Index({
-                      //QNSector(
-                          //QN( {QNNameVal("Nf", 0), QNNameVal("Sz",  0)} ),
-                          //2
-                      //)
-                  //},OUT);
-  //Index pb_inB = InverseIndex(pb_outB);
-  //DGQTensor nf = DGQTensor({pb_inF, pb_outF}); //fermion number
-  //DGQTensor bupcF =DGQTensor({pb_inF,pb_outF});
-  //DGQTensor bupaF = DGQTensor({pb_inF,pb_outF});
-  //DGQTensor Fbdnc = DGQTensor({pb_inF,pb_outF});
-  //DGQTensor Fbdna = DGQTensor({pb_inF,pb_outF});
-  //DGQTensor bupc =DGQTensor({pb_inF,pb_outF});
-  //DGQTensor bupa = DGQTensor({pb_inF,pb_outF});
-  //DGQTensor bdnc = DGQTensor({pb_inF,pb_outF});
-  //DGQTensor bdna = DGQTensor({pb_inF,pb_outF});
-  //DGQTensor Uterm = DGQTensor({pb_inF,pb_outF}); // Hubbard Uterm, nup*ndown
+  U1U1QN qn0 = U1U1QN({QNCard("N", U1QNVal(0)), QNCard("Sz", U1QNVal(0))});
+  //Fermion(electron)
+  IndexT2 pb_outF = IndexT2(
+                        {
+                            QNSctT2(U1U1QN({QNCard("N", U1QNVal(2)), QNCard("Sz", U1QNVal(0))}), 1),
+                            QNSctT2(U1U1QN({QNCard("N", U1QNVal(1)), QNCard("Sz", U1QNVal(1))}), 1),
+                            QNSctT2(U1U1QN({QNCard("N", U1QNVal(1)), QNCard("Sz", U1QNVal(-1))}), 1),
+                            QNSctT2(U1U1QN({QNCard("S", U1QNVal(0)), QNCard("Sz", U1QNVal(0))}), 1)
+                        },
+                        GQTenIndexDirType::OUT
+                    );
+  IndexT2 pb_inF = InverseIndex(pb_outF);
+  //Boson(Phonon)
+  IndexT2 pb_outB = IndexT2({QNSctT2(qn0,2)}, GQTenIndexDirType::OUT);
+  IndexT2 pb_inB = InverseIndex(pb_outB);
 
-  //DGQTensor a = DGQTensor({pb_inB, pb_outB}); //bosonic annihilation
-  //DGQTensor adag = DGQTensor({pb_inB, pb_outB}); //bosonic creation
-  //DGQTensor n_a =  DGQTensor({pb_inB, pb_outB}); // the number of phonon
-  //DGQTensor idB =  DGQTensor({pb_inB, pb_outB}); // bosonic identity
-  //DGQTensor &P1 = n_a;
-  //DGQTensor P0 = DGQTensor({pb_inB, pb_outB});
+  //ZSiteVec2 zsite_vec;
 
-  //DTenPtrVec dmps    = DTenPtrVec(N);
-  //std::vector<Index> pb_set = std::vector<Index>(N);
+  DGQTensor2 nf     = DGQTensor2({pb_inF, pb_outF}); //fermion number
+  DGQTensor2 bupcF  = DGQTensor2({pb_inF,pb_outF});
+  DGQTensor2 bupaF  = DGQTensor2({pb_inF,pb_outF});
+  DGQTensor2 Fbdnc  = DGQTensor2({pb_inF,pb_outF});
+  DGQTensor2 Fbdna  = DGQTensor2({pb_inF,pb_outF});
+  DGQTensor2 bupc   = DGQTensor2({pb_inF,pb_outF});
+  DGQTensor2 bupa   = DGQTensor2({pb_inF,pb_outF});
+  DGQTensor2 bdnc   = DGQTensor2({pb_inF,pb_outF});
+  DGQTensor2 bdna   = DGQTensor2({pb_inF,pb_outF});
+  DGQTensor2 Uterm  = DGQTensor2({pb_inF,pb_outF}); // Hubbard Uterm, nup*ndown
 
+  DGQTensor2 a      =   DGQTensor2({pb_inB, pb_outB}); //bosonic annihilation
+  DGQTensor2 adag   =   DGQTensor2({pb_inB, pb_outB}); //bosonic creation
+  DGQTensor2 P1    =   DGQTensor2({pb_inB, pb_outB}); // the number of phonon
+  DGQTensor2 idB    =   DGQTensor2({pb_inB, pb_outB}); // bosonic identity
+  DGQTensor2 P0     =   DGQTensor2({pb_inB, pb_outB});
 
-  //void SetUp(void) {
-    //nf({0,0}) = 2;  nf({1,1}) = 1;  nf({2,2}) = 1;
+  std::vector<IndexT2> index_set = std::vector<IndexT2>(N);
 
-    //bupcF({0,2}) = -1;  bupcF({1,3}) = 1;
-    //Fbdnc({0,1}) = 1;   Fbdnc({2,3}) = -1;
-    //bupaF({2,0}) = 1;   bupaF({3,1}) = -1;
-    //Fbdna({1,0}) = -1;  Fbdna({3,2}) = 1;
+  ZGQTensor2 znf     = ZGQTensor2({pb_inF, pb_outF}); //fermion number
+  ZGQTensor2 zbupcF  = ZGQTensor2({pb_inF,pb_outF});
+  ZGQTensor2 zbupaF  = ZGQTensor2({pb_inF,pb_outF});
+  ZGQTensor2 zFbdnc  = ZGQTensor2({pb_inF,pb_outF});
+  ZGQTensor2 zFbdna  = ZGQTensor2({pb_inF,pb_outF});
+  ZGQTensor2 zbupc   = ZGQTensor2({pb_inF,pb_outF});
+  ZGQTensor2 zbupa   = ZGQTensor2({pb_inF,pb_outF});
+  ZGQTensor2 zbdnc   = ZGQTensor2({pb_inF,pb_outF});
+  ZGQTensor2 zbdna   = ZGQTensor2({pb_inF,pb_outF});
+  ZGQTensor2 zUterm  = ZGQTensor2({pb_inF,pb_outF}); // Hubbard Uterm, nup*ndown
 
-    //bupc({0,2}) = 1;    bupc({1,3}) = 1;
-    //bdnc({0,1}) = 1;    bdnc({2,3}) = 1;
-    //bupa({2,0}) = 1;    bupa({3,1}) = 1;
-    //bdna({1,0}) = 1;    bdna({3,2}) = 1;
-
-    //Uterm({0,0}) = 1;
+  ZGQTensor2 za      =   ZGQTensor2({pb_inB, pb_outB}); //bosonic annihilation
+  ZGQTensor2 zadag   =   ZGQTensor2({pb_inB, pb_outB}); //bosonic creation
+  ZGQTensor2 zP1    =   ZGQTensor2({pb_inB, pb_outB}); // the number of phonon
+  ZGQTensor2 zidB    =   ZGQTensor2({pb_inB, pb_outB}); // bosonic identity
+  ZGQTensor2 zP0     =   ZGQTensor2({pb_inB, pb_outB});
 
 
-    //adag({0,1}) = 1;
-    //a({1,0}) = 1;
-    //n_a({0,0}) = 1;
-    //idB({0,0}) = 1; idB({1,1}) = 1;
-    //P0 = idB+(-n_a);
-    //for(int i =0;i < N; ++i){
-      //if(i%(Np+1)==0) pb_set[i] = pb_outF; // even site is fermion
-      //else pb_set[i] = pb_outB; // odd site is boson
-    //}
-  //}
-//};
 
-//TEST_F(TestHolsteinChain, holsteinchain) {
-  //SiteVec site_vec(pb_set);
-  //auto dmpo_gen = MPOGenerator<GQTEN_Double>(site_vec, qn0);
-  //for (int i = 0; i < N-Np-1; i=i+Np+1) {
-    //dmpo_gen.AddTerm(-t, bupcF, i, bupa, i+Np+1);
-    //dmpo_gen.AddTerm(-t, bdnc, i, Fbdna, i+Np+1);
-    //dmpo_gen.AddTerm( t, bupaF, i, bupc, i+Np+1);
-    //dmpo_gen.AddTerm( t, bdna, i, Fbdnc, i+Np+1);
-  //}
-  //for (int i = 0; i < N; i=i+Np+1) {
-    //dmpo_gen.AddTerm(U, Uterm, i);
-    //for(int j = 0; j < Np; ++j) {
-      //dmpo_gen.AddTerm(omega, (double)(pow(2,j))*n_a, i+j+1);
-    //}
-    //dmpo_gen.AddTerm(2*g, {nf, a, a, adag},{i, i+1, i+2, i+3});
-    //dmpo_gen.AddTerm(2*g, {nf, adag, adag, a},{i, i+1, i+2, i+3});
-    //dmpo_gen.AddTerm(g,   {nf, a, adag, sqrt(2)*P0+sqrt(6)*P1},{i,i+1,i+2,i+3});
-    //dmpo_gen.AddTerm(g,   {nf, adag, a, sqrt(2)*P0+sqrt(6)*P1},{i,i+1,i+2,i+3});
-    //dmpo_gen.AddTerm(g,  {nf,a+adag,P1, sqrt(3)*P0+sqrt(7)*P1},{i,i+1,i+2,i+3});
-    //dmpo_gen.AddTerm(g,   {nf,a+adag,P0, P0+sqrt(5)*P1},{i,i+1,i+2,i+3});
-  //}
 
-  //auto dmpo = dmpo_gen.Gen();
-  //std::vector<long> stat_labs(N,0);
-  //int qn_label = 1;
-  //for (int i = 0; i < N; i=i+Np+1) {
-  //stat_labs[i] = qn_label;
-  //qn_label=3-qn_label;
-  //}
-  //DirectStateInitMps(dmps, stat_labs, pb_set, qn0);
-  //auto sweep_params = SweepParams(
-                          //5,
-                          //256, 256, 1.0E-10,
-                          //true,
-                          //kTwoSiteAlgoWorkflowInitial,
-                          //LanczosParams(1.0E-10, 40)
-                      //);
-  //std::vector<double> noise = {0.1,0.1,0.01,0.001};
-  //RunTestTwoSiteAlgorithmNoiseCase(
-      //dmps, dmpo,
-      //sweep_params, noise,
-      //-1.9363605088186260 , 1.0E-8
-  //);
-//}
+
+  void SetUp(void) {
+    nf({0,0}) = 2;  nf({1,1}) = 1;  nf({2,2}) = 1;
+
+    bupcF({0,2}) = -1;  bupcF({1,3}) = 1;
+    Fbdnc({0,1}) = 1;   Fbdnc({2,3}) = -1;
+    bupaF({2,0}) = 1;   bupaF({3,1}) = -1;
+    Fbdna({1,0}) = -1;  Fbdna({3,2}) = 1;
+
+    bupc({0,2}) = 1;    bupc({1,3}) = 1;
+    bdnc({0,1}) = 1;    bdnc({2,3}) = 1;
+    bupa({2,0}) = 1;    bupa({3,1}) = 1;
+    bdna({1,0}) = 1;    bdna({3,2}) = 1;
+
+    Uterm({0,0}) = 1;
+
+    adag({0,1}) = 1;
+    a({1,0}) = 1;
+    P1({0,0}) = 1;
+    idB({0,0}) = 1; idB({1,1}) = 1;
+    P0 = idB+(-P1);
+
+    znf = ToComplex(nf);
+
+    zbupcF = ToComplex(bupcF);
+    zFbdnc = ToComplex(Fbdnc);
+    zbupaF = ToComplex(bupaF);
+    zFbdna = ToComplex(Fbdna);
+    zbupc  = ToComplex(bupc);
+    zbdnc  = ToComplex(bdnc);
+    zbupa  = ToComplex(bupa);
+    zbdna  = ToComplex(bdna);
+
+    zUterm	=  ToComplex(Uterm);
+    zadag 	=  ToComplex(adag );
+    za    	=  ToComplex(a    );
+    zP1   	=  ToComplex(P1   );
+    zidB  	=  ToComplex(idB  );
+    zP0   	=  ToComplex(P0   );
+
+    for(size_t i =0; i < N; ++i){
+      if (i%(Np+1)==0) {
+        index_set[i] = pb_outF;     // even site is fermion
+      } else {
+        index_set[i] = pb_outB;     // odd site is boson
+      }
+    }
+  }
+};
+
+
+TEST_F(TestSingleSiteAlgorithmElectronPhononSystem, holsteinchain) {
+  DSiteVec2 dsite_vec = DSiteVec2(index_set);
+  auto dmpo_gen = MPOGenerator<GQTEN_Double, U1U1QN>(dsite_vec, qn0);
+  for (int i = 0; i < N-Np-1; i=i+Np+1) {
+    dmpo_gen.AddTerm(-t, bupcF, i, bupa,  i+Np+1);
+    dmpo_gen.AddTerm(-t, bdnc,  i, Fbdna, i+Np+1);
+    dmpo_gen.AddTerm( t, bupaF, i, bupc,  i+Np+1);
+    dmpo_gen.AddTerm( t, bdna,  i, Fbdnc, i+Np+1);
+  }
+  for (unsigned long i = 0; i < N; i=i+Np+1) {
+    dmpo_gen.AddTerm(U, Uterm, i);
+    for(unsigned long j = 0; j < Np; ++j) {
+      dmpo_gen.AddTerm(omega, (double)(pow(2,j))*P1, i+j+1);
+    }
+    dmpo_gen.AddTerm(2*g, {nf,  a,      a,    adag},                  {i, i+1,  i+2,  i+3});
+    dmpo_gen.AddTerm(2*g, {nf,  adag,   adag, a},                     {i, i+1,  i+2,  i+3});
+    dmpo_gen.AddTerm(g,   {nf,  a,      adag, sqrt(2)*P0+sqrt(6)*P1}, {i, i+1,  i+2,  i+3});
+    dmpo_gen.AddTerm(g,   {nf,  adag,   a,    sqrt(2)*P0+sqrt(6)*P1}, {i, i+1,  i+2,  i+3});
+    dmpo_gen.AddTerm(g,   {nf,  a+adag, P1,   sqrt(3)*P0+sqrt(7)*P1}, {i, i+1,  i+2,  i+3});
+    dmpo_gen.AddTerm(g,   {nf,  a+adag, P0,   P0+sqrt(5)*P1},         {i, i+1,  i+2,  i+3});
+  }
+
+  auto dmpo = dmpo_gen.Gen();
+  DMPS2 dmps = DMPS2(dsite_vec);
+  std::vector<unsigned long> stat_labs(N,0);
+  int qn_label = 1;
+  for (int i = 0; i < N; i=i+Np+1) {
+    stat_labs[i] = qn_label;
+    qn_label=3-qn_label;
+  }
+  DirectStateInitMps(dmps, stat_labs);
+  auto sweep_params = SweepParams(
+                          5,
+                          256, 256, 1.0E-10,
+                          LanczosParams(1.0E-7),
+                          {0.1, 0.1, 0.01, 0.001, 0.0001}
+                      );
+  dmps.Dump(sweep_params.mps_path, true);
+
+  RunTestSingleSiteAlgorithmCase(
+      dmps, dmpo, sweep_params,
+      -1.9363605088186260 , 1.0E-8
+  );
+  RemoveFolder(sweep_params.mps_path);
+  RemoveFolder(sweep_params.temp_path);
+
+
+
+  //Complex case
+  ZSiteVec2 zsite_vec = ZSiteVec2(index_set);
+  auto zmpo_gen = MPOGenerator<GQTEN_Complex, U1U1QN>(zsite_vec, qn0);
+  for (int i = 0; i < N-Np-1; i=i+Np+1) {
+    zmpo_gen.AddTerm(-t, zbupcF, i, zbupa,  i+Np+1);
+    zmpo_gen.AddTerm(-t, zbdnc,  i, zFbdna, i+Np+1);
+    zmpo_gen.AddTerm( t, zbupaF, i, zbupc,  i+Np+1);
+    zmpo_gen.AddTerm( t, zbdna,  i, zFbdnc, i+Np+1);
+  }
+  for (unsigned long i = 0; i < N; i=i+Np+1) {
+    zmpo_gen.AddTerm(U, zUterm, i);
+    for(unsigned long j = 0; j < Np; ++j) {
+    zmpo_gen.AddTerm(omega, (double)(pow(2,j))*zP1, i+j+1);
+  }
+    zmpo_gen.AddTerm(2*g, {znf,  za,       za,    zadag},                   {i, i+1,  i+2,  i+3});
+    zmpo_gen.AddTerm(2*g, {znf,  zadag,    zadag, za},                      {i, i+1,  i+2,  i+3});
+    zmpo_gen.AddTerm(g,   {znf,  za,       zadag, sqrt(2)*zP0+sqrt(6)*zP1}, {i, i+1,  i+2,  i+3});
+    zmpo_gen.AddTerm(g,   {znf,  zadag,    za,    sqrt(2)*zP0+sqrt(6)*zP1}, {i, i+1,  i+2,  i+3});
+    zmpo_gen.AddTerm(g,   {znf,  za+zadag, zP1,   sqrt(3)*zP0+sqrt(7)*zP1}, {i, i+1,  i+2,  i+3});
+    zmpo_gen.AddTerm(g,   {znf,  za+zadag, zP0,   zP0+sqrt(5)*zP1},         {i, i+1,  i+2,  i+3});
+}
+
+  auto zmpo = zmpo_gen.Gen();
+  ZMPS2 zmps = ZMPS2(zsite_vec);
+  DirectStateInitMps(zmps, stat_labs);
+  zmps.Dump(sweep_params.mps_path, true);
+
+  RunTestSingleSiteAlgorithmCase(
+      zmps, zmpo, sweep_params,
+      -1.9363605088186260 , 1.0E-8
+  );
+  RemoveFolder(sweep_params.mps_path);
+  RemoveFolder(sweep_params.temp_path);
+}

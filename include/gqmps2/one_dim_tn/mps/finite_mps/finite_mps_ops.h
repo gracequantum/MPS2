@@ -44,7 +44,7 @@ void FiniteMPSAdd(
   for (size_t i = 0; i < N; ++i) {
     mps_c.alloc(i);
     if (i == 0) {
-      Expand(mps_a(i), mps_b(i), {1}, mps_c(i));
+      Expand(mps_a(i), mps_b(i), {2}, mps_c(i));
     } else if (i == N - 1) {
       Expand(mps_a(i), mps_b(i), {0}, mps_c(i));
     } else {

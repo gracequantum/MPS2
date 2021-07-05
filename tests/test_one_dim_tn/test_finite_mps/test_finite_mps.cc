@@ -32,6 +32,7 @@ struct TestMPS : public testing::Test {
   QNT qn0 = QNT({QNCard("N", U1QNVal(0))});
   QNT qn1 = QNT({QNCard("N", U1QNVal(1))});
   QNT qn2 = QNT({QNCard("N", U1QNVal(2))});
+  IndexT vb0_in = IndexT({QNSctT(qn0, 1)}, IN);
   IndexT pb_out = IndexT({QNSctT(qn0, 1), QNSctT(qn1, 1)}, OUT);
   IndexT vb01_out = IndexT({QNSctT(qn0, 1), QNSctT(qn1, 1)}, OUT);
   IndexT vb01_in = InverseIndex(vb01_out);
@@ -40,11 +41,12 @@ struct TestMPS : public testing::Test {
                         OUT
                     );
   IndexT vb012_in = InverseIndex(vb012_out);
-  Tensor t0 = Tensor({pb_out, vb01_out});
+  IndexT vb0_out = InverseIndex(vb0_in);
+  Tensor t0 = Tensor({vb0_in, pb_out, vb01_out});
   Tensor t1 = Tensor({vb01_in, pb_out, vb012_out});
   Tensor t2 = Tensor({vb012_in, pb_out, vb012_out});
   Tensor t3 = Tensor({vb012_in, pb_out, vb01_out});
-  Tensor t4 = Tensor({vb01_in, pb_out});
+  Tensor t4 = Tensor({vb01_in, pb_out, vb0_out});
 
   SiteVecT site_vec = SiteVecT(5, pb_out);
 
@@ -72,7 +74,13 @@ void CheckIsIdTen(const TenT &t) {
   EXPECT_EQ(shape.size(), 2);
   EXPECT_EQ(shape[0], shape[1]);
   for (size_t i = 0; i < shape[0]; ++i) {
-    EXPECT_NEAR(t(i, i), 1.0, 1E-15);
+    for (size_t j = 0; j < shape[1]; ++j) {
+      if (i == j) {
+        EXPECT_NEAR(t(i, j), 1.0, 1E-15);
+      } else {
+        EXPECT_NEAR(t(i, j), 0.0, 1E-15);
+      }
+    }
   }
 }
 
@@ -80,20 +88,13 @@ void CheckIsIdTen(const TenT &t) {
 void CheckMPSTenCanonical(
     const MPST &mps,
     const size_t i,
-    const int center) {
+    const int center
+) {
   std::vector<std::vector<size_t>> ctrct_leg_idxs;
   if (i < center) {
-    if (i == 0) {
-      ctrct_leg_idxs = {{0}, {0}};
-    } else {
-      ctrct_leg_idxs = {{0, 1}, {0, 1}};
-    }
+    ctrct_leg_idxs = {{0, 1}, {0, 1}};
   } else if (i > center) {
-    if (i == mps.size() - 1) {
-      ctrct_leg_idxs = {{1}, {1}};
-    } else {
-      ctrct_leg_idxs = {{1, 2}, {1, 2}};
-    }
+    ctrct_leg_idxs = {{1, 2}, {1, 2}};
   }
 
   Tensor res;

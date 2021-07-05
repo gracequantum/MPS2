@@ -172,12 +172,7 @@ void FiniteMPS<TenElemT, QNT>::LeftCanonicalize_(const size_t stop_idx) {
 template <typename TenElemT, typename QNT>
 void FiniteMPS<TenElemT, QNT>::LeftCanonicalizeTen_(const size_t site_idx) {
   assert(site_idx < this->size() - 1);
-  size_t ldims;
-  if (site_idx == 0) {
-    ldims = 1;
-  } else {
-    ldims = 2;
-  }
+  size_t ldims(2);
   GQTensor<GQTEN_Double, QNT> s;
   LocalTenT vt;
   auto pu = new LocalTenT;
@@ -224,15 +219,7 @@ void FiniteMPS<TenElemT, QNT>::RightCanonicalizeTen_(const size_t site_idx) {
 
   LocalTenT temp_ten;
   Contract(&u, &s, {{1}, {0}}, &temp_ten);
-  std::vector<size_t> ta_ctrct_axes;
-  if ((site_idx - 1) == 0) {
-    ta_ctrct_axes = {1};
-  } else {
-    ta_ctrct_axes = {2};
-  }
-  std::vector<std::vector<size_t>> ctrct_axes;
-  ctrct_axes.emplace_back(ta_ctrct_axes);
-  ctrct_axes.push_back({0});
+  std::vector<std::vector<size_t>> ctrct_axes = {{2}, {0}};
   auto pprev_ten = new LocalTenT;
   Contract((*this)(site_idx - 1), &temp_ten, ctrct_axes, pprev_ten);
   delete (*this)(site_idx - 1);
@@ -251,7 +238,8 @@ tensor generated from each SVD step will be normalized.
 
 @param mps To-be truncated finite MPS.
 @param trunc_err The target truncation error.
-@param Dmin The 
+@param Dmin Minimal bond dimension
+@param Dmax Maximal bond dimension
 */
 template <typename TenElemT, typename QNT>
 void TruncateMPS(
@@ -270,12 +258,7 @@ void TruncateMPS(
   GQTEN_Double actual_trunc_err;
   size_t D;
   for (size_t i = 0; i < mps_size - 1; ++i) {
-    size_t ldims;
-    if (i == 0) {
-      ldims = 1;
-    } else {
-      ldims = 2;
-    }
+    size_t ldims(2);
     GQTensor<GQTEN_Double, QNT> s;
     LocalTenT vt;
     auto pu = new LocalTenT;

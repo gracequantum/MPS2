@@ -99,22 +99,22 @@ TEST_F(TestMpsMeasurement, TestMeasureOneSiteOp) {
   // Double case 1
   std::vector<GQTEN_Double> dres1;
   for (long i = 0; i < N; ++i) { dres1.push_back(stat_labs1[i]); }
-  DirectStateInitMps(dmps, stat_labs1, qn0);
+  DirectStateInitMps(dmps, stat_labs1);
   RunTestMeasureOneSiteOpCase(dmps, dntot, dres1);
   // Double case 2
   std::vector<GQTEN_Double> dres2;
   for (long i = 0; i < N; ++i) { dres2.push_back(stat_labs2[i]); }
-  DirectStateInitMps(dmps, stat_labs2, qn0);
+  DirectStateInitMps(dmps, stat_labs2);
   RunTestMeasureOneSiteOpCase(dmps, dntot, dres2);
   // Complex case 1
   std::vector<GQTEN_Complex> zres1;
   for (auto d : dres1) { zres1.push_back(d); }
-  DirectStateInitMps(zmps, stat_labs1, qn0);
+  DirectStateInitMps(zmps, stat_labs1);
   RunTestMeasureOneSiteOpCase(zmps, zntot, zres1);
   // Complex case 2
   std::vector<GQTEN_Complex> zres2;
   for (auto d : dres2) { zres2.push_back(d); }
-  DirectStateInitMps(zmps, stat_labs2, qn0);
+  DirectStateInitMps(zmps, stat_labs2);
   RunTestMeasureOneSiteOpCase(zmps, zntot, zres2);
 }
 
@@ -148,22 +148,22 @@ TEST_F(TestMpsMeasurement, TestMeasureTwoSiteOp) {
 
   // Double case 1
   std::vector<GQTEN_Double> dres1(sites_set.size(), 1.0);
-  DirectStateInitMps(dmps, stat_labs1, qn0);
+  DirectStateInitMps(dmps, stat_labs1);
   RunTestMeasureTwoSiteOpCase(dmps, {did, did}, did, sites_set, dres1);
   RunTestMeasureTwoSiteOpCase(dmps, {dntot, dntot}, did, sites_set, dres1);
   // Double case 2
-  DirectStateInitMps(dmps, stat_labs2, qn0);
+  DirectStateInitMps(dmps, stat_labs2);
   RunTestMeasureTwoSiteOpCase(dmps, {did, did}, did, sites_set, dres1);
   std::vector<GQTEN_Double> dres2 = {0, 0, 0, 0, 1, 0};
   RunTestMeasureTwoSiteOpCase(dmps, {dntot, dntot}, did, sites_set, dres2);
 
   // Complex case 1
   std::vector<GQTEN_Complex> zres1(sites_set.size(), 1.0);
-  DirectStateInitMps(zmps, stat_labs1, qn0);
+  DirectStateInitMps(zmps, stat_labs1);
   RunTestMeasureTwoSiteOpCase(zmps, {zid, zid}, zid, sites_set, zres1);
   RunTestMeasureTwoSiteOpCase(zmps, {zntot, zntot}, zid, sites_set, zres1);
   // Double case 2
-  DirectStateInitMps(zmps, stat_labs2, qn0);
+  DirectStateInitMps(zmps, stat_labs2);
   RunTestMeasureTwoSiteOpCase(zmps, {zid, zid}, zid, sites_set, zres1);
   std::vector<GQTEN_Complex> zres2 = {0, 0, 0, 0, 1, 0};
   RunTestMeasureTwoSiteOpCase(zmps, {zntot, zntot}, zid, sites_set, zres2);

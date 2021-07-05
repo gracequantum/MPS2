@@ -26,6 +26,7 @@ struct CustomCaseParamsParser : public CaseParamsParserBasic {
     case_char = ParseChar("Char");
     case_str = ParseStr("String");
     case_bool = ParseBool("Boolean");
+    case_double_vec = ParseDoubleVec("DoubleVec");
   }
 
   int case_int;
@@ -33,6 +34,7 @@ struct CustomCaseParamsParser : public CaseParamsParserBasic {
   char case_char;
   std::string case_str;
   bool case_bool;
+  std::vector<double> case_double_vec;
 };
 
 
@@ -43,6 +45,7 @@ TEST(TestCaseParamsParser, Case1) {
   EXPECT_EQ(params.case_char, 'c');
   EXPECT_EQ(params.case_str, "string");
   EXPECT_EQ(params.case_bool, false);
+  EXPECT_EQ(params.case_double_vec, std::vector<double>({0.1, 0.02, 0.003}));
 }
 
 

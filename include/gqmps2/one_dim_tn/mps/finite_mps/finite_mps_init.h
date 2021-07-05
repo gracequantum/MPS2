@@ -215,8 +215,7 @@ Initialize a finite MPS as a direct product state.
 template <typename TenElemT, typename QNT>
 void DirectStateInitMps(
     FiniteMPS<TenElemT, QNT> &mps,
-    const std::vector<size_t> &stat_labs,
-    const QNT &zero_div
+    const std::vector<size_t> &stat_labs
 ) {
   using TenT = GQTensor<TenElemT, QNT>;
   using IndexT = Index<QNT>;
@@ -234,28 +233,31 @@ void DirectStateInitMps(
   for (size_t i = 1; i < N; ++i) {
     div += pb_out_set[i].GetQNSctFromActualCoor(stat_labs[i]).GetQn();
   }
+  // Calculate zero quantum number
+  auto zero_qn = div - div;
 
   auto stat_lab = stat_labs[0];
   auto rvb_qn = div - pb_out_set[0].GetQNSctFromActualCoor(stat_lab).GetQn();
+  lvb = IndexT({QNSctT(zero_qn, 1)}, GQTenIndexDirType::IN);
   rvb = IndexT({QNSctT(rvb_qn, 1)}, GQTenIndexDirType::OUT);
-  mps(0) = new TenT({pb_out_set[0], rvb});
-  (mps[0])({stat_lab, 0}) = 1;
+  mps(0) = new TenT({lvb, pb_out_set[0], rvb});
+  (mps[0])({0, stat_lab, 0}) = 1;
 
   for (size_t i = 1; i < N-1; ++i) {
     lvb = InverseIndex(rvb);
     stat_lab = stat_labs[i];
-    rvb_qn = zero_div -
-             pb_out_set[i].GetQNSctFromActualCoor(stat_lab).GetQn() +
-             lvb.GetQNSctFromActualCoor(0).GetQn();
+    rvb_qn = lvb.GetQNSctFromActualCoor(0).GetQn() -
+             pb_out_set[i].GetQNSctFromActualCoor(stat_lab).GetQn();
     rvb = IndexT({QNSctT(rvb_qn, 1)}, GQTenIndexDirType::OUT);
     mps(i) = new TenT({lvb, pb_out_set[i], rvb});
     (mps[i])({0, stat_lab, 0}) = 1;
   }
 
   lvb = InverseIndex(rvb);
-  mps(N-1) = new TenT({lvb, pb_out_set[N-1]});
+  rvb = IndexT({QNSctT(zero_qn, 1)}, GQTenIndexDirType::OUT);
+  mps(N-1) = new TenT({lvb, pb_out_set[N-1], rvb});
   stat_lab = stat_labs[N-1];
-  (mps[N-1])({0, stat_lab}) = 1;
+  (mps[N-1])({0, stat_lab, 0}) = 1;
 
   // Centralize MPS.
   mps.Centralize(0);
@@ -269,7 +271,6 @@ template <typename TenElemT, typename QNT>
 void ExtendDirectRandomInitMps(
     FiniteMPS<TenElemT, QNT> &mps,
     const std::vector<std::vector<size_t>> &stat_labs_set,
-    const QNT &zero_div,
     const size_t enlarged_dim
 ) {
   using TenT = GQTensor<TenElemT, QNT>;
@@ -291,6 +292,8 @@ void ExtendDirectRandomInitMps(
   for (size_t i = 1; i < N; ++i) {
     div += pb_out_set[i].GetQNSctFromActualCoor(stat_labs_set[0][i]).GetQn();
   }
+  // Calculate zero quantum number
+  auto zero_qn = div-div;
 
   // Deal with MPS head local tensor
   for (size_t i = 0; i < fusion_stats_num; ++i) {
@@ -298,9 +301,10 @@ void ExtendDirectRandomInitMps(
     auto rvb_qn = div - pb_out_set[0].GetQNSctFromActualCoor(stat_lab).GetQn();
     rvb_qnscts.push_back(QNSctT(rvb_qn, enlarged_dim));
   }
+  lvb = IndexT({QNSctT(zero_qn, 1)}, GQTenIndexDirType::IN);
   rvb = IndexT(rvb_qnscts, GQTenIndexDirType::OUT);
   rvb_qnscts.clear();
-  mps(0) = new TenT({pb_out_set[0], rvb});
+  mps(0) = new TenT({lvb, pb_out_set[0], rvb});
   mps[0].Random(div);
 
   // Deal with MPS middle local tensors
@@ -308,21 +312,21 @@ void ExtendDirectRandomInitMps(
     lvb = InverseIndex(rvb);
     for (size_t j = 0; j < fusion_stats_num; ++j) {
       auto stat_lab = stat_labs_set[j][i];
-      auto rvb_qn = zero_div -
-                    pb_out_set[i].GetQNSctFromActualCoor(stat_lab).GetQn() +
-                    lvb.GetQNSctFromActualCoor(j*enlarged_dim).GetQn();
+      auto rvb_qn = lvb.GetQNSctFromActualCoor(j * enlarged_dim).GetQn() -
+                    pb_out_set[i].GetQNSctFromActualCoor(stat_lab).GetQn();
       rvb_qnscts.push_back(QNSctT(rvb_qn, enlarged_dim));
     }
     rvb = IndexT(rvb_qnscts, GQTenIndexDirType::OUT);
     mps(i) = new TenT({lvb, pb_out_set[i], rvb});
     rvb_qnscts.clear();
-    mps[i].Random(zero_div);
+    mps[i].Random(zero_qn);
   }
 
   // Deal with MPS tail local tensor
   lvb = InverseIndex(rvb);
-  mps(N-1) = new TenT({lvb, pb_out_set[N-1]});
-  mps[N-1].Random(zero_div);
+  rvb = IndexT({QNSctT(zero_qn, 1)}, GQTenIndexDirType::OUT);
+  mps(N-1) = new TenT({lvb, pb_out_set[N-1], rvb});
+  mps[N-1].Random(zero_qn);
 
   // Centralize MPS.
   mps.Centralize(0);
