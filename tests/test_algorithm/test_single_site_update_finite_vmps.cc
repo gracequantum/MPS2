@@ -86,6 +86,7 @@ void RunTestSingleSiteAlgorithmCase(
   auto e0 = SingleSiteFiniteVMPS(mps, mpo, sweep_params);
   EXPECT_NEAR(e0, benmrk_e0, precision);
   EXPECT_TRUE(mps.empty());
+  mkl_free_buffers();
 }
 
 

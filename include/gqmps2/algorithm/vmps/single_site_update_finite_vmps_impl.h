@@ -446,6 +446,7 @@ void SingleSiteFiniteVMPSExpand(
                                  mps[next_site].GetIndexes()[2]
                              });
     Expand(mps(next_site), &expanded_zero_ten, {0}, ten_tmp);
+    delete mps(next_site);
     mps(next_site) = ten_tmp;
   } else if (dir=='l') {
     size_t next_site = target_site - 1;
@@ -463,6 +464,7 @@ void SingleSiteFiniteVMPSExpand(
                                  expanded_index
                              });
     Expand(mps(next_site), &expanded_zero_ten, {2}, ten_tmp);
+    delete mps(next_site);
     mps(next_site) = ten_tmp;
   }
 }
