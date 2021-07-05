@@ -74,9 +74,12 @@ void CheckIsIdTen(const TenT &t) {
   EXPECT_EQ(shape.size(), 2);
   EXPECT_EQ(shape[0], shape[1]);
   for (size_t i = 0; i < shape[0]; ++i) {
-    for (size_t j = 0; j < shape[1]; ++j){
-      if(i==j)EXPECT_NEAR(t(i, i), 1.0, 1E-15);
-      else EXPECT_NEAR(t(i, j), 0.0, 1E-15);
+    for (size_t j = 0; j < shape[1]; ++j) {
+      if (i == j) {
+        EXPECT_NEAR(t(i, j), 1.0, 1E-15);
+      } else {
+        EXPECT_NEAR(t(i, j), 0.0, 1E-15);
+      }
     }
   }
 }
@@ -85,7 +88,8 @@ void CheckIsIdTen(const TenT &t) {
 void CheckMPSTenCanonical(
     const MPST &mps,
     const size_t i,
-    const int center) {
+    const int center
+) {
   std::vector<std::vector<size_t>> ctrct_leg_idxs;
   if (i < center) {
     ctrct_leg_idxs = {{0, 1}, {0, 1}};

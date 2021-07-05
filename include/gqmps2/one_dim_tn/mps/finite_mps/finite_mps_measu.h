@@ -103,8 +103,8 @@ void DumpMeasuRes(const MeasuRes<AvgT> &, const std::string &);
 
 // Helpers.
 inline bool IsOrderKept(const std::vector<size_t> &sites) {
-  for (std::size_t i = 0; i < sites.size()-1; ++i){
-    if (sites[i] > sites[i+1]){return false;}
+  for (size_t i = 0; i < sites.size() - 1; ++i){
+    if (sites[i] > sites[i+1]) { return false; }
   }
   return true;
 }
@@ -369,12 +369,10 @@ MeasuResElem<TenElemT> OneSiteOpAvg(
     const size_t site,
     const size_t N
 ) {
-  std::vector<size_t> ta_ctrct_axes1, tb_ctrct_axes1;
-  std::vector<size_t> ta_ctrct_axes2, tb_ctrct_axes2;
-  ta_ctrct_axes1 = {1};
-  tb_ctrct_axes1 = {0};
-  ta_ctrct_axes2 = {0, 2, 1};
-  tb_ctrct_axes2 = {0, 1, 2};
+  std::vector<size_t> ta_ctrct_axes1 {1};
+  std::vector<size_t> tb_ctrct_axes1 {0};
+  std::vector<size_t> ta_ctrct_axes2 {0, 2, 1};
+  std::vector<size_t> tb_ctrct_axes2 {0, 1, 2};
   GQTensor<TenElemT, QNT> temp_ten, res_ten;
   Contract(&cent_ten, &op, {ta_ctrct_axes1, tb_ctrct_axes1}, &temp_ten);
   auto cent_ten_dag = Dag(cent_ten);
@@ -455,12 +453,9 @@ TenElemT OpsVecAvg(
 ) {
   auto id_op_set = mps.GetSitesInfo().id_ops;
   // Deal with head tensor.
-  std::vector<size_t> head_mps_ten_ctrct_axes1;
-  std::vector<size_t> head_mps_ten_ctrct_axes2;
-  std::vector<size_t> head_mps_ten_ctrct_axes3;
-  head_mps_ten_ctrct_axes1 = {1};
-  head_mps_ten_ctrct_axes2 = {0, 2};
-  head_mps_ten_ctrct_axes3 = {0, 1};
+  std::vector<size_t> head_mps_ten_ctrct_axes1 {1};
+  std::vector<size_t> head_mps_ten_ctrct_axes2 {0, 2};
+  std::vector<size_t> head_mps_ten_ctrct_axes3 {0, 1};
   GQTensor<TenElemT, QNT> temp_ten0;
   auto ptemp_ten = new GQTensor<TenElemT, QNT>;
   Contract(
@@ -482,10 +477,8 @@ TenElemT OpsVecAvg(
   }
 
   // Deal with tail tensor.
-  std::vector<size_t> tail_mps_ten_ctrct_axes1;
-  std::vector<size_t> tail_mps_ten_ctrct_axes2;
-  tail_mps_ten_ctrct_axes1 = {0, 1, 2};
-  tail_mps_ten_ctrct_axes2 = {2, 0, 1};
+  std::vector<size_t> tail_mps_ten_ctrct_axes1 {0, 1, 2};
+  std::vector<size_t> tail_mps_ten_ctrct_axes2 {2, 0, 1};
   GQTensor<TenElemT, QNT> temp_ten2, temp_ten3, res_ten;
   Contract(&mps[tail_site], ptemp_ten, {{0}, {0}}, &temp_ten2);
   delete ptemp_ten;

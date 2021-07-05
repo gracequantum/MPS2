@@ -29,7 +29,7 @@ struct SweepParams {
       const size_t sweeps,
       const size_t dmin, const size_t dmax, const double trunc_err,
       const LanczosParams &lancz_params,
-      const std::vector<double> noises = std::vector<double>(1,0.0),
+      const std::vector<double> noises = std::vector<double>(1, 0.0),
       const std::string mps_path = kMpsPath,
       const std::string temp_path = kRuntimeTempPath
   ) :

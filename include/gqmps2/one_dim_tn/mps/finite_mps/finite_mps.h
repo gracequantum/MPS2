@@ -219,7 +219,7 @@ void FiniteMPS<TenElemT, QNT>::RightCanonicalizeTen_(const size_t site_idx) {
 
   LocalTenT temp_ten;
   Contract(&u, &s, {{1}, {0}}, &temp_ten);
-  std::vector<std::vector<size_t>> ctrct_axes = {{2},{0}};
+  std::vector<std::vector<size_t>> ctrct_axes = {{2}, {0}};
   auto pprev_ten = new LocalTenT;
   Contract((*this)(site_idx - 1), &temp_ten, ctrct_axes, pprev_ten);
   delete (*this)(site_idx - 1);

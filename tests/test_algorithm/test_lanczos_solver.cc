@@ -269,7 +269,6 @@ mkl_free_buffers();
 }
 
 
-
 TEST_F(TestLanczos, TestSingleSiteLanczosSolver) {
 	// Tensor with double element.
 	auto dlsite = DGQTensor({idx_din, idx_vout, idx_dout});
@@ -302,9 +301,10 @@ TEST_F(TestLanczos, TestSingleSiteLanczosSolver) {
 	pdinit_state->Random(qn0);
 	LanczosParams lanczos_params(1.0E-9);
 	RunTestSingleSiteLanczosSolverCase(
-		{&dlsite, &drsite, &drblock},
-		pdinit_state,
-	lanczos_params);
+		  {&dlsite, &drsite, &drblock},
+		  pdinit_state,
+	    lanczos_params
+  );
 
 	// Tensor with complex element.
 	auto zlblock = ZGQTensor({idx_din, idx_vout, idx_dout});
@@ -336,7 +336,8 @@ TEST_F(TestLanczos, TestSingleSiteLanczosSolver) {
 	srand(0);
 	pzinit_state->Random(qn0);
 	RunTestSingleSiteLanczosSolverCase(
-		{&zlblock, &zrsite, &zrblock},
-		pzinit_state,
-		lanczos_params);
+		  {&zlblock, &zrsite, &zrblock},
+		  pzinit_state,
+		  lanczos_params
+  );
 }
