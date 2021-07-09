@@ -15,7 +15,7 @@
 #ifndef GQMPS2_ALGORITM_VMPS_ONE_SITE_UPDATE_FINITE_VMPS_IMPL_H
 #define GQMPS2_ALGORITM_VMPS_ONE_SITE_UPDATE_FINITE_VMPS_IMPL_H
 
-#include "gqmps2/algorithm/vmps/two_site_update_finite_vmps.h"    // SweepParams
+#include "gqmps2/algorithm/vmps/two_site_update_finite_vmps.h"    // helper functions
 #include "gqmps2/one_dim_tn/mpo/mpo.h"                            // MPO
 #include "gqmps2/one_dim_tn/mps/finite_mps/finite_mps.h"          // FiniteMPS
 #include "gqmps2/utilities.h"                                     // IsPathExist, CreatPath
@@ -40,11 +40,6 @@ namespace gqmps2 {
   using std::cout;
   using std::endl;
   using std::vector;
-
-  const double kMaxNoise = 1.0; //maximal noise
-  const double kNoiseIncrease = 1.02;
-  const double kNoiseDecrease = 0.95;
-  const double kAlpha = 0.3;
 
   // Helpers
   template <typename DTenT>
@@ -98,7 +93,7 @@ template <typename TenElemT, typename QNT>
 GQTEN_Double SingleSiteFiniteVMPS(
     FiniteMPS<TenElemT, QNT> &mps,
     const MPO<GQTensor<TenElemT, QNT>> &mpo,
-    SweepParams &sweep_params
+    SingleVMPSSweepParams &sweep_params
 ){
     assert(mps.size() == mpo.size());
 
@@ -125,7 +120,7 @@ GQTEN_Double SingleSiteFiniteVMPS(
     // the left/right environments
     if (!IsPathExist(sweep_params.temp_path)) {
       CreatPath(sweep_params.temp_path);
-      InitEnvs(mps, mpo, sweep_params, 1);
+      InitEnvs(mps, mpo, sweep_params.mps_path, sweep_params.temp_path, 1);
       std::cout << "no exsiting path " <<sweep_params.temp_path
                 << ", thus progress created it and generated environment tensors."
                 << std::endl;
@@ -162,13 +157,18 @@ template <typename TenElemT, typename QNT>
 double SingleSiteFiniteVMPSSweep(
     FiniteMPS<TenElemT, QNT> &mps,
     const MPO<GQTensor<TenElemT, QNT>> &mpo,
-    const SweepParams &sweep_params,
+    const SingleVMPSSweepParams &sweep_params,
     double& noise_start
 ) {
   auto N = mps.size();
   using TenT = GQTensor<TenElemT, QNT>;
   TenVec<TenT> lenvs(N), renvs(N);
   double e0(0.0), actual_e0(0.0), actual_laststep_e0(0.0);
+
+  const double& alpha = sweep_params.alpha;
+  const double& noise_decrease = sweep_params.noise_decrease;
+  const double& noise_increase = sweep_params.noise_increase;
+  const double& max_noise = sweep_params.max_noise;
 
   double& noise_running = noise_start;
   for (size_t i = 0; i < N - 1; ++i) {
@@ -180,11 +180,11 @@ double SingleSiteFiniteVMPSSweep(
       // expand and truncate let the energy lower or not change
       // this case is very rare, but include the boundary mps tensor case
       // so we do nothing now
-    } else if ((actual_e0 - e0) >= kAlpha*fabs(actual_laststep_e0-e0)) {
+    } else if ((actual_e0 - e0) >= alpha*fabs(actual_laststep_e0-e0)) {
       // below two case suppose actual_laststep_e0-laststep_e0>0, usually it is right
-      noise_running = noise_running*kNoiseDecrease;
+      noise_running = noise_running*noise_decrease;
     } else {
-      noise_running = std::min(noise_running*kNoiseIncrease, kMaxNoise);
+      noise_running = std::min(noise_running*noise_increase, max_noise);
     }
     e0 = SingleSiteFiniteVMPSUpdate(
              mps,
@@ -202,10 +202,10 @@ double SingleSiteFiniteVMPSSweep(
     LoadRelatedTensSingleSiteAlg(mps, lenvs, renvs, i, 'l', sweep_params);
     actual_e0 = CalEnergyEptSingleSite(mps, mpo,lenvs, renvs, i);
     if ((actual_e0 - e0) <= 0.0) {
-    } else if ((actual_e0 - e0) >= kAlpha*fabs(actual_laststep_e0 - e0)) {
-      noise_running = noise_running * kNoiseDecrease;
+    } else if ((actual_e0 - e0) >= alpha*fabs(actual_laststep_e0 - e0)) {
+      noise_running = noise_running * noise_decrease;
     } else {
-      noise_running = std::min(noise_running * kNoiseIncrease, kMaxNoise);
+      noise_running = std::min(noise_running * noise_increase, max_noise);
     }
     e0 = SingleSiteFiniteVMPSUpdate(
              mps,
@@ -237,7 +237,7 @@ double SingleSiteFiniteVMPSUpdate(
     TenVec<GQTensor<TenElemT, QNT>> &lenvs,
     TenVec<GQTensor<TenElemT, QNT>> &renvs,
     const MPO<GQTensor<TenElemT, QNT>> &mpo,
-    const SweepParams &sweep_params,
+    const SingleVMPSSweepParams &sweep_params,
     const char dir,
     const size_t target_site,
     const double preset_noise
@@ -477,7 +477,7 @@ void LoadRelatedTensSingleSiteAlg(
     TenVec<GQTensor<TenElemT, QNT>> &renvs,
     const size_t target_site,
     const char dir,
-    const SweepParams &sweep_params
+    const SingleVMPSSweepParams &sweep_params
 ) {
   auto N = mps.size();
   switch (dir) {
@@ -542,7 +542,7 @@ void DumpRelatedTensSingleSiteAlg(
     TenVec<GQTensor<TenElemT, QNT>> &renvs,
     const size_t target_site,
     const char dir,
-    const SweepParams &sweep_params
+    const SingleVMPSSweepParams &sweep_params
 ) {
   auto N = mps.size();
   lenvs.dealloc(target_site);

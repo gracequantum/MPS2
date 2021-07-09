@@ -75,7 +75,8 @@ inline void RemoveFile(const std::string &file) {
 Function to perform two-site update finite vMPS algorithm.
 
 @note The input MPS will be considered an empty one.
-@note The canonical center of MPS should be set at site 0 or 1.
+@note The canonical center of input MPS should be set at site 0 or 1.
+@note The canonical center of output MPS is set at site 1.
 */
 template <typename TenElemT, typename QNT>
 GQTEN_Double TwoSiteFiniteVMPS(
@@ -109,32 +110,45 @@ GQTEN_Double TwoSiteFiniteVMPS(
       true);
   return e0;
 }
-
-
 template <typename TenElemT, typename QNT>
 void InitEnvs(
     FiniteMPS<TenElemT, QNT> &mps,
     const MPO<GQTensor<TenElemT, QNT>> &mpo,
     const SweepParams &sweep_params,
+    const unsigned int update_site_num =2){
+  InitEnvs(
+      mps,
+      mpo,
+      sweep_params.mps_path,
+      sweep_params.temp_path,
+      update_site_num);
+}
+
+template <typename TenElemT, typename QNT>
+void InitEnvs(
+    FiniteMPS<TenElemT, QNT> &mps,
+    const MPO<GQTensor<TenElemT, QNT>> &mpo,
+    const std::string mps_path,
+    const std::string temp_path,
     const unsigned int update_site_num = 2) {
   using TenT = GQTensor<TenElemT, QNT>;
   auto N = mps.size();
 
   TenT renv;
   //Write a trivial right environment tensor to disk
-  mps.LoadTen(N-1, GenMPSTenName(sweep_params.mps_path, N-1));
+  mps.LoadTen(N-1, GenMPSTenName(mps_path, N-1));
   auto mps_trivial_index = mps.back().GetIndexes()[2];
   auto mpo_trivial_index_inv = InverseIndex(mpo.back().GetIndexes()[3]);
   auto mps_trivial_index_inv = InverseIndex(mps_trivial_index);
   renv = TenT({mps_trivial_index_inv, mpo_trivial_index_inv, mps_trivial_index});
   renv({0,0,0}) = 1;
-  auto file = GenEnvTenName("r", 0, sweep_params.temp_path);
+  auto file = GenEnvTenName("r", 0, temp_path);
   WriteGQTensorTOFile(renv, file);
 
   //bulk right environment tensors
   for (size_t i = 1; i <= N - update_site_num; ++i) {
-    if(i>1){mps.LoadTen(N-i, GenMPSTenName(sweep_params.mps_path, N-i));}
-    auto file = GenEnvTenName("r", i, sweep_params.temp_path);
+    if(i>1){mps.LoadTen(N-i, GenMPSTenName(mps_path, N-i));}
+    auto file = GenEnvTenName("r", i, temp_path);
     TenT temp1;
     Contract(&mps[N-i], &renv, {{2}, {0}}, &temp1);
     renv = TenT();
@@ -148,13 +162,13 @@ void InitEnvs(
 
   //Write a trivial left environment tensor to disk
   TenT lenv;
-  mps.LoadTen(0, GenMPSTenName(sweep_params.mps_path, 0));
+  mps.LoadTen(0, GenMPSTenName(mps_path, 0));
   mps_trivial_index = mps.front().GetIndexes()[0];
   mpo_trivial_index_inv = InverseIndex(mpo.front().GetIndexes()[0]);
   mps_trivial_index_inv = InverseIndex(mps_trivial_index);
   lenv = TenT({mps_trivial_index_inv, mpo_trivial_index_inv, mps_trivial_index});
   lenv({0,0,0}) = 1;
-  file = GenEnvTenName("l", 0, sweep_params.temp_path);
+  file = GenEnvTenName("l", 0, temp_path);
   WriteGQTensorTOFile(lenv, file);
   mps.dealloc(0);
 

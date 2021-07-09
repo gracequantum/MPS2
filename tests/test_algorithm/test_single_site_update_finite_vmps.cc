@@ -80,7 +80,7 @@ template <typename TenElemT, typename QNT>
 void RunTestSingleSiteAlgorithmCase(
     FiniteMPS<TenElemT, QNT> &mps,
     const MPO<GQTensor<TenElemT, QNT>> &mpo,
-    SweepParams sweep_params,
+    SingleVMPSSweepParams sweep_params,
     const double benmrk_e0, const double precision
 ) {
   auto e0 = SingleSiteFiniteVMPS(mps, mpo, sweep_params);
@@ -141,7 +141,7 @@ TEST_F(TestSingleSiteAlgorithmSpinSystem, 1DIsing) {
   }
   auto dmpo = dmpo_gen.Gen();
 
-  auto sweep_params = SweepParams(
+  auto sweep_params = SingleVMPSSweepParams(
                           4,
                           1, 10, 1.0E-5,
                           LanczosParams(1.0E-7)
@@ -172,7 +172,7 @@ TEST_F(TestSingleSiteAlgorithmSpinSystem, 1DIsing) {
     zmpo_gen.AddTerm(1, {zsz, zsz}, {i, i+1});
   }
   auto zmpo = zmpo_gen.Gen();
-  sweep_params = SweepParams(
+  sweep_params = SingleVMPSSweepParams(
                      4,
                      1, 10, 1.0E-5,
                      LanczosParams(1.0E-7)
@@ -200,7 +200,7 @@ TEST_F(TestSingleSiteAlgorithmSpinSystem, 1DHeisenberg) {
   }
   auto dmpo = dmpo_gen.Gen();
 
-  auto sweep_params = SweepParams(
+  auto sweep_params = SingleVMPSSweepParams(
                           6,
                           8, 8, 1.0E-9,
                           LanczosParams(1.0E-7),
@@ -233,7 +233,7 @@ TEST_F(TestSingleSiteAlgorithmSpinSystem, 1DHeisenberg) {
   }
   auto zmpo = zmpo_gen.Gen();
 
-  sweep_params = SweepParams(
+  sweep_params = SingleVMPSSweepParams(
                      6,
                      8, 8, 1.0E-9,
                      LanczosParams(1.0E-7),
@@ -268,11 +268,15 @@ TEST_F(TestSingleSiteAlgorithmSpinSystem, 2DHeisenberg) {
   }
   auto dmpo = dmpo_gen.Gen();
 
-  auto sweep_params = SweepParams(
+  auto sweep_params = SingleVMPSSweepParams(
                           6,
                           8, 8, 1.0E-9,
                           LanczosParams(1.0E-7),
-                          {0.01, 0.001, 0.0001, 0.00001}
+                          {0.01, 0.001, 0.0001, 0.00001},
+                          0.3,
+                          1.01,
+                          0.8,
+                          0.1
                       );
 
   // Test direct product state initialization.
@@ -296,7 +300,7 @@ TEST_F(TestSingleSiteAlgorithmSpinSystem, 2DHeisenberg) {
   }
   auto zmpo = zmpo_gen.Gen();
 
-  sweep_params = SweepParams(
+  sweep_params = SingleVMPSSweepParams(
                      6,
                      8, 8, 1.0E-9,
                      LanczosParams(1.0E-7),
@@ -331,7 +335,7 @@ TEST_F(TestSingleSiteAlgorithmSpinSystem, 2DKitaevSimpleCase) {
   }
   auto dmpo = dmpo_gen.Gen();
 
-  auto sweep_params = SweepParams(
+  auto sweep_params = SingleVMPSSweepParams(
                           4,
                           8, 8, 1.0E-4,
                           LanczosParams(1.0E-10),
@@ -482,7 +486,7 @@ TEST(TestSingleSiteAlgorithmNoSymmetrySpinSystem, 2DKitaevComplexCase) {
       was_up = true;
     }
   }
-  auto sweep_params = SweepParams(
+  auto sweep_params = SingleVMPSSweepParams(
                           4,
                           60, 60, 1.0E-4,
                           LanczosParams(1.0E-10),
@@ -576,7 +580,7 @@ TEST_F(TestSingleSiteAlgorithmTjSystem2U1Symm, 1DCase) {
   }
   auto dmpo = dmpo_gen.Gen();
 
-  auto sweep_params = SweepParams(
+  auto sweep_params = SingleVMPSSweepParams(
                           11,
                           8, 8, 1.0E-9,
                           LanczosParams(1.0E-8, 20),
@@ -632,7 +636,7 @@ TEST_F(TestSingleSiteAlgorithmTjSystem2U1Symm, 2DCase) {
   }
   auto dmpo = dmpo_gen.Gen();
 
-  auto sweep_params = SweepParams(
+  auto sweep_params = SingleVMPSSweepParams(
                           10,
                           8, 8, 1.0E-9,
                           LanczosParams(1.0E-8, 20),
@@ -786,7 +790,7 @@ TEST_F(TestSingleSiteAlgorithmTjSystem1U1Symm, RashbaTermCase) {
   }
   auto mpo = mpo_gen.Gen();
 
-  auto sweep_params = SweepParams(
+  auto sweep_params = SingleVMPSSweepParams(
                           8,
                           30, 30, 1.0E-4,
                           LanczosParams(1.0E-14, 100),
@@ -950,7 +954,7 @@ TEST_F(TestSingleSiteAlgorithmHubbardSystem, 2Dcase) {
   }
   auto dmpo = dmpo_gen.Gen();
 
-  auto sweep_params = SweepParams(
+  auto sweep_params = SingleVMPSSweepParams(
                           10,
                           16, 16, 1.0E-9,
                           LanczosParams(1.0E-8, 20),
@@ -1111,7 +1115,7 @@ TEST_F(TestKondoInsulatorSystem, doublechain) {
   }
   auto dmpo = dmpo_gen.Gen();
 
-  auto sweep_params = SweepParams(
+  auto sweep_params = SingleVMPSSweepParams(
                           5,
                           64, 64, 1.0E-9,
                           LanczosParams(1.0E-8, 20),
@@ -1282,7 +1286,7 @@ TEST_F(TestSingleSiteAlgorithmElectronPhononSystem, holsteinchain) {
     qn_label=3-qn_label;
   }
   DirectStateInitMps(dmps, stat_labs);
-  auto sweep_params = SweepParams(
+  auto sweep_params = SingleVMPSSweepParams(
                           5,
                           256, 256, 1.0E-10,
                           LanczosParams(1.0E-7),
