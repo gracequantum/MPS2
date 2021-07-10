@@ -15,14 +15,15 @@
 #ifndef GQMPS2_ALGORITM_VMPS_ONE_SITE_UPDATE_FINITE_VMPS_IMPL_H
 #define GQMPS2_ALGORITM_VMPS_ONE_SITE_UPDATE_FINITE_VMPS_IMPL_H
 
-#include "gqmps2/algorithm/vmps/two_site_update_finite_vmps.h"    // helper functions
-#include "gqmps2/one_dim_tn/mpo/mpo.h"                            // MPO
-#include "gqmps2/one_dim_tn/mps/finite_mps/finite_mps.h"          // FiniteMPS
-#include "gqmps2/utilities.h"                                     // IsPathExist, CreatPath
-#include "gqmps2/one_dim_tn/framework/ten_vec.h"                  // TenVec
+#include "gqmps2/algorithm/vmps/single_site_update_finite_vmps.h"   // SingleVMPSSweepParams
+#include "gqmps2/algorithm/vmps/two_site_update_finite_vmps.h"      // helper functions
+#include "gqmps2/one_dim_tn/mpo/mpo.h"                              // MPO
+#include "gqmps2/one_dim_tn/mps/finite_mps/finite_mps.h"            // FiniteMPS
+#include "gqmps2/utilities.h"                                       // IsPathExist, CreatPath
+#include "gqmps2/one_dim_tn/framework/ten_vec.h"                    // TenVec
 #include "gqmps2/consts.h"
 #include "gqten/gqten.h"
-#include "gqten/utility/timer.h"                                  // Timer
+#include "gqten/utility/timer.h"                                    // Timer
 
 #include <iostream>
 #include <iomanip>
