@@ -112,7 +112,7 @@ void InitEnvs(
     FiniteMPS<TenElemT, QNT> &mps,
     const MPO<GQTensor<TenElemT, QNT>> &mpo,
     const SweepParams &sweep_params,
-    const unsigned int update_site_num = 2
+    const size_t update_site_num = 2
 ){
   InitEnvs(
       mps,
@@ -130,7 +130,7 @@ void InitEnvs(
     const MPO<GQTensor<TenElemT, QNT>> &mpo,
     const std::string mps_path,
     const std::string temp_path,
-    const unsigned int update_site_num = 2
+    const size_t update_site_num = 2
 ) {
   using TenT = GQTensor<TenElemT, QNT>;
   auto N = mps.size();
@@ -464,10 +464,12 @@ void DumpRelatedTensTwoSiteAlg(
       mps.DumpTen(
           target_site,
           GenMPSTenName(sweep_params.mps_path, target_site),
-          true);
+          true
+      );
       lenvs.DumpTen(
           target_site + 1,
-          GenEnvTenName("l", target_site + 1, sweep_params.temp_path));
+          GenEnvTenName("l", target_site + 1, sweep_params.temp_path)
+      );
     }break;
     case 'l':{
       lenvs.dealloc((target_site+1) - 2);
@@ -475,11 +477,13 @@ void DumpRelatedTensTwoSiteAlg(
       mps.DumpTen(
           target_site,
           GenMPSTenName(sweep_params.mps_path, target_site),
-          true);
+          true
+      );
       auto next_renv_len = N - target_site;
       renvs.DumpTen(
           next_renv_len,
-          GenEnvTenName("r", next_renv_len, sweep_params.temp_path));
+          GenEnvTenName("r", next_renv_len, sweep_params.temp_path)
+      );
     }break;
     default:
       assert(false);
