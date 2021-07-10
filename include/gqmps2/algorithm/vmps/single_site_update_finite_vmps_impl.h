@@ -37,9 +37,6 @@
 
 namespace gqmps2 {
   using namespace gqten;
-  using std::cout;
-  using std::endl;
-  using std::vector;
 
   // Helpers
   template <typename DTenT>
@@ -165,10 +162,10 @@ double SingleSiteFiniteVMPSSweep(
   TenVec<TenT> lenvs(N), renvs(N);
   double e0(0.0), actual_e0(0.0), actual_laststep_e0(0.0);
 
-  const double& alpha = sweep_params.alpha;
-  const double& noise_decrease = sweep_params.noise_decrease;
-  const double& noise_increase = sweep_params.noise_increase;
-  const double& max_noise = sweep_params.max_noise;
+  const double alpha = sweep_params.alpha;
+  const double noise_decrease = sweep_params.noise_decrease;
+  const double noise_increase = sweep_params.noise_increase;
+  const double max_noise = sweep_params.max_noise;
 
   double& noise_running = noise_start;
   for (size_t i = 0; i < N - 1; ++i) {
