@@ -1289,7 +1289,7 @@ TEST_F(TestSingleSiteAlgorithmElectronPhononSystem, holsteinchain) {
   auto sweep_params = SingleVMPSSweepParams(
                           5,
                           256, 256, 1.0E-10,
-                          LanczosParams(1.0E-7),
+                          LanczosParams(1.0E-9),
                           {0.1, 0.1, 0.01, 0.001, 0.0001}
                       );
   dmps.Dump(sweep_params.mps_path, true);
