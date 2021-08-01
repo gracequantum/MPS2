@@ -5,10 +5,6 @@
 #  
 #  Description: GraceQ/MPS2 project. CMake file to control unittest.
 # 
-if(NOT GQMPS2_BUILD_GQTEN_USE_EXTERNAL_HPTT_LIB)
-  set(hptt_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external/gqten/external/hptt/include")
-  set(hptt_LIBRARY "${CMAKE_BINARY_DIR}/external/gqten/external/hptt/libhptt.a")
-endif()
 # Set MKL compile flags and link flags.
 if(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
   set(MATH_LIB_COMPILE_FLAGS "-I$ENV{MKLROOT}/include")

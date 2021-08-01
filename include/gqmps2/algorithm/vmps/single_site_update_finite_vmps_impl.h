@@ -414,11 +414,14 @@ double SingleSiteFiniteVMPSUpdate(
   return lancz_res.gs_eng;
 }
 
-
+/**
+  SingleSiteFiniteVMPSExpand Function
+  @note gs_vec will be changed when dir=='r'
+*/
 template <typename TenElemT, typename QNT>
 void SingleSiteFiniteVMPSExpand(
     FiniteMPS<TenElemT, QNT> &mps,
-    const GQTensor<TenElemT, QNT> *gs_vec,
+    GQTensor<TenElemT, QNT> *gs_vec,
     const std::vector< GQTensor<TenElemT, QNT> *> &eff_ham,
     const char dir,
     const size_t target_site,
@@ -432,12 +435,13 @@ void SingleSiteFiniteVMPSExpand(
     size_t next_site = target_site + 1;
     Contract(eff_ham[0], gs_vec, {{0}, {0}}, ten_tmp);
     InplaceContract(ten_tmp, eff_ham[1], {{0, 2}, {0, 1}});
-    ten_tmp->Transpose({0, 2, 1, 3});
-    TenT expanded_ten = FuseIndex(*ten_tmp, 2, 3);
-    expanded_ten = noise * expanded_ten;;
-    Expand(gs_vec, &expanded_ten, {2},  mps(target_site));
+    ten_tmp->FuseIndex(1,3);
+    (*ten_tmp) *= noise;
+    gs_vec->Transpose({2,0,1});
+    Expand(gs_vec, ten_tmp, {0},  mps(target_site));
+    mps(target_site)->Transpose({1,2,0});
 
-    auto expanded_index = InverseIndex(expanded_ten.GetIndexes()[2]);
+    auto expanded_index = InverseIndex(ten_tmp->GetIndexes()[0]);
     TenT expanded_zero_ten = TenT({
                                  expanded_index,
                                  mps[next_site].GetIndexes()[1],
@@ -451,11 +455,11 @@ void SingleSiteFiniteVMPSExpand(
     Contract(gs_vec, eff_ham[2], {{2}, {0}}, ten_tmp);
     InplaceContract(ten_tmp, eff_ham[1], {{1, 2}, {1, 3}});
     ten_tmp->Transpose({0, 2, 3, 1});
-    TenT expanded_ten = FuseIndex(*ten_tmp, 0, 1);
-    expanded_ten = noise*expanded_ten;
-    Expand(gs_vec, &expanded_ten, {0}, mps(target_site));
+    ten_tmp->FuseIndex(0,1);
+    (*ten_tmp) *= noise;
+    Expand(gs_vec, ten_tmp, {0}, mps(target_site));
 
-    auto expanded_index = InverseIndex(expanded_ten.GetIndexes()[0]);
+    auto expanded_index = InverseIndex(ten_tmp->GetIndexes()[0]);
     TenT expanded_zero_ten = TenT({
                                  mps[next_site].GetIndexes()[0],
                                  mps[next_site].GetIndexes()[1],
