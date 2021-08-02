@@ -28,7 +28,7 @@ using namespace gqten;
 
 
 // Helpers
-std::string GenMPSTenName(const std::string &mps_path, const size_t idx) {
+inline std::string GenMPSTenName(const std::string &mps_path, const size_t idx) {
   return mps_path + "/" +
          kMpsTenBaseName + std::to_string(idx) + "." + kGQTenFileSuffix;
 }
