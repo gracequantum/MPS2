@@ -43,44 +43,6 @@ namespace gqmps2 {
   template <typename DTenT>
   inline double MeasureEE(const DTenT &s, const size_t sdim);
 
-  // TODO: Need improve!
-  /** Fuse two indices of a tensor t. we suppose i<j, and the new index is placed on position i.
-      Original index after index i are placed in original order.
-  */
-  template <typename TenElemT, typename QNT>
-  GQTensor<TenElemT, QNT> FuseIndex(
-      const GQTensor<TenElemT, QNT>& t,
-      size_t i, size_t j
-  ) {
-    assert(i<j);
-    assert(i<t.Rank() && j<t.Rank());
-    assert(t.GetIndexes()[i].GetDir()==t.GetIndexes()[j].GetDir());
-    Index<QNT> index1 = t.GetIndexes()[i];
-    Index<QNT> index2 = t.GetIndexes()[j];
-
-    GQTensor<TenElemT, QNT> combiner = IndexCombine<TenElemT>(
-                                           InverseIndex(index1),
-                                           InverseIndex(index2),
-                                           index1.GetDir()
-                                       );
-    GQTensor<TenElemT, QNT> fused_tensor;
-    Contract(&t, &combiner, {{i, j}, {0, 1}}, &fused_tensor);
-    size_t fused_ten_rank = fused_tensor.Rank();
-    std::vector<size_t> axs(fused_ten_rank);
-    for (size_t k = 0; k < fused_ten_rank; k++) {
-      if (k < i) {
-        axs[k] = k;
-      } else if (k == i) {
-        axs[k] = fused_ten_rank - 1;
-      } else {
-        axs[k] = k - 1;
-      }
-    }
-    fused_tensor.Transpose(axs);
-    return fused_tensor;
-  }
-
-
 /**
 Function to perform single-site update finite vMPS algorithm.
 
@@ -242,9 +204,6 @@ double SingleSiteFiniteVMPSUpdate(
 ) {
   Timer update_timer("single_site_fvmps_update");
 
-#ifdef GQMPS2_TIMING_MODE
-  Timer preprocessing_timer("single_site_fvmps_preprocessing");
-#endif
   double noise = preset_noise;
   auto N = mps.size();
   size_t lenv_len = target_site;
@@ -286,7 +245,7 @@ double SingleSiteFiniteVMPSUpdate(
 #endif
 
 #ifdef GQMPS2_TIMING_MODE
-  Timer expand_timer("single_site_fvmps_expand");
+  Timer expand_timer("single_site_fvmps_add_noise");
 #endif
 
   bool need_expand(true);
@@ -432,11 +391,26 @@ void SingleSiteFiniteVMPSExpand(
   TenT* ten_tmp = new TenT();
   mps(target_site) = new TenT();    // we suppose mps only contain mps[next_site]
   if (dir=='r') {
+#ifdef GQMPS2_TIMING_MODE
+  Timer contract_timer("single_site_fvmps_add_noise_contract");
+#endif
     size_t next_site = target_site + 1;
     Contract(eff_ham[0], gs_vec, {{0}, {0}}, ten_tmp);
     InplaceContract(ten_tmp, eff_ham[1], {{0, 2}, {0, 1}});
+#ifdef GQMPS2_TIMING_MODE
+  contract_timer.PrintElapsed();
+  Timer fuse_index_timer("single_site_fvmps_add_noise_fuse_index");
+#endif
     ten_tmp->FuseIndex(1,3);
+#ifdef GQMPS2_TIMING_MODE
+  fuse_index_timer.PrintElapsed();
+  Timer scalar_multip_timer("single_site_fvmps_add_noise_scalar_multiplication");
+#endif
     (*ten_tmp) *= noise;
+#ifdef GQMPS2_TIMING_MODE
+  scalar_multip_timer.PrintElapsed();
+  Timer expansion_timer("single_site_fvmps_add_noise_expansion");
+#endif
     gs_vec->Transpose({2,0,1});
     Expand(gs_vec, ten_tmp, {0},  mps(target_site));
     mps(target_site)->Transpose({1,2,0});
@@ -450,13 +424,31 @@ void SingleSiteFiniteVMPSExpand(
     Expand(mps(next_site), &expanded_zero_ten, {0}, ten_tmp);
     delete mps(next_site);
     mps(next_site) = ten_tmp;
+#ifdef GQMPS2_TIMING_MODE
+  expansion_timer.PrintElapsed();
+#endif
   } else if (dir=='l') {
+#ifdef GQMPS2_TIMING_MODE
+  Timer contract_timer("single_site_fvmps_add_noise_contract");
+#endif  
     size_t next_site = target_site - 1;
     Contract(gs_vec, eff_ham[2], {{2}, {0}}, ten_tmp);
     InplaceContract(ten_tmp, eff_ham[1], {{1, 2}, {1, 3}});
+#ifdef GQMPS2_TIMING_MODE
+  contract_timer.PrintElapsed();
+  Timer fuse_index_timer("single_site_fvmps_add_noise_fuse_index");
+#endif
     ten_tmp->Transpose({0, 2, 3, 1});
     ten_tmp->FuseIndex(0,1);
+#ifdef GQMPS2_TIMING_MODE
+  fuse_index_timer.PrintElapsed();
+  Timer scalar_multip_timer("single_site_fvmps_add_noise_scalar_multiplication");
+#endif
     (*ten_tmp) *= noise;
+#ifdef GQMPS2_TIMING_MODE
+  scalar_multip_timer.PrintElapsed();
+  Timer expansion_timer("single_site_fvmps_add_noise_expansion");
+#endif
     Expand(gs_vec, ten_tmp, {0}, mps(target_site));
 
     auto expanded_index = InverseIndex(ten_tmp->GetIndexes()[0]);
@@ -468,6 +460,9 @@ void SingleSiteFiniteVMPSExpand(
     Expand(mps(next_site), &expanded_zero_ten, {2}, ten_tmp);
     delete mps(next_site);
     mps(next_site) = ten_tmp;
+#ifdef GQMPS2_TIMING_MODE
+  expansion_timer.PrintElapsed();
+#endif
   }
 }
 
@@ -481,6 +476,9 @@ void LoadRelatedTensSingleSiteAlg(
     const char dir,
     const SingleVMPSSweepParams &sweep_params
 ) {
+#ifdef GQMPS2_TIMING_MODE
+  Timer preprocessing_timer("single_site_fvmps_preprocessing");
+#endif
   auto N = mps.size();
   switch (dir) {
     case 'r':
@@ -534,6 +532,9 @@ void LoadRelatedTensSingleSiteAlg(
     default:
       assert(false);
   }
+#ifdef GQMPS2_TIMING_MODE
+  preprocessing_timer.PrintElapsed();
+#endif
 }
 
 
@@ -546,6 +547,9 @@ void DumpRelatedTensSingleSiteAlg(
     const char dir,
     const SingleVMPSSweepParams &sweep_params
 ) {
+#ifdef GQMPS2_TIMING_MODE
+  Timer postprocessing_timer("single_site_fvmps_postprocessing");
+#endif
   auto N = mps.size();
   lenvs.dealloc(target_site);
   renvs.dealloc(N - target_site - 1);
@@ -568,6 +572,9 @@ void DumpRelatedTensSingleSiteAlg(
     default:
       assert(false);
   }
+#ifdef GQMPS2_TIMING_MODE
+  postprocessing_timer.PrintElapsed();
+#endif
 }
 
 
@@ -579,6 +586,9 @@ double CalEnergyEptSingleSite(
     TenVec<GQTensor<TenElemT, QNT>> &renvs,
     const size_t target_site
 ) {
+#ifdef GQMPS2_TIMING_MODE
+  Timer cal_energy_timer("single_site_fvmps_pre_caluclate_energy");
+#endif
   using TenT = GQTensor<TenElemT, QNT>;
   std::vector<TenT *> eff_ham(3);
   size_t lenv_len = target_site;
@@ -593,6 +603,9 @@ double CalEnergyEptSingleSite(
   Contract(h_mul_state, &mps_ten_dag, {{0, 1, 2}, {0, 1, 2}}, &scalar_ten);
   delete h_mul_state;
   double energy = Real(scalar_ten());
+#ifdef GQMPS2_TIMING_MODE
+  cal_energy_timer.PrintElapsed();
+#endif
   return energy;
 }
 } /* gqmps2 */
