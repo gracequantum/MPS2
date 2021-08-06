@@ -15,14 +15,15 @@
 #ifndef GQMPS2_ALGORITM_VMPS_ONE_SITE_UPDATE_FINITE_VMPS_IMPL_H
 #define GQMPS2_ALGORITM_VMPS_ONE_SITE_UPDATE_FINITE_VMPS_IMPL_H
 
-#include "gqmps2/algorithm/vmps/two_site_update_finite_vmps.h"    // SweepParams
-#include "gqmps2/one_dim_tn/mpo/mpo.h"                            // MPO
-#include "gqmps2/one_dim_tn/mps/finite_mps/finite_mps.h"          // FiniteMPS
-#include "gqmps2/utilities.h"                                     // IsPathExist, CreatPath
-#include "gqmps2/one_dim_tn/framework/ten_vec.h"                  // TenVec
+#include "gqmps2/algorithm/vmps/single_site_update_finite_vmps.h"   // SingleVMPSSweepParams
+#include "gqmps2/algorithm/vmps/two_site_update_finite_vmps.h"      // helper functions
+#include "gqmps2/one_dim_tn/mpo/mpo.h"                              // MPO
+#include "gqmps2/one_dim_tn/mps/finite_mps/finite_mps.h"            // FiniteMPS
+#include "gqmps2/utilities.h"                                       // IsPathExist, CreatPath
+#include "gqmps2/one_dim_tn/framework/ten_vec.h"                    // TenVec
 #include "gqmps2/consts.h"
 #include "gqten/gqten.h"
-#include "gqten/utility/timer.h"                                  // Timer
+#include "gqten/utility/timer.h"                                    // Timer
 
 #include <iostream>
 #include <iomanip>
@@ -37,56 +38,10 @@
 
 namespace gqmps2 {
   using namespace gqten;
-  using std::cout;
-  using std::endl;
-  using std::vector;
-
-  const double kMaxNoise = 1.0; //maximal noise
-  const double kNoiseIncrease = 1.02;
-  const double kNoiseDecrease = 0.95;
-  const double kAlpha = 0.3;
 
   // Helpers
   template <typename DTenT>
   inline double MeasureEE(const DTenT &s, const size_t sdim);
-
-  // TODO: Need improve!
-  /** Fuse two indices of a tensor t. we suppose i<j, and the new index is placed on position i.
-      Original index after index i are placed in original order.
-  */
-  template <typename TenElemT, typename QNT>
-  GQTensor<TenElemT, QNT> FuseIndex(
-      const GQTensor<TenElemT, QNT>& t,
-      size_t i, size_t j
-  ) {
-    assert(i<j);
-    assert(i<t.Rank() && j<t.Rank());
-    assert(t.GetIndexes()[i].GetDir()==t.GetIndexes()[j].GetDir());
-    Index<QNT> index1 = t.GetIndexes()[i];
-    Index<QNT> index2 = t.GetIndexes()[j];
-
-    GQTensor<TenElemT, QNT> combiner = IndexCombine<TenElemT>(
-                                           InverseIndex(index1),
-                                           InverseIndex(index2),
-                                           index1.GetDir()
-                                       );
-    GQTensor<TenElemT, QNT> fused_tensor;
-    Contract(&t, &combiner, {{i, j}, {0, 1}}, &fused_tensor);
-    size_t fused_ten_rank = fused_tensor.Rank();
-    std::vector<size_t> axs(fused_ten_rank);
-    for (size_t k = 0; k < fused_ten_rank; k++) {
-      if (k < i) {
-        axs[k] = k;
-      } else if (k == i) {
-        axs[k] = fused_ten_rank - 1;
-      } else {
-        axs[k] = k - 1;
-      }
-    }
-    fused_tensor.Transpose(axs);
-    return fused_tensor;
-  }
-
 
 /**
 Function to perform single-site update finite vMPS algorithm.
@@ -98,7 +53,7 @@ template <typename TenElemT, typename QNT>
 GQTEN_Double SingleSiteFiniteVMPS(
     FiniteMPS<TenElemT, QNT> &mps,
     const MPO<GQTensor<TenElemT, QNT>> &mpo,
-    SweepParams &sweep_params
+    SingleVMPSSweepParams &sweep_params
 ){
     assert(mps.size() == mpo.size());
 
@@ -125,7 +80,7 @@ GQTEN_Double SingleSiteFiniteVMPS(
     // the left/right environments
     if (!IsPathExist(sweep_params.temp_path)) {
       CreatPath(sweep_params.temp_path);
-      InitEnvs(mps, mpo, sweep_params, 1);
+      InitEnvs(mps, mpo, sweep_params.mps_path, sweep_params.temp_path, 1);
       std::cout << "no exsiting path " <<sweep_params.temp_path
                 << ", thus progress created it and generated environment tensors."
                 << std::endl;
@@ -162,13 +117,18 @@ template <typename TenElemT, typename QNT>
 double SingleSiteFiniteVMPSSweep(
     FiniteMPS<TenElemT, QNT> &mps,
     const MPO<GQTensor<TenElemT, QNT>> &mpo,
-    const SweepParams &sweep_params,
+    const SingleVMPSSweepParams &sweep_params,
     double& noise_start
 ) {
   auto N = mps.size();
   using TenT = GQTensor<TenElemT, QNT>;
   TenVec<TenT> lenvs(N), renvs(N);
   double e0(0.0), actual_e0(0.0), actual_laststep_e0(0.0);
+
+  const double alpha = sweep_params.alpha;
+  const double noise_decrease = sweep_params.noise_decrease;
+  const double noise_increase = sweep_params.noise_increase;
+  const double max_noise = sweep_params.max_noise;
 
   double& noise_running = noise_start;
   for (size_t i = 0; i < N - 1; ++i) {
@@ -180,11 +140,11 @@ double SingleSiteFiniteVMPSSweep(
       // expand and truncate let the energy lower or not change
       // this case is very rare, but include the boundary mps tensor case
       // so we do nothing now
-    } else if ((actual_e0 - e0) >= kAlpha*fabs(actual_laststep_e0-e0)) {
+    } else if ((actual_e0 - e0) >= alpha*fabs(actual_laststep_e0-e0)) {
       // below two case suppose actual_laststep_e0-laststep_e0>0, usually it is right
-      noise_running = noise_running*kNoiseDecrease;
+      noise_running = noise_running*noise_decrease;
     } else {
-      noise_running = std::min(noise_running*kNoiseIncrease, kMaxNoise);
+      noise_running = std::min(noise_running*noise_increase, max_noise);
     }
     e0 = SingleSiteFiniteVMPSUpdate(
              mps,
@@ -202,10 +162,10 @@ double SingleSiteFiniteVMPSSweep(
     LoadRelatedTensSingleSiteAlg(mps, lenvs, renvs, i, 'l', sweep_params);
     actual_e0 = CalEnergyEptSingleSite(mps, mpo,lenvs, renvs, i);
     if ((actual_e0 - e0) <= 0.0) {
-    } else if ((actual_e0 - e0) >= kAlpha*fabs(actual_laststep_e0 - e0)) {
-      noise_running = noise_running * kNoiseDecrease;
+    } else if ((actual_e0 - e0) >= alpha*fabs(actual_laststep_e0 - e0)) {
+      noise_running = noise_running * noise_decrease;
     } else {
-      noise_running = std::min(noise_running * kNoiseIncrease, kMaxNoise);
+      noise_running = std::min(noise_running * noise_increase, max_noise);
     }
     e0 = SingleSiteFiniteVMPSUpdate(
              mps,
@@ -237,16 +197,13 @@ double SingleSiteFiniteVMPSUpdate(
     TenVec<GQTensor<TenElemT, QNT>> &lenvs,
     TenVec<GQTensor<TenElemT, QNT>> &renvs,
     const MPO<GQTensor<TenElemT, QNT>> &mpo,
-    const SweepParams &sweep_params,
+    const SingleVMPSSweepParams &sweep_params,
     const char dir,
     const size_t target_site,
     const double preset_noise
 ) {
   Timer update_timer("single_site_fvmps_update");
 
-#ifdef GQMPS2_TIMING_MODE
-  Timer preprocessing_timer("single_site_fvmps_preprocessing");
-#endif
   double noise = preset_noise;
   auto N = mps.size();
   size_t lenv_len = target_site;
@@ -288,7 +245,7 @@ double SingleSiteFiniteVMPSUpdate(
 #endif
 
 #ifdef GQMPS2_TIMING_MODE
-  Timer expand_timer("single_site_fvmps_expand");
+  Timer expand_timer("single_site_fvmps_add_noise");
 #endif
 
   bool need_expand(true);
@@ -416,11 +373,14 @@ double SingleSiteFiniteVMPSUpdate(
   return lancz_res.gs_eng;
 }
 
-
+/**
+  SingleSiteFiniteVMPSExpand Function
+  @note gs_vec will be changed when dir=='r'
+*/
 template <typename TenElemT, typename QNT>
 void SingleSiteFiniteVMPSExpand(
     FiniteMPS<TenElemT, QNT> &mps,
-    const GQTensor<TenElemT, QNT> *gs_vec,
+    GQTensor<TenElemT, QNT> *gs_vec,
     const std::vector< GQTensor<TenElemT, QNT> *> &eff_ham,
     const char dir,
     const size_t target_site,
@@ -431,15 +391,31 @@ void SingleSiteFiniteVMPSExpand(
   TenT* ten_tmp = new TenT();
   mps(target_site) = new TenT();    // we suppose mps only contain mps[next_site]
   if (dir=='r') {
+#ifdef GQMPS2_TIMING_MODE
+  Timer contract_timer("single_site_fvmps_add_noise_contract");
+#endif
     size_t next_site = target_site + 1;
     Contract(eff_ham[0], gs_vec, {{0}, {0}}, ten_tmp);
     InplaceContract(ten_tmp, eff_ham[1], {{0, 2}, {0, 1}});
-    ten_tmp->Transpose({0, 2, 1, 3});
-    TenT expanded_ten = FuseIndex(*ten_tmp, 2, 3);
-    expanded_ten = noise * expanded_ten;;
-    Expand(gs_vec, &expanded_ten, {2},  mps(target_site));
+#ifdef GQMPS2_TIMING_MODE
+  contract_timer.PrintElapsed();
+  Timer fuse_index_timer("single_site_fvmps_add_noise_fuse_index");
+#endif
+    ten_tmp->FuseIndex(1,3);
+#ifdef GQMPS2_TIMING_MODE
+  fuse_index_timer.PrintElapsed();
+  Timer scalar_multip_timer("single_site_fvmps_add_noise_scalar_multiplication");
+#endif
+    (*ten_tmp) *= noise;
+#ifdef GQMPS2_TIMING_MODE
+  scalar_multip_timer.PrintElapsed();
+  Timer expansion_timer("single_site_fvmps_add_noise_expansion");
+#endif
+    gs_vec->Transpose({2,0,1});
+    Expand(gs_vec, ten_tmp, {0},  mps(target_site));
+    mps(target_site)->Transpose({1,2,0});
 
-    auto expanded_index = InverseIndex(expanded_ten.GetIndexes()[2]);
+    auto expanded_index = InverseIndex(ten_tmp->GetIndexes()[0]);
     TenT expanded_zero_ten = TenT({
                                  expanded_index,
                                  mps[next_site].GetIndexes()[1],
@@ -448,16 +424,34 @@ void SingleSiteFiniteVMPSExpand(
     Expand(mps(next_site), &expanded_zero_ten, {0}, ten_tmp);
     delete mps(next_site);
     mps(next_site) = ten_tmp;
+#ifdef GQMPS2_TIMING_MODE
+  expansion_timer.PrintElapsed();
+#endif
   } else if (dir=='l') {
+#ifdef GQMPS2_TIMING_MODE
+  Timer contract_timer("single_site_fvmps_add_noise_contract");
+#endif  
     size_t next_site = target_site - 1;
     Contract(gs_vec, eff_ham[2], {{2}, {0}}, ten_tmp);
     InplaceContract(ten_tmp, eff_ham[1], {{1, 2}, {1, 3}});
+#ifdef GQMPS2_TIMING_MODE
+  contract_timer.PrintElapsed();
+  Timer fuse_index_timer("single_site_fvmps_add_noise_fuse_index");
+#endif
     ten_tmp->Transpose({0, 2, 3, 1});
-    TenT expanded_ten = FuseIndex(*ten_tmp, 0, 1);
-    expanded_ten = noise*expanded_ten;
-    Expand(gs_vec, &expanded_ten, {0}, mps(target_site));
+    ten_tmp->FuseIndex(0,1);
+#ifdef GQMPS2_TIMING_MODE
+  fuse_index_timer.PrintElapsed();
+  Timer scalar_multip_timer("single_site_fvmps_add_noise_scalar_multiplication");
+#endif
+    (*ten_tmp) *= noise;
+#ifdef GQMPS2_TIMING_MODE
+  scalar_multip_timer.PrintElapsed();
+  Timer expansion_timer("single_site_fvmps_add_noise_expansion");
+#endif
+    Expand(gs_vec, ten_tmp, {0}, mps(target_site));
 
-    auto expanded_index = InverseIndex(expanded_ten.GetIndexes()[0]);
+    auto expanded_index = InverseIndex(ten_tmp->GetIndexes()[0]);
     TenT expanded_zero_ten = TenT({
                                  mps[next_site].GetIndexes()[0],
                                  mps[next_site].GetIndexes()[1],
@@ -466,6 +460,9 @@ void SingleSiteFiniteVMPSExpand(
     Expand(mps(next_site), &expanded_zero_ten, {2}, ten_tmp);
     delete mps(next_site);
     mps(next_site) = ten_tmp;
+#ifdef GQMPS2_TIMING_MODE
+  expansion_timer.PrintElapsed();
+#endif
   }
 }
 
@@ -477,8 +474,11 @@ void LoadRelatedTensSingleSiteAlg(
     TenVec<GQTensor<TenElemT, QNT>> &renvs,
     const size_t target_site,
     const char dir,
-    const SweepParams &sweep_params
+    const SingleVMPSSweepParams &sweep_params
 ) {
+#ifdef GQMPS2_TIMING_MODE
+  Timer preprocessing_timer("single_site_fvmps_preprocessing");
+#endif
   auto N = mps.size();
   switch (dir) {
     case 'r':
@@ -532,6 +532,9 @@ void LoadRelatedTensSingleSiteAlg(
     default:
       assert(false);
   }
+#ifdef GQMPS2_TIMING_MODE
+  preprocessing_timer.PrintElapsed();
+#endif
 }
 
 
@@ -542,8 +545,11 @@ void DumpRelatedTensSingleSiteAlg(
     TenVec<GQTensor<TenElemT, QNT>> &renvs,
     const size_t target_site,
     const char dir,
-    const SweepParams &sweep_params
+    const SingleVMPSSweepParams &sweep_params
 ) {
+#ifdef GQMPS2_TIMING_MODE
+  Timer postprocessing_timer("single_site_fvmps_postprocessing");
+#endif
   auto N = mps.size();
   lenvs.dealloc(target_site);
   renvs.dealloc(N - target_site - 1);
@@ -566,6 +572,9 @@ void DumpRelatedTensSingleSiteAlg(
     default:
       assert(false);
   }
+#ifdef GQMPS2_TIMING_MODE
+  postprocessing_timer.PrintElapsed();
+#endif
 }
 
 
@@ -577,6 +586,9 @@ double CalEnergyEptSingleSite(
     TenVec<GQTensor<TenElemT, QNT>> &renvs,
     const size_t target_site
 ) {
+#ifdef GQMPS2_TIMING_MODE
+  Timer cal_energy_timer("single_site_fvmps_pre_caluclate_energy");
+#endif
   using TenT = GQTensor<TenElemT, QNT>;
   std::vector<TenT *> eff_ham(3);
   size_t lenv_len = target_site;
@@ -591,6 +603,9 @@ double CalEnergyEptSingleSite(
   Contract(h_mul_state, &mps_ten_dag, {{0, 1, 2}, {0, 1, 2}}, &scalar_ten);
   delete h_mul_state;
   double energy = Real(scalar_ten());
+#ifdef GQMPS2_TIMING_MODE
+  cal_energy_timer.PrintElapsed();
+#endif
   return energy;
 }
 } /* gqmps2 */

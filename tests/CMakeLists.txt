@@ -5,23 +5,39 @@
 #  
 #  Description: GraceQ/MPS2 project. CMake file to control unittest.
 # 
-if(NOT GQMPS2_BUILD_GQTEN_USE_EXTERNAL_HPTT_LIB)
-  set(hptt_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external/gqten/external/hptt/include")
-  set(hptt_LIBRARY "${CMAKE_BINARY_DIR}/external/gqten/external/hptt/libhptt.a")
-endif()
 # Set MKL compile flags and link flags.
-if(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
-  set(MATH_LIB_COMPILE_FLAGS "-I$ENV{MKLROOT}/include")
-  set(MATH_LIB_LINK_FLAGS -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_intel_thread.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -liomp5 -lpthread -lm -ldl)
-endif()
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-  set(MATH_LIB_COMPILE_FLAGS -m64 -I$ENV{MKLROOT}/include)
-  # Link the Intel's OpenMP library to avoid performance issue when the library calls the MKL's gesdd function.
-  set(MATH_LIB_LINK_FLAGS -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_intel_thread.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -L$ENV{MKLROOT}/lib/intel64 -liomp5 -lpthread -lm -ldl)
-endif()
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  set(MATH_LIB_COMPILE_FLAGS -m64 -I$ENV{MKLROOT}/include)
-  set(MATH_LIB_LINK_FLAGS -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_intel_thread.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -L$ENV{MKLROOT}/lib/intel64 -liomp5 -lpthread -lm -ldl)
+
+if(APPLE)
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+    set(MATH_LIB_COMPILE_FLAGS "-I$ENV{MKLROOT}/include")
+    #Need test
+    set(MATH_LIB_LINK_FLAGS $ENV{MKLROOT}/lib/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/libmkl_intel_thread.a $ENV{MKLROOT}/lib/libmkl_core.a -liomp5 -lpthread -lm -ldl)
+  endif()
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    set(MATH_LIB_COMPILE_FLAGS -m64 -I$ENV{MKLROOT}/include)
+    # May not work
+    set(MATH_LIB_LINK_FLAGS $ENV{MKLROOT}/lib/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/libmkl_intel_thread.a $ENV{MKLROOT}/lib/libmkl_core.a -L$ENV{MKLROOT}/lib -L$ENV{CMPLR_ROOT}/mac/compiler/lib/ -liomp5 -lpthread -lm -ldl)
+  endif()
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(MATH_LIB_COMPILE_FLAGS -m64 -I$ENV{MKLROOT}/include)
+    # Note as of Intel oneAPI 2021.2, "source /opt/intel/oneapi/compiler/latest/env/vars.sh"
+    set(MATH_LIB_LINK_FLAGS $ENV{MKLROOT}/lib/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/libmkl_intel_thread.a $ENV{MKLROOT}/lib/libmkl_core.a -L$ENV{MKLROOT}/lib -L$ENV{CMPLR_ROOT}/mac/compiler/lib/ -Wl, -rpath $ENV{CMPLR_ROOT}/mac/compiler/lib/libiomp5.dylib -liomp5 -lpthread -lm -ldl)
+  endif()
+elseif(UNIX)
+  #UNIX include APPLE, but we except it here
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+    set(MATH_LIB_COMPILE_FLAGS "-I$ENV{MKLROOT}/include")
+    set(MATH_LIB_LINK_FLAGS -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_intel_thread.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -liomp5 -lpthread -lm -ldl)
+  endif()
+  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    set(MATH_LIB_COMPILE_FLAGS -m64 -I$ENV{MKLROOT}/include)
+    # Link the Intel's OpenMP library to avoid performance issue when the library calls the MKL's gesdd function.
+    set(MATH_LIB_LINK_FLAGS -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_intel_thread.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -L$ENV{MKLROOT}/lib/intel64 -liomp5 -lpthread -lm -ldl)
+  endif()
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(MATH_LIB_COMPILE_FLAGS -m64 -I$ENV{MKLROOT}/include)
+    set(MATH_LIB_LINK_FLAGS -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_intel_thread.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -L$ENV{MKLROOT}/lib/intel64 -liomp5 -lpthread -lm -ldl)
+  endif()
 endif()
 
 

@@ -178,7 +178,7 @@ LanczosRes<TenT> LanczosSolver(
     bases[m] = gamma;
 
 #ifdef GQMPS2_TIMING_MODE
-    mat_vec_timer.Restart();
+    mat_vec_timer.ClearAndRestart();
 #endif
 
     last_mat_mul_vec_res = (*eff_ham_mul_state)(rpeff_ham, bases[m]);
