@@ -40,13 +40,15 @@ void RunTestDuoVectorConstructorsCase(const size_t size) {
     EXPECT_EQ(duovec_moved[i], duovec[i]);
   }
 
-  auto duovec_copy2 = duovec;
+  DuoVector<ElemT> duovec_copy2;
+  duovec_copy2 = duovec;
   for (size_t i = 0; i < size; ++i) {
     EXPECT_EQ(duovec_copy2[i], duovec[i]);
     EXPECT_NE(duovec_copy2(i), duovec(i));
   }
   auto craw_data_copy2 = duovec_copy2.cdata();
-  auto duovec_moved2 = std::move(duovec_copy2);
+  DuoVector<ElemT> duovec_moved2;
+  duovec_moved2 = std::move(duovec_copy2);
   for (size_t i = 0; i < size; ++i) {
     EXPECT_EQ(duovec_moved2(i), craw_data_copy2[i]);
     EXPECT_EQ(duovec_moved2[i], duovec[i]);

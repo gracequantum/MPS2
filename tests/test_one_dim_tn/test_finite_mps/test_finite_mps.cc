@@ -175,7 +175,8 @@ TEST_F(TestMPS, TestCopyAndMove) {
     EXPECT_NE(crmps_copy(i), crmps(i));
   }
 
-  MPST mps_copy2 = mps;
+  MPST mps_copy2(mps.GetSitesInfo());
+  mps_copy2 = mps;
   const MPST &crmps_copy2 = mps_copy2;
   EXPECT_EQ(mps_copy2.GetCenter(), mps.GetCenter());
   for (size_t i = 0; i < mps.size(); ++i) {
@@ -195,7 +196,8 @@ TEST_F(TestMPS, TestCopyAndMove) {
   }
 
   auto craw_data_copy2 = mps_copy2.cdata();
-  MPST mps_move2 = std::move(mps_copy2);
+  MPST mps_move2(mps_copy2.GetSitesInfo());
+  mps_move2 = std::move(mps_copy2);
   const MPST &crmps_move2 = mps_move2;
   EXPECT_EQ(mps_move2.GetCenter(), mps.GetCenter());
   for (size_t i = 0; i < mps.size(); ++i) {

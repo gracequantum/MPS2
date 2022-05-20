@@ -50,7 +50,7 @@ public:
 
   @param duovec A DuoVector instance.
   */
-  DuoVector(const DuoVector &duovec) : raw_data_(duovec.size(), nullptr) {
+  DuoVector(const DuoVector<ElemT> &duovec) : raw_data_(duovec.size(), nullptr) {
     for (size_t i = 0; i < duovec.size(); ++i) {
       if (duovec(i) != nullptr) {
         raw_data_[i] = new ElemT(duovec[i]);
@@ -63,10 +63,17 @@ public:
 
   @param rhs A DuoVector instance.
   */
-  DuoVector<ElemT> &operator=(const DuoVector &rhs) {
-    ~DuoVector();
-    raw_data_ = std::vector<ElemT *>(rhs.size(), nullptr);
-    for (size_t i = 0; i < rhs[i]; ++i) {
+  DuoVector<ElemT> &operator=(const DuoVector<ElemT> &rhs) {
+//    this->DuoVector::~DuoVector();
+//    I'm no sure why above line do not work if used in the derived FiniteMPS class
+    for (auto &rpelem : raw_data_) {
+      if (rpelem != nullptr) {
+        delete rpelem;
+      }
+    }
+    const size_t N = rhs.size();
+    raw_data_ = std::vector<ElemT *>(N, nullptr);
+    for (size_t i = 0; i < N; ++i) {
       if (rhs(i) != nullptr) {
         raw_data_[i] = new ElemT(rhs[i]);
       }
@@ -80,17 +87,26 @@ public:
   @param duovec A DuoVector instance.
   */
   DuoVector(
-      DuoVector &&duovec
-  ) noexcept : raw_data_(std::move(duovec.raw_data_)) {}
+      DuoVector<ElemT> &&duovec
+  ) noexcept : raw_data_(std::move(duovec.raw_data_)) {
+    duovec.raw_data_ = std::vector<ElemT *>(duovec.size(), nullptr);
+  }
 
   /**
   Move a DuoVector.
 
   @param rhs A DuoVector instance.
   */
-  DuoVector<ElemT> &operator=(DuoVector &&rhs) noexcept {
-    ~DuoVector();
+  DuoVector<ElemT> &operator=(DuoVector<ElemT> &&rhs) noexcept {
+//    this->DuoVector::~DuoVector();
+//    I have no idea why above line do not work if used in the derived FiniteMPS class
+    for (auto &rpelem : raw_data_) {
+      if (rpelem != nullptr) {
+        delete rpelem;
+      }
+    }
     raw_data_ = std::move(rhs.raw_data_);
+    rhs.raw_data_ = std::vector<ElemT *>(rhs.size(), nullptr);
     return *this;
   }
 
