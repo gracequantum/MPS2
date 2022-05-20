@@ -34,12 +34,26 @@ A fix size tensor vector.
 template <typename TenT>
 class TenVec : public DuoVector<TenT> {
 public:
+
+  //No default constructor
+
   /**
   Create a TenVec using its size.
 
   @param size The size of the vector.
   */
   TenVec(const size_t size) : DuoVector<TenT>(size) {}
+
+//  /**
+//   * Copy constructor
+//   */
+//  TenVec(const TenVec &rhs) : DuoVector<TenT>( (DuoVector<TenT>&)rhs ) {}
+
+//  TenVec<TenT> &operator=(const TenVec &rhs) {
+//    (*this) = rhs;
+//    return *this;
+//  }
+//
 
   /**
   Load element tensor from a file.

@@ -28,13 +28,13 @@ struct FSMNode {
 using FSMNodeVec = std::vector<FSMNode>;
 
 
-bool operator==(const FSMNode &lhs, const FSMNode &rhs) {
+inline bool operator==(const FSMNode &lhs, const FSMNode &rhs) {
   return (lhs.fsm_site_idx == rhs.fsm_site_idx) &&
          (lhs.fsm_stat_idx == rhs.fsm_stat_idx);
 }
 
 
-bool operator!=(const FSMNode &lhs, const FSMNode &rhs) {
+inline bool operator!=(const FSMNode &lhs, const FSMNode &rhs) {
   return !(lhs == rhs);
 }
 
@@ -106,7 +106,7 @@ const long kFSMReadyStatIdx = 0;
 const long kFSMFinalStatIdx = -1;
 
 
-void FSM::AddPath(
+inline void FSM::AddPath(
       const size_t head_ntrvl_site_idx, const size_t tail_ntrvl_site_idx,
       const OpReprVec &ntrvl_ops) {
   assert(
@@ -148,7 +148,7 @@ void FSM::AddPath(
 }
 
 
-SparOpReprMatVec FSM::GenMatRepr(void) const {
+inline SparOpReprMatVec FSM::GenMatRepr(void) const {
   auto fsm_site_dims = CalcFSMSiteDims_();
   auto final_stat_dim_idxs = CalcFinalStatDimIdxs_(fsm_site_dims);
   SparOpReprMatVec fsm_mat_repr;
@@ -164,7 +164,7 @@ SparOpReprMatVec FSM::GenMatRepr(void) const {
 }
 
 
-std::vector<size_t> FSM::CalcFSMSiteDims_(void) const {
+inline std::vector<size_t> FSM::CalcFSMSiteDims_(void) const {
   std::vector<size_t> fsm_site_dims(fsm_site_num_, 0);
   for (size_t i = 0; i < fsm_site_num_; ++i) {
     auto fsm_site_dim = mid_stat_nums_[i];
@@ -176,7 +176,7 @@ std::vector<size_t> FSM::CalcFSMSiteDims_(void) const {
 }
 
 
-std::vector<long> FSM::CalcFinalStatDimIdxs_(
+inline std::vector<long> FSM::CalcFinalStatDimIdxs_(
     const std::vector<size_t> &fsm_site_dims) const {
   std::vector<long> final_stat_dim_idxs(fsm_site_num_, -1);
   for (size_t i = 0; i < fsm_site_num_; ++i) {
@@ -192,7 +192,7 @@ std::vector<long> FSM::CalcFinalStatDimIdxs_(
 }
 
 
-void FSM::CastFSMPathToMatRepr_(
+inline void FSM::CastFSMPathToMatRepr_(
     const FSMPath &fsm_path,
     const std::vector<long> &final_stat_dim_idxs,
     SparOpReprMatVec &fsm_mat_repr) const {
@@ -229,7 +229,7 @@ void FSM::CastFSMPathToMatRepr_(
 }
 
 
-SparOpReprMatVec FSM::GenCompressedMatRepr(void) const {
+inline SparOpReprMatVec FSM::GenCompressedMatRepr(void) const {
   auto comp_mat_repr = GenMatRepr();
   for (size_t i = 0; i < phys_site_num_-1; ++i) {
     SparOpReprMatColCompresser(comp_mat_repr[i], comp_mat_repr[i+1]);
@@ -241,7 +241,7 @@ SparOpReprMatVec FSM::GenCompressedMatRepr(void) const {
 }
 
 
-void FSM::ReplaceIdOpLabels(std::vector<OpLabel> &new_id_op_labels) {
+inline void FSM::ReplaceIdOpLabels(std::vector<OpLabel> &new_id_op_labels) {
   assert(new_id_op_labels.size() == id_op_labels_.size());
   id_op_labels_ = new_id_op_labels;
 }

@@ -244,7 +244,7 @@ const OpRepr kIdOpRepr = OpRepr(kIdOpLabel);  // Operator representation for ide
 using OpReprVec = std::vector<OpRepr>;
 
 
-std::pair<CoefRepr, OpRepr> SeparateCoefAndBase(const OpRepr &op_repr) {
+inline std::pair<CoefRepr, OpRepr> SeparateCoefAndBase(const OpRepr &op_repr) {
   auto term_num = op_repr.coef_repr_list_.size();
   if (term_num == 0) {
     return std::make_pair(kNullCoefRepr, kNullOpRepr);
@@ -264,7 +264,7 @@ std::pair<CoefRepr, OpRepr> SeparateCoefAndBase(const OpRepr &op_repr) {
 }
 
 
-CoefRepr GetOpReprCoef(const OpRepr &op_repr) {
+inline CoefRepr GetOpReprCoef(const OpRepr &op_repr) {
   return SeparateCoefAndBase(op_repr).first;
 }
 
@@ -480,7 +480,7 @@ using SparOpReprMatVec = std::vector<SparOpReprMat>;
 
 
 // Incomplete multiplication for SparMat.
-OpRepr CoefReprOpReprIncompleteMulti(const CoefRepr &coef, const OpRepr &op) {
+inline OpRepr CoefReprOpReprIncompleteMulti(const CoefRepr &coef, const OpRepr &op) {
   if (op == kNullOpRepr) { return kNullOpRepr; }
   if (coef == kIdCoefRepr) { return op; }
   for (auto &c : op.coef_repr_list_) {
@@ -494,7 +494,7 @@ OpRepr CoefReprOpReprIncompleteMulti(const CoefRepr &coef, const OpRepr &op) {
 }
 
 
-void SparCoefReprMatSparOpReprMatIncompleteMultiKernel(
+inline void SparCoefReprMatSparOpReprMatIncompleteMultiKernel(
     const SparCoefReprMat &coef_mat, const SparOpReprMat &op_mat,
     const size_t coef_mat_row_idx, const size_t op_mat_col_idx,
     SparOpReprMat &res) {
@@ -513,7 +513,7 @@ void SparCoefReprMatSparOpReprMatIncompleteMultiKernel(
 }
 
 
-void SparOpReprMatSparCoefReprMatIncompleteMultiKernel(
+inline void SparOpReprMatSparCoefReprMatIncompleteMultiKernel(
     const SparOpReprMat &op_mat, const SparCoefReprMat &coef_mat,
     const size_t op_mat_row_idx, const size_t coef_mat_col_idx,
     SparOpReprMat &res) {
@@ -532,7 +532,7 @@ void SparOpReprMatSparCoefReprMatIncompleteMultiKernel(
 }
 
 
-SparOpReprMat SparCoefReprMatSparOpReprMatIncompleteMulti(
+inline SparOpReprMat SparCoefReprMatSparOpReprMatIncompleteMulti(
     const SparCoefReprMat &coef_mat, const SparOpReprMat &op_mat) {
   assert(coef_mat.cols == op_mat.rows);
   SparOpReprMat res(coef_mat.rows, op_mat.cols);
@@ -546,7 +546,7 @@ SparOpReprMat SparCoefReprMatSparOpReprMatIncompleteMulti(
 }
 
 
-SparOpReprMat SparOpReprMatSparCoefReprMatIncompleteMulti(
+inline SparOpReprMat SparOpReprMatSparCoefReprMatIncompleteMulti(
     const SparOpReprMat &op_mat, const SparCoefReprMat &coef_mat) {
   assert(op_mat.cols == coef_mat.rows);
   SparOpReprMat res(op_mat.rows, coef_mat.cols);
@@ -562,7 +562,7 @@ SparOpReprMat SparOpReprMatSparCoefReprMatIncompleteMulti(
 
 // Row and column delinearization.
 /* TODO: So bad implementation, need refactor. */
-OpReprVec CalcSparOpReprMatRowLinCmb(
+inline OpReprVec CalcSparOpReprMatRowLinCmb(
     const SparOpReprMat &m, const CoefReprVec &cmb) {
   auto work_row_num = cmb.size();
   assert(work_row_num > 0);
@@ -595,7 +595,7 @@ OpReprVec CalcSparOpReprMatRowLinCmb(
 }
 
 
-OpReprVec CalcSparOpReprMatColLinCmb(
+inline OpReprVec CalcSparOpReprMatColLinCmb(
     const SparOpReprMat &m, const CoefReprVec &cmb) {
   auto work_col_num = cmb.size();
   assert(work_col_num > 0);
@@ -628,7 +628,7 @@ OpReprVec CalcSparOpReprMatColLinCmb(
 }
 
 
-void SparOpReprMatRowDelinearize(
+inline void SparOpReprMatRowDelinearize(
     SparOpReprMat &target, SparOpReprMat &follower) {
   auto row_num = target.rows;
   size_t i;
@@ -660,7 +660,7 @@ void SparOpReprMatRowDelinearize(
 }
 
 
-void SparOpReprMatColDelinearize(
+inline void SparOpReprMatColDelinearize(
     SparOpReprMat &target, SparOpReprMat &follower) {
   auto col_num = target.cols;
   size_t i;
@@ -693,7 +693,7 @@ void SparOpReprMatColDelinearize(
 
 
 // Row and column compresser.
-void SparOpReprMatRowCompresser(
+inline void SparOpReprMatRowCompresser(
     SparOpReprMat &target, SparOpReprMat &follower) {
   assert(target.rows == follower.cols);
   auto row_num = target.rows;
@@ -725,7 +725,7 @@ void SparOpReprMatRowCompresser(
 }
 
 
-void SparOpReprMatColCompresser(
+inline void SparOpReprMatColCompresser(
     SparOpReprMat &target, SparOpReprMat &follower) {
   assert(target.cols == follower.rows);
   auto col_num = target.cols;
